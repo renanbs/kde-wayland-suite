@@ -1,0 +1,10 @@
+{
+  "name": "kde-wayland-suite",
+  "version": "1.0.0",
+  "description": "KDE Plasma 6 Wayland Suite for keyboard shortcuts repair, ABNT2/US-intl layout management, and touchpad gestures.",
+  "skills": [
+    "./skills/check-status.md",
+    "./skills/fix-keyboard.md",
+    "./skills/configure-gestures.md"
+  ]
+}

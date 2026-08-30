@@ -1,0 +1,14 @@
+# KDE Plasma 6 Wayland Suite — Cursor CLI Rules
+
+You have access to the `kde-wayland-suite` in this repository.
+
+When the user asks about keyboard layouts (ABNT2, US-intl, cedilla), broken shortcuts (Ctrl+C), or touchpad gestures in KDE Plasma 6 Wayland:
+
+1. To run a full diagnostic:
+   execute `./bin/kde-config status` or `make check`
+2. To fix keyboard shortcuts and configure XCompose cedilla:
+   execute `./bin/kde-config fix-keyboard` or `make fix-keyboard`
+3. To configure touchpad gestures (libinput-gestures):
+   execute `./bin/kde-config gestures` or `make gestures`
+4. To switch active keyboard layout:
+   execute `./bin/kde-config switch br` or `./bin/kde-config switch us`

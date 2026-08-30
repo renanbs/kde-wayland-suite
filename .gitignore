@@ -1,0 +1,17 @@
+# IDE / OS
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Backups & Temp
+*.bak
+*.bak_*
+tmp/
+*.tmp
+kde-config-backups/
+
+# Logs
+*.log

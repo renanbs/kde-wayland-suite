@@ -1,0 +1,30 @@
+---
+description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), XCompose cedilla, and touchpad gestures via CLI and agent.
+globs: *
+alwaysApply: true
+---
+
+# KDE Plasma 6 Wayland Suite — Cursor CLI & Agent Rule
+
+Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar e executar automações do KDE Plasma 6 Wayland.
+
+## Comandos Disponíveis via CLI
+
+```bash
+# Diagnóstico de saúde do ambiente
+./bin/kde-config status
+
+# Correção de atalhos (Ctrl+C) no ABNT2 e configuração de cedilha (~/.XCompose)
+./bin/kde-config fix-keyboard
+
+# Configuração de gestos de touchpad (libinput-gestures)
+./bin/kde-config gestures
+
+# Alternar layout ativo via D-Bus
+./bin/kde-config switch [br|us]
+```
+
+## Arquitetura de Execução
+
+- Sempre invoque `./bin/kde-config` ou `make <target>` para aplicar alterações no sistema de forma atômica e com backup.
+- Os scripts canônicos residem em `shared/` (`check-status.sh`, `fix-keyboard.sh`, `configure-gestures.sh`).

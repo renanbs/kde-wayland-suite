@@ -31,6 +31,7 @@ usage() {
     echo -e "${BOLD}Uso:${NC} kde-config <comando> [argumentos]"
     echo ""
     echo -e "${BOLD}Comandos disponíveis:${NC}"
+    echo "  init              Inicializa todo o ambiente, salva backups e aplica ajustes"
     echo "  status            Auditoria completa de teclado, atalhos e gestos"
     echo "  fix-keyboard      Aplica correção de Ctrl+C no ABNT2 e configura XCompose"
     echo "  gestures          Instala e configura gestos de touchpad (libinput-gestures)"
@@ -78,8 +79,23 @@ cmd_preflight() {
         exit 1
     fi
 }
+cmd_init() {
+    echo -e "${BOLD}${BLUE}======================================================${NC}"
+    echo -e "${BOLD}${BLUE}   KDE Plasma 6 Wayland — Inicialização Completa      ${NC}"
+    echo -e "${BOLD}${BLUE}======================================================${NC}\n"
+    cmd_preflight
+    echo ""
+    cmd_fix_keyboard
+    echo ""
+    cmd_gestures
+    echo ""
+    cmd_shortcut_switch
+    echo ""
+    cmd_install
+    echo ""
+    cmd_status
+}
 
-cmd_switch_layout() {
     local target="${1:-next}"
     if [ -z "$QDBUS" ]; then
         echo -e "${RED}Erro: qdbus6/qdbus não encontrado no PATH.${NC}"
@@ -160,8 +176,8 @@ cmd_install() {
 
 # Roteamento principal
 case "${1:-status}" in
+    init) cmd_init ;;
     status) cmd_status ;;
-    fix-keyboard) cmd_fix_keyboard ;;
     gestures) cmd_gestures ;;
     preflight) cmd_preflight ;;
     switch) cmd_switch_layout "${2:-next}" ;;

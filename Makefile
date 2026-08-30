@@ -1,9 +1,13 @@
-.PHONY: all status check fix-keyboard gestures switch-br switch-us shortcut-switch rollback install-cli preflight help
+.PHONY: all init status check fix-keyboard gestures switch-br switch-us shortcut-switch rollback install-cli preflight help
 
 all: status
 
+init:
+	@./bin/kde-config init
+
 help:
 	@echo "Alvos disponíveis no Makefile:"
+	@echo "  make init            - Inicializa e salva todo o ambiente com backups"
 	@echo "  make status          - Executa a auditoria completa de teclado e gestos"
 	@echo "  make check           - Alias para make status"
 	@echo "  make fix-keyboard    - Corrige Ctrl+C no ABNT2 e configura XCompose para US-intl"

@@ -6,6 +6,6 @@
     "name": "Looptech"
   },
   "skills": [
-    "./skills/kde-wayland-suite/SKILL.md"
+    "./skills/kde-wayland-suite"
   ]
 }

@@ -91,7 +91,7 @@ mkdir -p ~/.cursor/rules
 cp .cursor/rules/kde-wayland-suite.mdc ~/.cursor/rules/
 ```
 * O Cursor CLI e o Agent passam a aplicar as regras automaticamente em qualquer sessão.
-
+* Para suporte a MCP Tools no Cursor, o arquivo `.cursor/mcp.json` já fornece a integração com o `kde-config`.
 ---
 
 ### 3. Antigravity CLI
@@ -142,7 +142,8 @@ kde-wayland-suite/
 ├── Makefile                      # Interface make para automações
 ├── README.md                     # Documentação geral
 ├── .cursorrules                  # Regras de contexto para Cursor CLI (raiz)
-├── .cursor/                      # Regras nativas do Cursor IDE & CLI
+├── .cursor/                      # Regras nativas e MCP do Cursor IDE & CLI
+│   ├── mcp.json                  # Configuração de ferramentas MCP para o Cursor
 │   └── rules/
 │       └── kde-wayland-suite.mdc # Regra MDC com alwaysApply para Cursor Agent
 ├── bin/

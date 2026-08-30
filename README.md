@@ -85,9 +85,20 @@ O Cursor consome a suíte tanto via editor visual quanto via **Cursor CLI** (`cu
   * `fix-keyboard.md`
   * `configure-gestures.md`
 * Ao solicitar qualquer operação de KDE/Wayland, o Antigravity carrega a skill correspondente e executa os scripts canônicos em `shared/`.
-
 ### 4. OMP (Oh My Pi)
-* Consome nativamente a skill em `omp/skills/kde-wayland-suite/SKILL.md`.
+Para qualquer pessoa instalar e habilitar a skill no **OMP**:
+
+```bash
+# 1. Clonar o repositório e linkar a skill globalmente no OMP
+git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
+cd ~/src/kde-wayland-suite
+make install-cli
+
+# 2. Registrar a skill no diretório de skills do OMP
+mkdir -p ~/.config/omp/skills
+ln -sf ~/src/kde-wayland-suite/omp/skills/kde-wayland-suite ~/.config/omp/skills/
+```
+* O OMP detectará e carregará a skill automaticamente via `skill://kde-wayland-suite` sempre que o usuário solicitar diagnósticos ou ajustes de teclado/gestos no KDE Wayland.
 * Pode ser referenciada ou inspecionada via `skill://kde-wayland-suite`.
 
 ### 5. OpenCode

@@ -2,7 +2,9 @@
   "name": "kde-wayland-suite",
   "version": "1.0.0",
   "description": "Comprehensive KDE Plasma 6 Wayland configuration plugin for keyboard shortcuts (Ctrl+C ABNT2 fix), XCompose cedilla, and touchpad gestures.",
-  "author": "Looptech",
+  "author": {
+    "name": "Looptech"
+  },
   "skills": [
     "./skills/kde-wayland-suite/SKILL.md"
   ]

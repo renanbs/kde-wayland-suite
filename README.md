@@ -63,45 +63,74 @@ make install-cli
 
 ---
 
-## 🤖 Passo a Passo por Ferramenta de IA
+## 🤖 Instalação e Uso em Outras Máquinas (Por Ferramenta de IA)
+
+Para que qualquer outra pessoa instale e utilize esta suíte em sua própria máquina, siga as instruções da respectiva CLI:
 
 ### 1. Claude Code
-O Claude Code carrega o plugin automaticamente através do manifesto `.claude-plugin/plugin.json`:
-* **Comandos de Barra (Slash Commands)**:
-  * `/check-status` — Executa o diagnóstico completo do ambiente.
-  * `/fix-keyboard` — Executa a correção atômica de teclado e atalhos.
-  * `/configure-gestures` — Configura e inicia o daemon de gestos.
-* **Ativação por Linguagem Natural**: Basta pedir ao Claude (ex: *"arrume meus atalhos no KDE Wayland"* ou *"verifique o status do teclado"*), e a skill `kde-wayland-suite` será disparada.
+Qualquer pessoa pode instalar diretamente do GitHub ou de uma pasta clonada:
+```bash
+# Instalação direta via GitHub no chat do Claude Code:
+/plugin install renanbs/kde-wayland-suite
 
-### 2. Cursor (IDE & Cursor CLI)
-O Cursor consome a suíte tanto via editor visual quanto via **Cursor CLI** (`cursor agent` / headless mode):
-* **Cursor Rules (`.cursor/rules/kde-wayland-suite.mdc`)**: Regra em formato MDC com ativação contínua (`alwaysApply: true`), permitindo que o Cursor CLI e o Agent compreendam o contexto e executem `./bin/kde-config` ou comandos do `Makefile`.
-* **Compatibilidade Clássica (`.cursorrules`)**: Arquivo de regras na raiz para indexadores de CLI que não leem a pasta `.cursor`.
-* **Comandos e Skills (`cursor/commands/` e `cursor/skills/`)**: Mapeamento direto de slash commands e skills para o Composer/Chat.
+# Ou se já clonou o repositório localmente:
+/plugin install ~/src/kde-wayland-suite/claude-code
+```
+* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`.
+
+---
+
+### 2. Cursor CLI & IDE (`cursor agent` / Headless)
+```bash
+# 1. Clonar e instalar o binário
+git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
+cd ~/src/kde-wayland-suite && make install-cli
+
+# 2. Para usar globalmente em qualquer projeto aberto no Cursor:
+mkdir -p ~/.cursor/rules
+cp .cursor/rules/kde-wayland-suite.mdc ~/.cursor/rules/
+```
+* O Cursor CLI e o Agent passam a aplicar as regras automaticamente em qualquer sessão.
+
+---
 
 ### 3. Antigravity CLI
-* O arquivo `antigravity/plugin.json` registra as capabilities e aponta para as skills em `antigravity/skills/`:
-  * `check-status.md`
-  * `fix-keyboard.md`
-  * `configure-gestures.md`
-* Ao solicitar qualquer operação de KDE/Wayland, o Antigravity carrega a skill correspondente e executa os scripts canônicos em `shared/`.
-### 4. OMP (Oh My Pi)
-Para qualquer pessoa instalar e habilitar a skill no **OMP**:
-
 ```bash
-# 1. Clonar o repositório e linkar a skill globalmente no OMP
+# 1. Clonar e instalar o binário
 git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
-cd ~/src/kde-wayland-suite
-make install-cli
+cd ~/src/kde-wayland-suite && make install-cli
 
-# 2. Registrar a skill no diretório de skills do OMP
+# 2. Linkar como plugin no Antigravity
+mkdir -p ~/.config/antigravity/plugins
+ln -sf ~/src/kde-wayland-suite/antigravity ~/.config/antigravity/plugins/kde-wayland-suite
+```
+
+---
+
+### 4. OMP (Oh My Pi)
+```bash
+# 1. Clonar e instalar o binário
+git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
+cd ~/src/kde-wayland-suite && make install-cli
+
+# 2. Linkar a skill no OMP
 mkdir -p ~/.config/omp/skills
 ln -sf ~/src/kde-wayland-suite/omp/skills/kde-wayland-suite ~/.config/omp/skills/
 ```
-* O OMP detectará e carregará a skill automaticamente via `skill://kde-wayland-suite` sempre que o usuário solicitar diagnósticos ou ajustes de teclado/gestos no KDE Wayland.
-* Pode ser referenciada ou inspecionada via `skill://kde-wayland-suite`.
+* Reconhecido nativamente como `skill://kde-wayland-suite`.
+
+---
 
 ### 5. OpenCode
+```bash
+# 1. Clonar e instalar o binário
+git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
+cd ~/src/kde-wayland-suite && make install-cli
+
+# 2. Linkar a skill no OpenCode
+mkdir -p ~/.config/opencode/skills
+ln -sf ~/src/kde-wayland-suite/opencode/skills/kde-wayland-suite ~/.config/opencode/skills/
+```
 * Carrega a definição padrão localizada em `opencode/skills/kde-wayland-suite/SKILL.md`.
 
 ---

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "kde-wayland-suite": {
+      "command": "kde-config",
+      "args": ["status"]
+    }
+  }
+}

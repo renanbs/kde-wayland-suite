@@ -23,6 +23,8 @@ if [ -f "$HOME/.config/environment.d/im.conf" ]; then
     echo -e "    ${GREEN}[OK]${NC} ~/.config/environment.d/im.conf removido com sucesso."
 fi
 
+# Mata processos xsel travados no XWayland
+pkill -9 xsel 2>/dev/null || true
 # Zera variáveis no escopo da shell atual
 unset GTK_IM_MODULE QT_IM_MODULE XMODIFIERS 2>/dev/null || true
 

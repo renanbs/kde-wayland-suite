@@ -75,6 +75,21 @@ else
     echo -e "  • ${YELLOW}[AVISO]${NC} Não foi possível consultar KWin Layouts via D-Bus."
 fi
 
+# D. Clipboard do Wayland (wl-clipboard vs xsel)
+if command -v wl-copy >/dev/null 2>&1 && command -v wl-paste >/dev/null 2>&1; then
+    echo -e "  • ${GREEN}[OK]${NC} wl-clipboard (wl-copy / wl-paste) instalado (Wayland nativo)."
+else
+    echo -e "  • ${RED}[FALHA]${NC} wl-clipboard NÃO instalado. Terminais e apps (Fish/Konsole) tentarão usar xsel (X11) e travarão a área de transferência."
+    echo -e "    ${YELLOW}Solução: sudo pacman -S wl-clipboard${NC}"
+fi
+
+HUNG_XSEL="$(pgrep -a xsel 2>/dev/null || true)"
+if [ -n "$HUNG_XSEL" ]; then
+    echo -e "  • ${RED}[FALHA]${NC} Processos xsel travados em background detectados (bloqueando Ctrl+Shift+V / colar):\n    $HUNG_XSEL"
+    echo -e "    ${YELLOW}Execute: pkill -9 xsel${NC}"
+else
+    echo -e "  • ${GREEN}[OK]${NC} Nenhum processo xsel travado."
+fi
 # -----------------------------------------------------------------------------
 # 3. Configuração de Touchpad Gestures
 # -----------------------------------------------------------------------------

@@ -70,11 +70,15 @@ Para que qualquer outra pessoa instale e utilize esta suíte em sua própria má
 ### 1. Claude Code
 Qualquer pessoa pode instalar diretamente do GitHub ou de uma pasta clonada:
 ```bash
-# Instalação direta via GitHub no chat do Claude Code:
-/plugin install renanbs/kde-wayland-suite
+# Passo 1: Adicionar o catálogo do marketplace
+/plugin marketplace add renanbs/kde-wayland-suite
 
-# Ou se já clonou o repositório localmente:
-/plugin install ~/src/kde-wayland-suite/claude-code
+# Passo 2: Instalar o plugin
+/plugin install kde-wayland-suite
+```
+* *Ou se estiver testando localmente sem GitHub:*
+```bash
+claude --plugin-dir ~/src/kde-wayland-suite/claude-code
 ```
 * **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`.
 

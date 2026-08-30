@@ -1,0 +1,14 @@
+{
+  "name": "kde-wayland-suite",
+  "owner": {
+    "name": "Renan BS"
+  },
+  "plugins": [
+    {
+      "name": "kde-wayland-suite",
+      "description": "Comprehensive KDE Plasma 6 Wayland configuration plugin for keyboard shortcuts (Ctrl+C ABNT2 fix), XCompose cedilla, and touchpad gestures.",
+      "version": "1.0.0",
+      "source": "./claude-code"
+    }
+  ]
+}

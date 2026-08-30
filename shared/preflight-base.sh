@@ -63,8 +63,8 @@ else
 fi
 printf "INPUT_GROUP_OK=%s\n" "$INPUT_GROUP_OK"
 
-# 6. Desktops Virtuais no KWin
+# 6. Desktops Virtuais no KWin (Plasma 6)
 if [ -n "$QDBUS" ]; then
-  DESKTOPS_COUNT="$("$QDBUS" org.kde.KWin /KWin org.kde.KWin.virtualDesktopsCount 2>/dev/null || echo 'unknown')"
+  DESKTOPS_COUNT="$("$QDBUS" org.kde.KWin /VirtualDesktopManager org.kde.KWin.VirtualDesktopManager.count 2>/dev/null || echo 'unknown')"
   printf "KWIN_VIRTUAL_DESKTOPS=%s\n" "$DESKTOPS_COUNT"
 fi

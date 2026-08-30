@@ -96,6 +96,7 @@ cmd_init() {
     cmd_status
 }
 
+cmd_switch_layout() {
     local target="${1:-next}"
     if [ -z "$QDBUS" ]; then
         echo -e "${RED}Erro: qdbus6/qdbus não encontrado no PATH.${NC}"

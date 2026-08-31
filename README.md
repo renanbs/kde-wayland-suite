@@ -76,12 +76,11 @@ Tanto o **OMP (Oh My Pi)** quanto o **Claude Code** suportam instalação direta
 
 ```bash
 # Passo 1: Adicionar o catálogo do marketplace
-/marketplace add renanbs/kde-wayland-suite
+/plugin marketplace add renanbs/kde-wayland-suite
 
-# Passo 2: Instalar o plugin com todas as skills, comandos e binários
-/marketplace install kde-wayland-suite
+# Passo 2: Instalar o plugin do catálogo
+/plugin install kde-wayland-suite@kde-wayland-suite
 ```
-* *Testando localmente sem GitHub:* `claude --plugin-dir ~/src/kde-wayland-suite`
 * **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
 * **Skill nativa**: `skill://kde-wayland-suite`.
 

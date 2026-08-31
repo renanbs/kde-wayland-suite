@@ -101,17 +101,17 @@ include "%L"
 EOF
 echo -e "    ${GREEN}[OK]${NC} ~/.XCompose configurado para ' + c -> ç."
 
-echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de compatibilidade (XWayland / XCompose) para Chrome, Orca e Electron...${NC}"
+echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de Wayland para Chrome, Orca e Electron...${NC}"
 
 configure_app_flags() {
     local conf_file="$1"
     backup_if_exists "$conf_file"
     mkdir -p "$(dirname "$conf_file")"
     cat << 'EOF' > "$conf_file"
---ozone-platform=x11
+--ozone-platform-hint=auto
+--enable-features=WaylandWindowDecorations
 EOF
 }
-# Lista de aplicativos Chromium, Electron e IDEs
 FLAG_FILES=(
     "$HOME/.config/chrome-flags.conf"
     "$HOME/.config/chromium-flags.conf"

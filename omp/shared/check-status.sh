@@ -102,8 +102,8 @@ for item in "${CHECK_APPS[@]}"; do
     fname="${item%%:*}"
     dname="${item##*:}"
     fpath="$HOME/.config/$fname"
-    if [ -f "$fpath" ] && grep -qE -- "(--ozone-platform=x11|--enable-wayland-ime)" "$fpath" 2>/dev/null; then
-        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de compatibilidade ativas."
+    if [ -f "$fpath" ] && grep -qE -- "(--ozone-platform-hint=auto|--enable-features=WaylandWindowDecorations)" "$fpath" 2>/dev/null; then
+        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de Wayland ativas."
     else
         echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): flags ausentes ou não configuradas."
         FLAGS_OK=0

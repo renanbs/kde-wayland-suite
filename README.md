@@ -71,22 +71,21 @@ make install-cli
 
 Para que qualquer outra pessoa instale e utilize esta suíte em sua própria máquina, siga as instruções da respectiva CLI:
 
-### 1. Claude Code & OMP (Oh My Pi Marketplace)
-Tanto o **Claude Code** quanto o **OMP (Oh My Pi)** suportam instalação nativa via Marketplace:
+### 1. OMP (Oh My Pi) & Claude Code Marketplace
+Tanto o **OMP (Oh My Pi)** quanto o **Claude Code** suportam instalação direta via `/marketplace`:
 
 ```bash
 # Passo 1: Adicionar o catálogo do marketplace
-/plugin marketplace add renanbs/kde-wayland-suite
+/marketplace add renanbs/kde-wayland-suite
 
 # Passo 2: Instalar o plugin com todas as skills, comandos e binários
-/plugin install kde-wayland-suite
+/marketplace install kde-wayland-suite
 ```
-* *Testando localmente sem GitHub no Claude Code / OMP:*
-```bash
-claude --plugin-dir ~/src/kde-wayland-suite
-```
+* *Testando localmente sem GitHub:* `claude --plugin-dir ~/src/kde-wayland-suite`
 * **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
 * **Skill nativa**: `skill://kde-wayland-suite`.
+
+---
 
 ### 2. Cursor CLI & IDE (`cursor agent` / Headless)
 ```bash
@@ -100,6 +99,7 @@ cp .cursor/rules/kde-wayland-suite.mdc ~/.cursor/rules/
 ```
 * O Cursor CLI e o Agent passam a aplicar as regras automaticamente em qualquer sessão.
 * Para suporte a MCP Tools no Cursor, o arquivo `.cursor/mcp.json` já fornece a integração com o `kde-config`.
+
 ---
 
 ### 3. Antigravity CLI
@@ -115,21 +115,7 @@ ln -sf ~/src/kde-wayland-suite/antigravity ~/.config/antigravity/plugins/kde-way
 
 ---
 
-### 4. OMP (Oh My Pi)
-```bash
-# 1. Clonar e instalar o binário
-git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
-cd ~/src/kde-wayland-suite && make install-cli
-
-# 2. Linkar a skill no OMP
-mkdir -p ~/.config/omp/skills
-ln -sf ~/src/kde-wayland-suite/omp/skills/kde-wayland-suite ~/.config/omp/skills/
-```
-* Reconhecido nativamente como `skill://kde-wayland-suite`.
-
----
-
-### 5. OpenCode
+### 4. OpenCode
 ```bash
 # 1. Clonar e instalar o binário
 git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite

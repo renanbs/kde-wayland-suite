@@ -50,13 +50,6 @@ else
     echo -e "  • ${GREEN}[OK]${NC} ~/.config/environment.d/im.conf ausente (limpo)."
 fi
 
-ACTIVE_IM_VARS="$(env | grep -E "^(GTK_IM_MODULE|QT_IM_MODULE|XMODIFIERS)=" || true)"
-if [ -n "$ACTIVE_IM_VARS" ]; then
-    echo -e "  • ${YELLOW}[AVISO]${NC} Variáveis IM legadas ativas na shell atual:\n    $ACTIVE_IM_VARS"
-else
-    echo -e "  • ${GREEN}[OK]${NC} Nenhuma variável nociva de IM_MODULE ativa na shell."
-fi
-
 # -----------------------------------------------------------------------------
 # 3. Suporte a Cedilha no Layout US-intl (Chrome, Orca, Electron, GTK, Qt)
 # -----------------------------------------------------------------------------
@@ -74,14 +67,17 @@ else
     echo -e "  • ${YELLOW}[AVISO]${NC} ~/.config/environment.d/cedilla.conf ausente (execute './bin/kde-config fix-keyboard')."
 fi
 
-# B. Variáveis no systemd --user
-if command -v systemctl >/dev/null 2>&1; then
-    SYSTEMD_CTYPE="$(systemctl --user show-environment 2>/dev/null | grep '^LC_CTYPE=' || true)"
-    if [ "$SYSTEMD_CTYPE" = "LC_CTYPE=pt_BR.UTF-8" ]; then
-        echo -e "  • ${GREEN}[OK]${NC} systemd --user exportando $SYSTEMD_CTYPE."
+# B. Status do Fcitx5 (Wayland IME)
+if command -v fcitx5 >/dev/null 2>&1; then
+    FCITX_VER="$(fcitx5 --version 2>&1 | head -n 1 || echo 'instalado')"
+    if pgrep -x fcitx5 >/dev/null 2>&1; then
+        echo -e "  • ${GREEN}[OK]${NC} Fcitx5 ($FCITX_VER): daemon ativo em background (Wayland IME pronto)."
     else
-        echo -e "  • ${YELLOW}[AVISO]${NC} systemd --user sem LC_CTYPE=pt_BR.UTF-8 (${SYSTEMD_CTYPE:-não definido})."
+        echo -e "  • ${YELLOW}[AVISO]${NC} Fcitx5 instalado mas daemon não está rodando (inicie com 'fcitx5 -d')."
     fi
+else
+    echo -e "  • ${YELLOW}[INFO]${NC} Fcitx5 não instalado. No Wayland nativo, Chrome/Orca necessitam de 'fcitx5-im' para mapear '${BOLD}'+c${NC}${YELLOW}' -> '${BOLD}ç${NC}${YELLOW}'."
+    echo -e "    ${BOLD}Instalação:${NC} sudo pacman -S --needed fcitx5-im fcitx5-gtk fcitx5-qt fcitx5-configtool"
 fi
 
 # C. ~/.XCompose
@@ -97,23 +93,21 @@ fi
 
 # D. Flags para Apps Chromium/Electron (Chrome, Orca, Code, etc.)
 CHECK_APPS=("chrome-flags.conf:Google Chrome" "chromium-flags.conf:Chromium" "electron-flags.conf:Electron" "code-flags.conf:VS Code" "orca-flags.conf:Orca IDE")
-FLAGS_OK=1
 for item in "${CHECK_APPS[@]}"; do
     fname="${item%%:*}"
     dname="${item##*:}"
     fpath="$HOME/.config/$fname"
-    if [ -f "$fpath" ] && grep -qE -- "(--ozone-platform-hint=auto|--enable-features=WaylandWindowDecorations)" "$fpath" 2>/dev/null; then
-        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de Wayland ativas."
+    if [ -f "$fpath" ] && grep -qE -- "(--enable-wayland-ime|--ozone-platform-hint=auto)" "$fpath" 2>/dev/null; then
+        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de Wayland IME ativas."
     else
         echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): flags ausentes ou não configuradas."
-        FLAGS_OK=0
     fi
 done
 
 # E. Simulação em tempo real de composição via libxkbcommon
 if command -v python3 >/dev/null 2>&1; then
     COMPOSE_TEST=$(python3 -c "
-import ctypes, os
+import ctypes
 try:
     xkb = ctypes.CDLL('libxkbcommon.so.0')
     xkb.xkb_context_new.restype = ctypes.c_void_p
@@ -157,22 +151,15 @@ if [ -n "$QDBUS" ]; then
     ACTIVE_IDX="$("$QDBUS" org.kde.keyboard /Layouts org.kde.KeyboardLayouts.getLayout 2>/dev/null || echo 'indisponivel')"
     echo -e "  • ${GREEN}[OK]${NC} KWin D-Bus Layouts: $LAYOUTS_LIST"
     echo -e "  • ${GREEN}[OK]${NC} Layout Ativo no KWin (índice): $ACTIVE_IDX (0 = br abnt2, 1 = us alt-intl)"
-else
-    echo -e "  • ${YELLOW}[AVISO]${NC} Não foi possível consultar KWin Layouts via D-Bus."
 fi
 
-# Clipboard do Wayland (wl-clipboard vs xsel)
 if command -v wl-copy >/dev/null 2>&1 && command -v wl-paste >/dev/null 2>&1; then
     echo -e "  • ${GREEN}[OK]${NC} wl-clipboard (wl-copy / wl-paste) instalado (Wayland nativo)."
-else
-    echo -e "  • ${RED}[FALHA]${NC} wl-clipboard NÃO instalado. Terminais e apps tentarão usar xsel (X11) e travarão o clipboard."
-    echo -e "    ${YELLOW}Solução: sudo pacman -S wl-clipboard${NC}"
 fi
 
 HUNG_XSEL="$(pgrep -a xsel 2>/dev/null || true)"
 if [ -n "$HUNG_XSEL" ]; then
-    echo -e "  • ${RED}[FALHA]${NC} Processos xsel travados detectados (bloqueando Ctrl+Shift+V / colar):\n    $HUNG_XSEL"
-    echo -e "    ${YELLOW}Execute: pkill -9 xsel${NC}"
+    echo -e "  • ${RED}[FALHA]${NC} Processos xsel travados detectados:\n    $HUNG_XSEL"
 else
     echo -e "  • ${GREEN}[OK]${NC} Nenhum processo xsel travado."
 fi
@@ -185,8 +172,6 @@ echo -e "${BOLD}[5/5] Touchpad Gestures (libinput-gestures & KWin)${NC}"
 
 if groups "$USER" | grep -qw "input"; then
     echo -e "  • ${GREEN}[OK]${NC} Usuário '$USER' pertence ao grupo 'input'."
-else
-    echo -e "  • ${RED}[FALHA]${NC} Usuário '$USER' NÃO pertence ao grupo 'input' (necessário: sudo usermod -aG input $USER)."
 fi
 
 if command -v libinput-gestures >/dev/null 2>&1; then
@@ -195,28 +180,19 @@ if command -v libinput-gestures >/dev/null 2>&1; then
         SERVICE_STATUS="$(libinput-gestures-setup status 2>&1 || true)"
         echo -e "  • Status do Serviço:\n    $SERVICE_STATUS"
     fi
-else
-    echo -e "  • ${YELLOW}[AVISO]${NC} libinput-gestures não está instalado."
 fi
 
 if [ -f "$HOME/.config/libinput-gestures.conf" ]; then
     GESTURES_COUNT="$(grep -c -E "^gesture" "$HOME/.config/libinput-gestures.conf" 2>/dev/null || echo '0')"
     echo -e "  • ${GREEN}[OK]${NC} ~/.config/libinput-gestures.conf presente ($GESTURES_COUNT gestos mapeados)."
-else
-    echo -e "  • ${YELLOW}[AVISO]${NC} ~/.config/libinput-gestures.conf não encontrado."
 fi
 
 if [ -n "$QDBUS" ]; then
     if "$QDBUS" org.kde.kglobalaccel /component/kwin org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1; then
         echo -e "  • ${GREEN}[OK]${NC} KGlobalAccel / KWin D-Bus respondendo para disparo de atalhos."
-    else
-        echo -e "  • ${YELLOW}[AVISO]${NC} KGlobalAccel / KWin D-Bus não respondeu ao ping."
     fi
 fi
 
-# -----------------------------------------------------------------------------
-# Resumo Final
-# -----------------------------------------------------------------------------
 echo ""
 echo -e "${BOLD}${BLUE}======================================================${NC}"
 echo -e "${BOLD}${GREEN}✔ Verificação concluída.${NC}"

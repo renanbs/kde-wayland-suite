@@ -35,40 +35,85 @@ if [ -f "$HOME/.config/environment.d/im.conf" ]; then
     echo -e "    ${GREEN}[OK]${NC} ~/.config/environment.d/im.conf removido com sucesso."
 fi
 
-# Limpa variáveis nocivas de outros arquivos em environment.d
-if [ -d "$HOME/.config/environment.d" ]; then
-    for env_f in "$HOME/.config/environment.d"/*.conf; do
-        [ -f "$env_f" ] || continue
-        [ "$(basename "$env_f")" = "cedilla.conf" ] && continue
-        if grep -qE '^(GTK_IM_MODULE|QT_IM_MODULE|XMODIFIERS)=' "$env_f" 2>/dev/null; then
-            backup_if_exists "$env_f"
-            sed -i '/^GTK_IM_MODULE=/d; /^QT_IM_MODULE=/d; /^XMODIFIERS=/d' "$env_f"
-            echo -e "    ${GREEN}[OK]${NC} Variáveis legadas de IM removidas de $(basename "$env_f")."
-        fi
-    done
-fi
-
-# Zera variáveis no escopo da shell atual
+# Zera variáveis nocivas legadas
 unset GTK_IM_MODULE QT_IM_MODULE XMODIFIERS 2>/dev/null || true
 
-echo -e "${BOLD}${BLUE}==> [2/6] Configurando LC_CTYPE e XCOMPOSEFILE para cedilha nativa...${NC}"
+echo -e "${BOLD}${BLUE}==> [2/6] Configurando ambiente de Input Method e Locale (Cedilha)...${NC}"
 mkdir -p "$HOME/.config/environment.d"
 backup_if_exists "$HOME/.config/environment.d/cedilla.conf"
 
-cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
-# Cedilha nativa para layout US-intl no KDE Plasma 6 Wayland sem quebrar Ctrl+C no ABNT2
+# Verifica se o fcitx5 está instalado
+HAS_FCITX5=0
+if command -v fcitx5 >/dev/null 2>&1; then
+    HAS_FCITX5=1
+fi
+
+if [ "$HAS_FCITX5" -eq 1 ]; then
+    echo -e "    ${GREEN}[OK]${NC} Fcitx5 detectado! Configurando integração completa de Wayland IME..."
+    cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
+# Cedilha nativa para layout US-intl via Fcitx5 no KDE Plasma 6 Wayland
+LC_CTYPE=pt_BR.UTF-8
+XCOMPOSEFILE=%h/.XCompose
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
+INPUT_METHOD=fcitx
+SDL_IM_MODULE=fcitx
+EOF
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user set-environment \
+            LC_CTYPE="pt_BR.UTF-8" \
+            XCOMPOSEFILE="$HOME/.XCompose" \
+            GTK_IM_MODULE="fcitx" \
+            QT_IM_MODULE="fcitx" \
+            XMODIFIERS="@im=fcitx" \
+            INPUT_METHOD="fcitx" \
+            SDL_IM_MODULE="fcitx" 2>/dev/null || true
+    fi
+
+    # Configura perfil do Fcitx5
+    mkdir -p "$HOME/.config/fcitx5"
+    backup_if_exists "$HOME/.config/fcitx5/profile"
+    pkill -9 -x fcitx5 2>/dev/null || true
+    sleep 0.2
+
+    cat << 'EOF' > "$HOME/.config/fcitx5/profile"
+[Groups/0]
+# Group Name
+Name=Default
+# Layout
+Default Layout=us-intl
+# Default Input Method
+DefaultIM=keyboard-us-intl
+
+[Groups/0/Items/0]
+# Name
+Name=keyboard-us-intl
+# Layout
+Layout=
+
+[GroupOrder]
+0=Default
+EOF
+
+    # Inicia/reinicia o daemon fcitx5
+    ( fcitx5 -d --replace >/dev/null 2>&1 & ) || true
+    echo -e "    ${GREEN}[OK]${NC} Fcitx5 configurado e daemon iniciado em background."
+else
+    cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
+# Cedilha nativa para layout US-intl no KDE Plasma 6 Wayland
 LC_CTYPE=pt_BR.UTF-8
 XCOMPOSEFILE=%h/.XCompose
 EOF
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user set-environment LC_CTYPE="pt_BR.UTF-8" XCOMPOSEFILE="$HOME/.XCompose" 2>/dev/null || true
+    fi
+fi
 echo -e "    ${GREEN}[OK]${NC} ~/.config/environment.d/cedilla.conf gravado (LC_CTYPE=pt_BR.UTF-8)."
 
-# Injeta na sessão do systemd para novos processos herdarem imediatamente
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user set-environment LC_CTYPE="pt_BR.UTF-8" XCOMPOSEFILE="$HOME/.XCompose" 2>/dev/null || true
-    echo -e "    ${GREEN}[OK]${NC} Variáveis LC_CTYPE e XCOMPOSEFILE injetadas no systemd --user."
-fi
-
-# Suporte ao shell Fish (se instalado)
+# Suporte ao shell Fish
 if [ -d "$HOME/.config/fish" ]; then
     mkdir -p "$HOME/.config/fish/conf.d"
     backup_if_exists "$HOME/.config/fish/conf.d/cedilla.fish"
@@ -76,6 +121,11 @@ if [ -d "$HOME/.config/fish" ]; then
 # Cedilha nativa no layout US-intl (KDE Wayland Suite)
 set -gx LC_CTYPE pt_BR.UTF-8
 set -gx XCOMPOSEFILE $HOME/.XCompose
+if command -v fcitx5 >/dev/null 2>&1
+    set -gx GTK_IM_MODULE fcitx
+    set -gx QT_IM_MODULE fcitx
+    set -gx XMODIFIERS @im=fcitx
+end
 EOF
     echo -e "    ${GREEN}[OK]${NC} ~/.config/fish/conf.d/cedilla.fish configurado."
 fi
@@ -101,7 +151,7 @@ include "%L"
 EOF
 echo -e "    ${GREEN}[OK]${NC} ~/.XCompose configurado para ' + c -> ç."
 
-echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de Wayland para Chrome, Orca e Electron...${NC}"
+echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de Wayland e IME para Chrome, Orca e Electron...${NC}"
 
 configure_app_flags() {
     local conf_file="$1"
@@ -110,8 +160,10 @@ configure_app_flags() {
     cat << 'EOF' > "$conf_file"
 --ozone-platform-hint=auto
 --enable-features=WaylandWindowDecorations
+--enable-wayland-ime
 EOF
 }
+
 FLAG_FILES=(
     "$HOME/.config/chrome-flags.conf"
     "$HOME/.config/chromium-flags.conf"
@@ -121,7 +173,6 @@ FLAG_FILES=(
     "$HOME/.config/orca-flags.conf"
 )
 
-# Adiciona variantes de versões do Electron (electron28..34)
 for ver in $(seq 28 34); do
     FLAG_FILES+=("$HOME/.config/electron${ver}-flags.conf")
 done
@@ -129,24 +180,10 @@ done
 for f in "${FLAG_FILES[@]}"; do
     configure_app_flags "$f"
 done
-echo -e "    ${GREEN}[OK]${NC} Flags (--enable-wayland-ime) configuradas para Chrome, Chromium, Brave, Orca, Code e Electron."
+echo -e "    ${GREEN}[OK]${NC} Flags de Wayland IME configuradas para Chrome, Chromium, Brave, Orca, Code e Electron."
 
 echo -e "${BOLD}${BLUE}==> [5/6] Desbloqueando e garantindo backend de clipboard Wayland (wl-clipboard)...${NC}"
-# Mata processos xsel legados travados no XWayland
 pkill -9 xsel 2>/dev/null || true
-
-if ! command -v wl-copy >/dev/null 2>&1 || ! command -v wl-paste >/dev/null 2>&1; then
-    echo -e "    ${YELLOW}wl-clipboard não encontrado. Tentando instalar automaticamente...${NC}"
-    if command -v pacman >/dev/null 2>&1; then
-        sudo pacman -S --needed --noconfirm wl-clipboard 2>/dev/null || {
-            echo -e "    ${YELLOW}Aviso: Execute 'sudo pacman -S wl-clipboard' para habilitar copiar/colar nativo no terminal.${NC}"
-        }
-    elif command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get update -qq && sudo apt-get install -y wl-clipboard 2>/dev/null || true
-    elif command -v dnf >/dev/null 2>&1; then
-        sudo dnf install -y wl-clipboard 2>/dev/null || true
-    fi
-fi
 
 if command -v wl-copy >/dev/null 2>&1; then
     echo -e "    ${GREEN}[OK]${NC} wl-clipboard ativo (área de transferência nativa Wayland pronta)."
@@ -179,4 +216,11 @@ if [ -n "$QDBUS" ]; then
     echo "    Índice ativo atual: $ACTIVE_IDX"
 fi
 
-echo -e "${GREEN}==> [SUCESSO] Teclado, cedilha (US-intl / Chrome / Orca) e clipboard configurados com sucesso!${NC}"
+if [ "$HAS_FCITX5" -eq 0 ]; then
+    echo ""
+    echo -e "${YELLOW}[DICA] Para que o Chrome/Orca no Wayland processe '${BOLD}'+c${NC}${YELLOW} como '${BOLD}ç${NC}${YELLOW} nativamente, instale o Fcitx5:${NC}"
+    echo -e "    ${BOLD}sudo pacman -S --needed fcitx5-im fcitx5-gtk fcitx5-qt fcitx5-configtool${NC}"
+    echo -e "    Depois, execute novamente: ${BOLD}./bin/kde-config fix-keyboard${NC}"
+fi
+
+echo -e "${GREEN}==> [SUCESSO] Teclado, cedilha e clipboard configurados com sucesso!${NC}"

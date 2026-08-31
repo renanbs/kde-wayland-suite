@@ -101,30 +101,16 @@ include "%L"
 EOF
 echo -e "    ${GREEN}[OK]${NC} ~/.XCompose configurado para ' + c -> ç."
 
-echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de Wayland IME para Chrome, Orca e Electron...${NC}"
-
-# Função para mesclar flags em arquivos de configuração
-merge_flag() {
-    local file="$1"
-    local flag="$2"
-    mkdir -p "$(dirname "$file")"
-    if [ -f "$file" ]; then
-        if ! grep -qxF -- "$flag" "$file"; then
-            echo "$flag" >> "$file"
-        fi
-    else
-        echo "$flag" > "$file"
-    fi
-}
+echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de compatibilidade (XWayland / XCompose) para Chrome, Orca e Electron...${NC}"
 
 configure_app_flags() {
     local conf_file="$1"
     backup_if_exists "$conf_file"
-    merge_flag "$conf_file" "--enable-features=UseOzonePlatform,WaylandWindowDecorations"
-    merge_flag "$conf_file" "--ozone-platform-hint=auto"
-    merge_flag "$conf_file" "--enable-wayland-ime"
+    mkdir -p "$(dirname "$conf_file")"
+    cat << 'EOF' > "$conf_file"
+--ozone-platform=x11
+EOF
 }
-
 # Lista de aplicativos Chromium, Electron e IDEs
 FLAG_FILES=(
     "$HOME/.config/chrome-flags.conf"

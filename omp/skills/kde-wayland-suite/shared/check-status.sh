@@ -95,17 +95,17 @@ else
     echo -e "  • ${RED}[FALHA]${NC} ~/.XCompose não encontrado."
 fi
 
-# D. Flags de Wayland IME para Apps Chromium/Electron (Chrome, Orca, Code, etc.)
+# D. Flags para Apps Chromium/Electron (Chrome, Orca, Code, etc.)
 CHECK_APPS=("chrome-flags.conf:Google Chrome" "chromium-flags.conf:Chromium" "electron-flags.conf:Electron" "code-flags.conf:VS Code" "orca-flags.conf:Orca IDE")
 FLAGS_OK=1
 for item in "${CHECK_APPS[@]}"; do
     fname="${item%%:*}"
     dname="${item##*:}"
     fpath="$HOME/.config/$fname"
-    if [ -f "$fpath" ] && grep -q -- "--enable-wayland-ime" "$fpath" 2>/dev/null; then
-        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): Wayland IME habilitado."
+    if [ -f "$fpath" ] && grep -qE -- "(--ozone-platform=x11|--enable-wayland-ime)" "$fpath" 2>/dev/null; then
+        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de compatibilidade ativas."
     else
-        echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): flags ausentes ou sem --enable-wayland-ime."
+        echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): flags ausentes ou não configuradas."
         FLAGS_OK=0
     fi
 done

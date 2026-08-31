@@ -1,6 +1,6 @@
 ---
 name: init
-description: Inicializa e salva todas as configurações de teclado, atalhos, XCompose e gestos no KDE Plasma 6 Wayland com backup automático.
+description: Inicializa e salva todas as configurações de teclado, atalhos, XCompose, gestos e mouse Logitech MX Master 3S no KDE Plasma 6 Wayland com backup automático.
 ---
 
 # Inicialização Geral — KDE Wayland

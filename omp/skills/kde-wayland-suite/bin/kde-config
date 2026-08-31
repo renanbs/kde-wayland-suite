@@ -46,6 +46,7 @@ usage() {
     echo "  status            Auditoria completa de teclado, cedilha, atalhos e gestos"
     echo "  fix-keyboard      Aplica correção de Ctrl+C no ABNT2 e cedilha no US-intl (Chrome/Orca)"
     echo "  gestures          Instala e configura gestos de touchpad (libinput-gestures)"
+    echo "  mouse             Instala e configura o Logitech MX Master 3S (logiops/logid)"
     echo "  preflight         Diagnóstico de ambiente, distribuição e ferramentas D-Bus"
     echo "  switch [br|us]    Alterna o layout ativo no KWin (0=br, 1=us)"
     echo "  shortcut-switch   Configura atalho Meta+Space para alternar layouts no KWin"
@@ -82,6 +83,15 @@ cmd_gestures() {
     fi
 }
 
+cmd_mouse() {
+    if [ -f "$SHARED_DIR/configure-mouse.sh" ]; then
+        bash "$SHARED_DIR/configure-mouse.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-mouse.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 cmd_preflight() {
     if [ -f "$SHARED_DIR/preflight-base.sh" ]; then
         bash "$SHARED_DIR/preflight-base.sh"
@@ -100,6 +110,8 @@ cmd_init() {
     cmd_fix_keyboard
     echo ""
     cmd_gestures
+    echo ""
+    cmd_mouse
     echo ""
     cmd_shortcut_switch
     echo ""
@@ -215,6 +227,7 @@ case "${1:-status}" in
     status) cmd_status ;;
     fix-keyboard) cmd_fix_keyboard ;;
     gestures) cmd_gestures ;;
+    mouse) cmd_mouse ;;
     preflight) cmd_preflight ;;
     switch) cmd_switch_layout "${2:-next}" ;;
     shortcut-switch) cmd_shortcut_switch ;;

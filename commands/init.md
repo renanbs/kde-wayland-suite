@@ -1,5 +1,5 @@
 ---
-description: Inicializa todo o ambiente KDE Plasma 6 Wayland (salva backups, corrige teclado/atalhos, configura gestos de touchpad e instala o CLI).
+description: Inicializa todo o ambiente KDE Plasma 6 Wayland (salva backups, corrige teclado/atalhos, configura gestos de touchpad, configura o mouse Logitech MX Master 3S e instala o CLI).
 ---
 
 # /init

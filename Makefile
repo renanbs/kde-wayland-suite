@@ -1,4 +1,4 @@
-.PHONY: all init status check fix-keyboard gestures switch-br switch-us shortcut-switch rollback install-cli preflight help
+.PHONY: all init status check fix-keyboard gestures mouse switch-br switch-us shortcut-switch rollback install-cli preflight help
 
 all: status
 
@@ -12,6 +12,7 @@ help:
 	@echo "  make check           - Alias para make status"
 	@echo "  make fix-keyboard    - Corrige Ctrl+C no ABNT2 e configura XCompose para US-intl"
 	@echo "  make gestures        - Configura gestos de touchpad (libinput-gestures)"
+	@echo "  make mouse           - Configura o Logitech MX Master 3S (logiops/logid)"
 	@echo "  make preflight       - Executa diagnóstico base de ambiente e ferramentas"
 	@echo "  make switch-br       - Alterna layout ativo para ABNT2 (br)"
 	@echo "  make switch-us       - Alterna layout ativo para US-intl (us)"
@@ -29,6 +30,9 @@ fix-keyboard:
 
 gestures:
 	@./bin/kde-config gestures
+
+mouse:
+	@./bin/kde-config mouse
 
 preflight:
 	@./bin/kde-config preflight

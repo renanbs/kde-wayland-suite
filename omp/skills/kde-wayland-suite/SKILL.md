@@ -14,6 +14,7 @@ Ao invocar esta skill no OMP, execute o binário empacotado `bin/kde-config` (ou
 - **Auditoria de Saúde**: `bin/kde-config status` (ou `shared/check-status.sh`)
 - **Correção de Teclado, Cedilha (Chrome/Orca) & Atalhos**: `bin/kde-config fix-keyboard` (ou `shared/fix-keyboard.sh`)
 - **Gestos de Touchpad**: `bin/kde-config gestures` (ou `shared/configure-gestures.sh`)
+- **Mouse Logitech MX Master 3S**: `bin/kde-config mouse` (ou `shared/configure-mouse.sh`)
 - **Alternar Layouts**: `bin/kde-config switch [br|us]`
 - **Diagnóstico Pré-Voo**: `bin/kde-config preflight` (ou `shared/preflight-base.sh`)
 - **Restaurar Backup**: `bin/kde-config rollback`

@@ -12,4 +12,5 @@ Esta skill permite ao Cursor e agentes de IA diagnosticar e corrigir problemas d
 - Auditoria: `bin/kde-config status`
 - Correção de Teclado & Cedilha: `bin/kde-config fix-keyboard`
 - Gestos: `bin/kde-config gestures`
+- Mouse (Logitech MX Master 3S): `bin/kde-config mouse`
 - Alternância de Layout: `bin/kde-config switch [br|us]`

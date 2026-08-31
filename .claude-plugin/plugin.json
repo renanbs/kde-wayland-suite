@@ -6,7 +6,9 @@
     "name": "Renan BS"
   },
   "skills": [
-    "./skills/kde-wayland-suite"
+    "./skills/kde-wayland-suite",
+    "./omp/skills/kde-wayland-suite",
+    "./claude-code/skills/kde-wayland-suite"
   ],
   "commands": [
     "./commands/check-status.md",

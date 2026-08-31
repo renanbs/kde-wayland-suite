@@ -1,21 +1,15 @@
 ---
 name: kde-wayland-suite
-description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), XCompose cedilla on US-intl, and 3/4-finger touchpad gestures using libinput-gestures and KWin D-Bus.
+description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), cedilla on US-intl (Chrome, Orca IDE, Electron, GTK, Qt via LC_CTYPE, XCompose & Wayland IME flags), and 3/4-finger touchpad gestures using libinput-gestures and KWin D-Bus.
 ---
 
-# KDE Plasma 6 Wayland Suite (Cursor IDE)
+# KDE Plasma 6 Wayland Suite (Cursor Plugin)
 
-Regras e comandos para diagnóstico e correção de ambiente KDE Plasma 6 Wayland no Cursor.
+Esta skill permite ao Cursor e agentes de IA diagnosticar e corrigir problemas de teclado, cedilha (Chrome/Orca no US-intl), atalhos e gestos no KDE Plasma 6 Wayland. Todos os recursos executáveis residem no próprio diretório da skill.
 
-## Ações Rápidas
+## Comandos
 
-```bash
-# Diagnóstico de saúde do ambiente
-./bin/kde-config status
-
-# Correção de atalhos (Ctrl+C) e cedilha
-./bin/kde-config fix-keyboard
-
-# Configuração de gestos de touchpad
-./bin/kde-config gestures
-```
+- Auditoria: `bin/kde-config status`
+- Correção de Teclado & Cedilha: `bin/kde-config fix-keyboard`
+- Gestos: `bin/kde-config gestures`
+- Alternância de Layout: `bin/kde-config switch [br|us]`

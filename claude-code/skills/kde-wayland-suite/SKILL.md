@@ -1,15 +1,15 @@
 ---
 name: kde-wayland-suite
-description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), XCompose cedilla on US-intl, Wayland clipboard repair (wl-clipboard/xsel deadlock fix), and 3/4-finger touchpad gestures using libinput-gestures and KWin D-Bus.
+description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), cedilla on US-intl (Chrome, Orca IDE, Electron, GTK, Qt via LC_CTYPE, XCompose & Wayland IME flags), and 3/4-finger touchpad gestures using libinput-gestures and KWin D-Bus.
 ---
 
-# KDE Plasma 6 Wayland Suite
+# KDE Plasma 6 Wayland Suite (Claude Code Plugin)
 
-Esta skill gerencia configurações, diagnósticos e correções de teclado, atalhos, área de transferência (clipboard) e gestos de touchpad no **KDE Plasma 6 (Wayland)**.
+Esta skill permite ao Claude Code auditar e corrigir problemas de teclado, atalhos, cedilha no layout US-intl (Chrome, Orca, Electron) e gestos de touchpad no KDE Plasma 6 Wayland. Todos os recursos executáveis residem no próprio diretório da skill.
 
-## Diagnóstico e Ações
+## Comandos
 
-- **Auditoria de Saúde**: Executar `bash shared/check-status.sh` ou `./bin/kde-config status`.
-- **Correção de Teclado, Atalhos e Clipboard**: Executar `bash shared/fix-keyboard.sh` ou `./bin/kde-config fix-keyboard`.
-- **Configuração de Gestos**: Executar `bash shared/configure-gestures.sh` ou `./bin/kde-config gestures`.
-- **Alternar Layouts**: Executar `./bin/kde-config switch [br|us]`.
+- Auditoria: `bin/kde-config status`
+- Correção de Teclado & Cedilha: `bin/kde-config fix-keyboard`
+- Gestos: `bin/kde-config gestures`
+- Alternância de Layout: `bin/kde-config switch [br|us]`

@@ -10,9 +10,13 @@ Este documento contém a especificação técnica completa, automação reproduz
    - Arquivo removido: `~/.config/environment.d/im.conf`
    - Conteúdo nocivo eliminado: `GTK_IM_MODULE=cedilla`, `QT_IM_MODULE=cedilla` e `XMODIFIERS=@im=cedilla`.
    - **Por que**: O módulo `im-cedilla` é um hook legado em C do X11 que intercepta a tecla `C` antes do despachante de atalhos. No Wayland sob layout ABNT2, ele engole o modificador `Ctrl`, quebrando o `Ctrl+C`.
-2. **Criação do mapeamento de cedilha nativo (`~/.XCompose`)**:
-   - Arquivo gerado: `~/.XCompose` com as regras `<dead_acute> <c> : "ç" Ccedilla` e `<dead_acute> <C> : "Ç" Ccedilla`.
-   - **Por que**: Permite que o layout US-intl gere `ç` com `' + c` de forma nativa e limpa pelo XKB/Compose, sem precisar de módulos IM que quebram atalhos.
+2. **Configuração de Cedilha Nativa para US-intl (Chrome, Orca IDE, Electron, GTK, Qt)**:
+   - Arquivos gerados:
+     - `~/.config/environment.d/cedilla.conf` com `LC_CTYPE=pt_BR.UTF-8` e `XCOMPOSEFILE=%h/.XCompose` (e injeção via `systemctl --user set-environment`).
+     - `~/.config/fish/conf.d/cedilla.fish` exportando `LC_CTYPE` e `XCOMPOSEFILE`.
+     - `~/.XCompose` com regras completas (`<dead_acute> <c> : "ç"` e `<dead_acute> <C> : "Ç"`).
+     - Flags `--enable-wayland-ime` e `--ozone-platform-hint=auto` em `~/.config/chrome-flags.conf`, `chromium-flags.conf`, `orca-flags.conf`, `code-flags.conf`, `electron*-flags.conf`.
+   - **Por que**: O locale `en_US.UTF-8` por padrão mapeia `' + c` para `ć` (c-acute). Definir `LC_CTYPE=pt_BR.UTF-8` ativa a tabela de composição brasileira em todo o sistema (sem alterar os menus em inglês) e as flags habilitam o protocolo Wayland IME no Chrome/Electron, garantindo `' + c` $\to$ `ç` sem módulos de IM que quebram o `Ctrl+C`.
 3. **Configuração canônica e recarregamento a quente do KWin via `kwriteconfig6 --notify`**:
    - Executado:
      ```bash

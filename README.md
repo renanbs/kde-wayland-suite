@@ -4,7 +4,7 @@
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OMP%20%7C%20OpenCode-purple.svg)](#-passo-a-passo-por-ferramenta-de-ia)
 
-Plugin e suíte de automação portátil para **KDE Plasma 6 (Wayland)** projetado para corrigir problemas de atalhos e gerenciar toda a pilha de entrada no Linux — cobrindo **teclado**, **atalhos** e **gestos de touchpad** sem concorrência com o KWin.
+Plugin e suíte de automação portátil para **KDE Plasma 6 (Wayland)** projetado para corrigir problemas de atalhos e gerenciar toda a pilha de entrada no Linux — cobrindo **teclado**, **cedilha nativa em Chrome/Orca/Electron**, **atalhos (Ctrl+C)** e **gestos de touchpad** sem concorrência com o KWin.
 
 Compatível com **Claude Code**, **Cursor IDE & CLI**, **Antigravity CLI**, **OMP (Oh My Pi)** e **OpenCode**, além de funcionar diretamente pelo terminal via CLI (`kde-config`) ou `Makefile`.
 
@@ -15,8 +15,12 @@ Compatível com **Claude Code**, **Cursor IDE & CLI**, **Antigravity CLI**, **OM
 1. **`Ctrl+C` quebrado no layout ABNT2 (`br`)**:
    - **Causa**: Módulos legados `GTK_IM_MODULE=cedilla` / `QT_IM_MODULE=cedilla` em `~/.config/environment.d/im.conf` interceptavam a tecla `C` em baixo nível e suprimiam modificadores no Wayland.
    - **Solução**: Remoção limpa das variáveis nocivas de IM e recarregamento a quente via KWin.
-2. **Cedilha no layout US-intl (`' + c` $\to$ `ç`)**:
-   - **Solução**: Configuração nativa de `~/.XCompose` lido automaticamente pelo `libxkbcommon` (Wayland/Qt/GTK/Electron) sem a necessidade de módulos IM.
+2. **Cedilha no layout US-intl (`' + c` $\to$ `ç` em Chrome, Orca IDE, Electron, GTK e Qt)**:
+   - **Causa**: O locale padrão `en_US.UTF-8` mapeia `<dead_acute> <c>` para `ć` (c-acute). Além disso, navegadores Chromium e apps Electron no Wayland usam `CharacterComposer` interno que ignora `~/.XCompose` sem as flags de IME.
+   - **Solução**:
+     - Configuração de `LC_CTYPE=pt_BR.UTF-8` e `XCOMPOSEFILE` em `~/.config/environment.d/cedilla.conf` e `systemd --user`.
+     - Configuração de `~/.XCompose` nativo com regras completas de cedilha (`<dead_acute> <c> : "ç"` e `<dead_acute> <C> : "Ç"`).
+     - Injeção das flags `--enable-wayland-ime` e `--ozone-platform-hint=auto` nos arquivos de configuração de flags (`chrome-flags.conf`, `chromium-flags.conf`, `orca-flags.conf`, `code-flags.conf`, `electron-flags.conf`).
 3. **Gestos de Touchpad sem Conflito**:
    - **Solução**: Mapeamento de 3 e 4 dedos complementares às animações 1:1 nativas do KWin via `libinput-gestures` e D-Bus (`qdbus6`).
 4. **Gerenciamento de Layouts no Plasma 6**:
@@ -30,11 +34,11 @@ Compatível com **Claude Code**, **Cursor IDE & CLI**, **Antigravity CLI**, **OM
 
 #### Via Makefile
 ```bash
-# Auditoria de saúde do sistema (sessão, teclado, IM e gestos)
+# Auditoria de saúde do sistema (sessão, teclado, cedilha, IM e gestos)
 make check
 # ou: make status
 
-# Aplicar correção de Ctrl+C no ABNT2 e suporte a cedilha no US-intl
+# Aplicar correção de Ctrl+C no ABNT2 e suporte a cedilha no US-intl (Chrome/Orca)
 make fix-keyboard
 
 # Configurar gestos de 3 e 4 dedos no touchpad
@@ -53,8 +57,8 @@ make install-cli
 
 #### Via CLI Orquestrador (`bin/kde-config`)
 ```bash
-./bin/kde-config status           # Auditoria completa
-./bin/kde-config fix-keyboard     # Corrige atalhos e teclado
+./bin/kde-config status           # Auditoria completa (inclui simulação de compose e flags de apps)
+./bin/kde-config fix-keyboard     # Corrige atalhos, cedilha e teclado
 ./bin/kde-config gestures         # Configura gestos de touchpad
 ./bin/kde-config switch [br|us]   # Alterna layout via D-Bus
 ./bin/kde-config shortcut-switch  # Ativa atalho Meta+Space
@@ -67,22 +71,22 @@ make install-cli
 
 Para que qualquer outra pessoa instale e utilize esta suíte em sua própria máquina, siga as instruções da respectiva CLI:
 
-### 1. Claude Code
-Qualquer pessoa pode instalar diretamente do GitHub ou de uma pasta clonada:
+### 1. Claude Code & OMP (Oh My Pi Marketplace)
+Tanto o **Claude Code** quanto o **OMP (Oh My Pi)** suportam instalação nativa via Marketplace:
+
 ```bash
 # Passo 1: Adicionar o catálogo do marketplace
 /plugin marketplace add renanbs/kde-wayland-suite
 
-# Passo 2: Instalar o plugin
+# Passo 2: Instalar o plugin com todas as skills, comandos e binários
 /plugin install kde-wayland-suite
 ```
-* *Ou se estiver testando localmente sem GitHub:*
+* *Testando localmente sem GitHub no Claude Code / OMP:*
 ```bash
-claude --plugin-dir ~/src/kde-wayland-suite/claude-code
+claude --plugin-dir ~/src/kde-wayland-suite
 ```
-* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`.
-
----
+* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
+* **Skill nativa**: `skill://kde-wayland-suite`.
 
 ### 2. Cursor CLI & IDE (`cursor agent` / Headless)
 ```bash

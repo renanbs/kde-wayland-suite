@@ -1,5 +1,5 @@
 ---
-description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), XCompose cedilla, and touchpad gestures via CLI and agent.
+description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), cedilla on US-intl (Chrome, Orca IDE, Electron, GTK, Qt via LC_CTYPE, XCompose & Wayland IME flags), and touchpad gestures via CLI and agent.
 globs: *
 alwaysApply: true
 ---
@@ -14,7 +14,7 @@ Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar 
 # Diagnóstico de saúde do ambiente
 ./bin/kde-config status
 
-# Correção de atalhos (Ctrl+C) no ABNT2 e configuração de cedilha (~/.XCompose)
+# Correção de atalhos (Ctrl+C) no ABNT2 e configuração de cedilha (Chrome, Orca, Electron, US-intl)
 ./bin/kde-config fix-keyboard
 
 # Configuração de gestos de touchpad (libinput-gestures)

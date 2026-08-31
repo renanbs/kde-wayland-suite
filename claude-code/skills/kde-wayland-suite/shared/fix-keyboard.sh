@@ -72,7 +72,7 @@ EOF
             SDL_IM_MODULE="fcitx" 2>/dev/null || true
     fi
 
-    # Configura perfil do Fcitx5
+    # Configura perfil do Fcitx5 (garantindo que não seja sobrescrito no shutdown)
     mkdir -p "$HOME/.config/fcitx5"
     backup_if_exists "$HOME/.config/fcitx5/profile"
     pkill -9 -x fcitx5 2>/dev/null || true
@@ -93,13 +93,26 @@ Name=keyboard-us-intl
 # Layout
 Layout=
 
+[Groups/0/Items/1]
+# Name
+Name=keyboard-br-abnt2
+# Layout
+Layout=
+
 [GroupOrder]
 0=Default
 EOF
 
-    # Inicia/reinicia o daemon fcitx5
-    ( fcitx5 -d --replace >/dev/null 2>&1 & ) || true
-    echo -e "    ${GREEN}[OK]${NC} Fcitx5 configurado e daemon iniciado em background."
+    # Configura autostart do Fcitx5 no login
+    mkdir -p "$HOME/.config/autostart"
+    if [ -f /usr/share/applications/org.fcitx.Fcitx5.desktop ]; then
+        cp /usr/share/applications/org.fcitx.Fcitx5.desktop "$HOME/.config/autostart/"
+    fi
+
+    # Inicia o daemon fcitx5 em background
+    ( fcitx5 -d >/dev/null 2>&1 & ) || true
+    sleep 0.3
+    echo -e "    ${GREEN}[OK]${NC} Fcitx5 configurado e daemon ativo em background."
 else
     cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
 # Cedilha nativa para layout US-intl no KDE Plasma 6 Wayland
@@ -133,6 +146,11 @@ fi
 # Exporta na sessão atual
 export LC_CTYPE="pt_BR.UTF-8"
 export XCOMPOSEFILE="$HOME/.XCompose"
+if [ "$HAS_FCITX5" -eq 1 ]; then
+    export GTK_IM_MODULE=fcitx
+    export QT_IM_MODULE=fcitx
+    export XMODIFIERS="@im=fcitx"
+fi
 
 echo -e "${BOLD}${BLUE}==> [3/6] Configurando suporte a cedilha nativo via ~/.XCompose...${NC}"
 backup_if_exists "$HOME/.XCompose"
@@ -218,7 +236,7 @@ fi
 
 if [ "$HAS_FCITX5" -eq 0 ]; then
     echo ""
-    echo -e "${YELLOW}[DICA] Para que o Chrome/Orca no Wayland processe '${BOLD}'+c${NC}${YELLOW} como '${BOLD}ç${NC}${YELLOW} nativamente, instale o Fcitx5:${NC}"
+    echo -e "${YELLOW}[DICA] Para que o Chrome/Orca no Wayland processe '${BOLD}'+c${NC}${YELLOW} como '${BOLD}ç${NC}${YELLOW}' nativamente, instale o Fcitx5:${NC}"
     echo -e "    ${BOLD}sudo pacman -S --needed fcitx5-im fcitx5-gtk fcitx5-qt fcitx5-configtool${NC}"
     echo -e "    Depois, execute novamente: ${BOLD}./bin/kde-config fix-keyboard${NC}"
 fi

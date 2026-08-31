@@ -71,22 +71,34 @@ make install-cli
 
 Para que qualquer outra pessoa instale e utilize esta suíte em sua própria máquina, siga as instruções da respectiva CLI:
 
-### 1. OMP (Oh My Pi) & Claude Code Marketplace
-Tanto o **OMP (Oh My Pi)** quanto o **Claude Code** suportam instalação direta via `/marketplace`:
+### 1. OMP (Oh My Pi)
+O **OMP** utiliza o comando nativo `/marketplace`:
 
 ```bash
-# Passo 1: Adicionar o catálogo do marketplace
-/plugin marketplace add renanbs/kde-wayland-suite
+# No chat do OMP (ou TUI):
+/marketplace add renanbs/kde-wayland-suite
+/marketplace install kde-wayland-suite@kde-wayland-suite
 
-# Passo 2: Instalar o plugin do catálogo
-/plugin install kde-wayland-suite@kde-wayland-suite
+# Ou diretamente pelo terminal via CLI do OMP:
+omp plugin marketplace add renanbs/kde-wayland-suite
+omp plugin install kde-wayland-suite@kde-wayland-suite
 ```
 * **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
 * **Skill nativa**: `skill://kde-wayland-suite`.
 
 ---
 
-### 2. Cursor CLI & IDE (`cursor agent` / Headless)
+### 2. Claude Code
+```bash
+# No chat do Claude Code:
+/plugin marketplace add renanbs/kde-wayland-suite
+/plugin install kde-wayland-suite@kde-wayland-suite
+```
+* *Testando localmente sem GitHub:* `claude --plugin-dir ~/src/kde-wayland-suite`
+* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
+---
+
+### 3. Cursor CLI & IDE (`cursor agent` / Headless)
 ```bash
 # 1. Clonar e instalar o binário
 git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
@@ -101,7 +113,7 @@ cp .cursor/rules/kde-wayland-suite.mdc ~/.cursor/rules/
 
 ---
 
-### 3. Antigravity CLI
+### 4. Antigravity CLI
 ```bash
 # 1. Clonar e instalar o binário
 git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
@@ -114,7 +126,7 @@ ln -sf ~/src/kde-wayland-suite/antigravity ~/.config/antigravity/plugins/kde-way
 
 ---
 
-### 4. OpenCode
+### 5. OpenCode
 ```bash
 # 1. Clonar e instalar o binário
 git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite

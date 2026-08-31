@@ -25,6 +25,12 @@ Compatível com **Claude Code**, **Cursor IDE & CLI**, **Antigravity CLI**, **OM
    - **Solução**: Mapeamento de 3 e 4 dedos complementares às animações 1:1 nativas do KWin via `libinput-gestures` e D-Bus (`qdbus6`).
 4. **Gerenciamento de Layouts no Plasma 6**:
    - Atualização atômica de `~/.config/kxkbrc` com `kwriteconfig6 --notify` e alternância via D-Bus (`org.kde.keyboard /Layouts`).
+5. **Botões e Rolagem do Logitech MX Master 3S**:
+   - **Causa**: O Logitech Options não roda nativamente no Linux; sem ele, os botões extras do mouse (botão de gesto, SmartShift) ficam sem função.
+   - **Solução**: Instalação do `logiops` (AUR) e geração de `~/.config/logid.cfg` (linkado em `/etc/logid.cfg`, editável sem sudo) mapeando o botão de gesto para Overview (`Meta+W`), Mostrar Área de Trabalho (`Meta+D`) e troca de workspace (`Meta+Ctrl+Left/Right`, sem mover a janela ativa junto), além de fixar o SmartShift em rolagem livre (sem catraca).
+6. **Troca de Workspace Não Reflete em Todas as Telas (Multi-Monitor)**:
+   - **Causa**: Por padrão, o KWin trata os workspaces virtuais como globais e compartilhados entre monitores (`kwinrc [Windows] PerOutputVirtualDesktops=false`), então a troca pode não refletir corretamente conforme o monitor onde o cursor está.
+   - **Solução**: Habilitação de `PerOutputVirtualDesktops=true` (equivalente a "Switch desktops independently for each screen" em System Settings → Área de Trabalho Virtual), aplicada automaticamente pelo `configure-mouse.sh`.
 
 ---
 
@@ -44,6 +50,9 @@ make fix-keyboard
 # Configurar gestos de 3 e 4 dedos no touchpad
 make gestures
 
+# Configurar o mouse Logitech MX Master 3S (logiops/logid)
+make mouse
+
 # Alternar layout ativo no KWin
 make switch-br    # Ativa Português (Brasil) - ABNT2 (índice 0)
 make switch-us    # Ativa English (US, alt-intl) (índice 1)
@@ -60,6 +69,7 @@ make install-cli
 ./bin/kde-config status           # Auditoria completa (inclui simulação de compose e flags de apps)
 ./bin/kde-config fix-keyboard     # Corrige atalhos, cedilha e teclado
 ./bin/kde-config gestures         # Configura gestos de touchpad
+./bin/kde-config mouse            # Configura o Logitech MX Master 3S (logiops)
 ./bin/kde-config switch [br|us]   # Alterna layout via D-Bus
 ./bin/kde-config shortcut-switch  # Ativa atalho Meta+Space
 ./bin/kde-config rollback         # Restaura último backup
@@ -83,7 +93,7 @@ O **OMP** utiliza o comando nativo `/marketplace`:
 omp plugin marketplace add renanbs/kde-wayland-suite
 omp plugin install kde-wayland-suite@kde-wayland-suite
 ```
-* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
+* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/configure-mouse`, `/init`.
 * **Skill nativa**: `skill://kde-wayland-suite`.
 
 ---
@@ -95,7 +105,7 @@ omp plugin install kde-wayland-suite@kde-wayland-suite
 /plugin install kde-wayland-suite@kde-wayland-suite
 ```
 * *Testando localmente sem GitHub:* `claude --plugin-dir ~/src/kde-wayland-suite`
-* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/init`.
+* **Comandos disponíveis**: `/check-status`, `/fix-keyboard`, `/configure-gestures`, `/configure-mouse`, `/init`.
 ---
 
 ### 3. Cursor CLI & IDE (`cursor agent` / Headless)
@@ -156,6 +166,7 @@ kde-wayland-suite/
 │   ├── check-status.sh
 │   ├── fix-keyboard.sh
 │   ├── configure-gestures.sh
+│   ├── configure-mouse.sh
 │   └── preflight-base.sh
 ├── claude-code/                  # Plugin para Claude Code
 │   ├── .claude-plugin/plugin.json
@@ -163,18 +174,21 @@ kde-wayland-suite/
 │   └── commands/
 │       ├── check-status.md
 │       ├── fix-keyboard.md
-│       └── configure-gestures.md
+│       ├── configure-gestures.md
+│       └── configure-mouse.md
 ├── cursor/                       # Plugin e Rules para Cursor IDE
 │   ├── skills/kde-wayland-suite/SKILL.md
 │   └── commands/
 │       ├── check-status.md
-│       └── fix-keyboard.md
+│       ├── fix-keyboard.md
+│       └── configure-mouse.md
 ├── antigravity/                  # Plugin para Antigravity CLI
 │   ├── plugin.json
 │   └── skills/
 │       ├── check-status.md
 │       ├── fix-keyboard.md
-│       └── configure-gestures.md
+│       ├── configure-gestures.md
+│       └── configure-mouse.md
 ├── omp/                          # Skill para Oh My Pi (OMP)
 │   └── skills/kde-wayland-suite/SKILL.md
 └── opencode/                     # Skill para OpenCode

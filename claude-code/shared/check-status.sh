@@ -50,6 +50,16 @@ else
     echo -e "  • ${GREEN}[OK]${NC} ~/.config/environment.d/im.conf ausente (limpo)."
 fi
 
+# GTK_IM_MODULE/QT_IM_MODULE=fcitx globais quebram Ctrl+C em apps Qt/GTK no ABNT2
+# (Chrome/Orca/Electron não precisam disso — falam com o Fcitx5 via Wayland IME).
+if grep -qE '^(GTK_IM_MODULE|QT_IM_MODULE)=' "$HOME/.config/environment.d/cedilla.conf" 2>/dev/null; then
+    echo -e "  • ${RED}[FALHA]${NC} ~/.config/environment.d/cedilla.conf força GTK_IM_MODULE/QT_IM_MODULE globalmente (quebra Ctrl+C no ABNT2). Rode './bin/kde-config fix-keyboard' para corrigir."
+elif systemctl --user show-environment 2>/dev/null | grep -qE '^(GTK_IM_MODULE|QT_IM_MODULE)='; then
+    echo -e "  • ${RED}[FALHA]${NC} systemd --user com GTK_IM_MODULE/QT_IM_MODULE=fcitx ativo (quebra Ctrl+C no ABNT2). Rode './bin/kde-config fix-keyboard' para corrigir."
+else
+    echo -e "  • ${GREEN}[OK]${NC} Nenhuma variável GTK_IM_MODULE/QT_IM_MODULE forçada globalmente."
+fi
+
 # -----------------------------------------------------------------------------
 # 3. Suporte a Cedilha no Layout US-intl (Chrome, Orca, Electron, GTK, Qt)
 # -----------------------------------------------------------------------------

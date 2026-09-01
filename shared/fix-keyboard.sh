@@ -50,26 +50,22 @@ fi
 
 if [ "$HAS_FCITX5" -eq 1 ]; then
     echo -e "    ${GREEN}[OK]${NC} Fcitx5 detectado! Configurando integração completa de Wayland IME..."
+    # GTK_IM_MODULE/QT_IM_MODULE=fcitx NÃO são setados globalmente aqui: isso
+    # forçaria TODO app Qt/GTK (Konsole, Dolphin, Kate...) a passar pelo Fcitx5,
+    # o que quebra Ctrl+C no ABNT2. Chrome/Orca/Electron falam com o Fcitx5
+    # diretamente via protocolo Wayland (--enable-wayland-ime nos *-flags.conf),
+    # sem precisar dessas variáveis.
     cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
-# Cedilha nativa para layout US-intl via Fcitx5 no KDE Plasma 6 Wayland
+# Cedilha nativa para layout US-intl no KDE Plasma 6 Wayland
 LC_CTYPE=pt_BR.UTF-8
 XCOMPOSEFILE=%h/.XCompose
-GTK_IM_MODULE=fcitx
-QT_IM_MODULE=fcitx
-XMODIFIERS=@im=fcitx
-INPUT_METHOD=fcitx
-SDL_IM_MODULE=fcitx
 EOF
 
     if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user unset-environment GTK_IM_MODULE QT_IM_MODULE XMODIFIERS INPUT_METHOD SDL_IM_MODULE 2>/dev/null || true
         systemctl --user set-environment \
             LC_CTYPE="pt_BR.UTF-8" \
-            XCOMPOSEFILE="$HOME/.XCompose" \
-            GTK_IM_MODULE="fcitx" \
-            QT_IM_MODULE="fcitx" \
-            XMODIFIERS="@im=fcitx" \
-            INPUT_METHOD="fcitx" \
-            SDL_IM_MODULE="fcitx" 2>/dev/null || true
+            XCOMPOSEFILE="$HOME/.XCompose" 2>/dev/null || true
     fi
 
     # Configura perfil do Fcitx5 (garantindo que não seja sobrescrito no shutdown)
@@ -132,13 +128,10 @@ if [ -d "$HOME/.config/fish" ]; then
     backup_if_exists "$HOME/.config/fish/conf.d/cedilla.fish"
     cat << 'EOF' > "$HOME/.config/fish/conf.d/cedilla.fish"
 # Cedilha nativa no layout US-intl (KDE Wayland Suite)
+# GTK_IM_MODULE/QT_IM_MODULE=fcitx não são setados aqui: forçariam todo app
+# Qt/GTK a passar pelo Fcitx5, quebrando Ctrl+C no ABNT2.
 set -gx LC_CTYPE pt_BR.UTF-8
 set -gx XCOMPOSEFILE $HOME/.XCompose
-if command -v fcitx5 >/dev/null 2>&1
-    set -gx GTK_IM_MODULE fcitx
-    set -gx QT_IM_MODULE fcitx
-    set -gx XMODIFIERS @im=fcitx
-end
 EOF
     echo -e "    ${GREEN}[OK]${NC} ~/.config/fish/conf.d/cedilla.fish configurado."
 fi
@@ -146,11 +139,7 @@ fi
 # Exporta na sessão atual
 export LC_CTYPE="pt_BR.UTF-8"
 export XCOMPOSEFILE="$HOME/.XCompose"
-if [ "$HAS_FCITX5" -eq 1 ]; then
-    export GTK_IM_MODULE=fcitx
-    export QT_IM_MODULE=fcitx
-    export XMODIFIERS="@im=fcitx"
-fi
+unset GTK_IM_MODULE QT_IM_MODULE XMODIFIERS 2>/dev/null || true
 
 echo -e "${BOLD}${BLUE}==> [3/6] Configurando suporte a cedilha nativo via ~/.XCompose...${NC}"
 backup_if_exists "$HOME/.XCompose"

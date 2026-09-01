@@ -21,6 +21,7 @@ Compatível com **Claude Code**, **Cursor IDE & CLI**, **Antigravity CLI**, **OM
      - Configuração de `LC_CTYPE=pt_BR.UTF-8` e `XCOMPOSEFILE` em `~/.config/environment.d/cedilla.conf` e `systemd --user`.
      - Configuração de `~/.XCompose` nativo com regras completas de cedilha (`<dead_acute> <c> : "ç"` e `<dead_acute> <C> : "Ç"`).
      - Injeção das flags `--enable-wayland-ime` e `--ozone-platform-hint=auto` nos arquivos de configuração de flags (`chrome-flags.conf`, `chromium-flags.conf`, `orca-flags.conf`, `code-flags.conf`, `electron-flags.conf`).
+     - **Importante**: `GTK_IM_MODULE`/`QT_IM_MODULE=fcitx` **não** são setados globalmente — isso forçaria todo app Qt/GTK (Konsole, Dolphin, Kate...) a passar pelo Fcitx5, quebrando `Ctrl+C` no ABNT2. Chrome/Orca/Electron falam com o Fcitx5 diretamente via protocolo Wayland (as flags acima), sem precisar dessas variáveis. `./bin/kde-config status` detecta e alerta se essas variáveis forem reintroduzidas.
 3. **Gestos de Touchpad sem Conflito**:
    - **Solução**: Mapeamento de 3 e 4 dedos complementares às animações 1:1 nativas do KWin via `libinput-gestures` e D-Bus (`qdbus6`).
 4. **Gerenciamento de Layouts no Plasma 6**:

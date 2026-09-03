@@ -13,6 +13,7 @@ Plugin autocontido para diagnóstico e correções de teclado, cedilha (Chrome, 
 - Correção de Teclado & Cedilha: `bin/kde-config fix-keyboard`
 - Gestos: `bin/kde-config gestures`
 - Mouse (Logitech MX Master 3S): `bin/kde-config mouse`
+- Diagnóstico de Bateria/Energia: `bin/kde-config battery-status`
 - Alternância de Layout: `bin/kde-config switch [br|us]`
 
 ## Bug conhecido: colapso do `kxkbrc` (KWin/Plasma)
@@ -21,11 +22,17 @@ Plugin autocontido para diagnóstico e correções de teclado, cedilha (Chrome, 
 
 > **Importante para agentes de IA**: a auto-cura no login (`KDE_SUITE_LAYOUT_AUTOHEAL=1`) **não deve ser habilitada automaticamente** — pergunte ao usuário antes, pois adiciona uma entrada de autostart à sessão dele. Sem a variável, `fix-keyboard` continua corrigindo o `kxkbrc` normalmente, só não instala o autostart.
 
+## Diagnóstico e Correção de Bateria/Energia (GPU primária, PCIe ASPM)
+
+`battery-status` audita: GPU primária do compositor em sistemas híbridos Intel/NVIDIA/AMD (detecta se o KWin compõe numa GPU diferente da que atende o painel interno — isso mantém a GPU discreta sempre ligada copiando frames à toa), política de PCIe ASPM, saúde da bateria, rádios ociosos (Bluetooth/Docker) e governor de CPU. É só leitura — nunca aplica nada sozinho.
+
+> **Importante para agentes de IA**: correções de bateria (`battery-apply`) **nunca devem ser aplicadas sem antes perguntar ao usuário**, achado por achado, via `AskUserQuestion` — explique o trade-off de cada uma (a de GPU só faz efeito após logout/reboot e muda qual GPU vira "padrão" para apps sem preferência explícita; a de PCIe ASPM tem um risco raro de instabilidade em NVMe/Wi-Fi com firmware ASPM mal implementado). Só depois de decidido, rode `battery-apply` com as variáveis `BATTERY_FIX_GPU_PRIMARY=1` / `BATTERY_FIX_PCIE_ASPM=1` / `BATTERY_FIX_PCIE_ASPM_PERSIST=1` correspondentes. Cada aplicação cria um snapshot de reversão; `battery-revert` desfaz a última aplicação.
+
 ## Fluxo Guiado de `init` (obrigatório para agentes de IA)
 
-`init` configura várias coisas de uma vez (teclado, gestos, mouse, atalhos). **Nunca rode `init` de forma cega.** Antes de executar qualquer comando, use a ferramenta `AskUserQuestion` para coletar todas as escolhas do usuário de uma vez só (uma única chamada, múltiplas perguntas), e só então rode `./bin/kde-config init` com as variáveis de ambiente correspondentes. Não pergunte no meio da execução — colete tudo antes.
+`init` configura várias coisas de uma vez (teclado, gestos, mouse, atalhos, diagnóstico de bateria). **Nunca rode `init` de forma cega.** Antes de executar qualquer comando, use a ferramenta `AskUserQuestion` para coletar todas as escolhas do usuário de uma vez só (uma única chamada, múltiplas perguntas), e só então rode `./bin/kde-config init` com as variáveis de ambiente correspondentes. Não pergunte no meio da execução — colete tudo antes.
 
-Pergunta 1 — **Componentes** (multiSelect): "Teclado, cedilha e atalhos (Ctrl+C ABNT2)" (recomendado); "Gestos de touchpad (3/4 dedos)" (recomendado se houver touchpad); "Mouse Logitech MX Master 3S (logiops)" (só se o usuário tiver o mouse).
+Pergunta 1 — **Componentes** (multiSelect): "Teclado, cedilha e atalhos (Ctrl+C ABNT2)" (recomendado); "Gestos de touchpad (3/4 dedos)" (recomendado se houver touchpad); "Mouse Logitech MX Master 3S (logiops)" (só se o usuário tiver o mouse); "Diagnóstico de bateria/energia" (recomendado — só diagnóstico nesta etapa, nenhuma correção é aplicada ainda).
 
 Pergunta 2 — **Auto-cura do layout no login** (single-select): "Sim, proteger contra o bug do KWin/Plasma (recomendado)" vs. "Não, prefiro corrigir manualmente se acontecer".
 
@@ -34,5 +41,7 @@ Pergunta 2 — **Auto-cura do layout no login** (single-select): "Sim, proteger 
 SKIP_MOUSE=1 KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config init
 ```
 
-`SKIP_KEYBOARD`, `SKIP_GESTURES` e `SKIP_MOUSE` pulam cada etapa. Se o usuário pedir para configurar só uma coisa específica, pule este fluxo e rode o comando direto (`./bin/kde-config mouse`, etc.).
+`SKIP_KEYBOARD`, `SKIP_GESTURES`, `SKIP_MOUSE` e `SKIP_BATTERY` pulam cada etapa. Se o usuário pedir para configurar só uma coisa específica, pule este fluxo e rode o comando direto (`./bin/kde-config mouse`, etc.).
+
+Depois que `init` mostrar o diagnóstico de bateria, **não aplique nenhuma correção ainda** — isso é sempre um segundo passo, feito seguindo o fluxo descrito acima em "Diagnóstico e Correção de Bateria/Energia" (perguntar antes de aplicar).
 

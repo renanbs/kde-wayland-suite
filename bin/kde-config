@@ -47,6 +47,9 @@ usage() {
     echo "  fix-keyboard      Aplica correção de Ctrl+C no ABNT2 e cedilha no US-intl (Chrome/Orca)"
     echo "  gestures          Instala e configura gestos de touchpad (libinput-gestures)"
     echo "  mouse             Instala e configura o Logitech MX Master 3S (logiops/logid)"
+    echo "  battery-status    Diagnóstico de bateria/energia (GPU primária, PCIe ASPM, rádios, saúde da bateria)"
+    echo "  battery-apply     Aplica correções de bateria decididas via variáveis BATTERY_FIX_*"
+    echo "  battery-revert    Reverte a última aplicação de battery-apply (ou um snapshot específico)"
     echo "  preflight         Diagnóstico de ambiente, distribuição e ferramentas D-Bus"
     echo "  switch [br|us]    Alterna o layout ativo no KWin (0=br, 1=us)"
     echo "  shortcut-switch   Configura atalho Meta+Space para alternar layouts no KWin"
@@ -59,6 +62,10 @@ usage() {
     echo "  SKIP_GESTURES=1              Pula a etapa de gestos de touchpad no init"
     echo "  SKIP_MOUSE=1                 Pula a etapa do mouse MX Master 3S no init"
     echo "  KDE_SUITE_LAYOUT_AUTOHEAL=1  Instala autostart que reaplica o layout de teclado a cada login"
+    echo "  SKIP_BATTERY=1               Pula o diagnóstico de bateria no init"
+    echo "  BATTERY_FIX_GPU_PRIMARY=1        (battery-apply) Reordena KWIN_DRM_DEVICES: GPU do painel interno primária"
+    echo "  BATTERY_FIX_PCIE_ASPM=1          (battery-apply) Aplica política PCIe ASPM powersave"
+    echo "  BATTERY_FIX_PCIE_ASPM_PERSIST=1  (battery-apply) Persiste a política ASPM após reboot (serviço systemd)"
     echo ""
 }
 
@@ -98,6 +105,33 @@ cmd_mouse() {
     fi
 }
 
+cmd_battery_status() {
+    if [ -f "$SHARED_DIR/diagnose-battery.sh" ]; then
+        bash "$SHARED_DIR/diagnose-battery.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/diagnose-battery.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_battery_apply() {
+    if [ -f "$SHARED_DIR/configure-battery.sh" ]; then
+        bash "$SHARED_DIR/configure-battery.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-battery.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_battery_revert() {
+    if [ -f "$SHARED_DIR/revert-battery.sh" ]; then
+        bash "$SHARED_DIR/revert-battery.sh" "${1:-}"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/revert-battery.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 cmd_preflight() {
     if [ -f "$SHARED_DIR/preflight-base.sh" ]; then
         bash "$SHARED_DIR/preflight-base.sh"
@@ -129,6 +163,19 @@ cmd_init() {
         echo -e "${YELLOW}==> Mouse Logitech MX Master 3S: pulado (SKIP_MOUSE=1).${NC}"
     else
         cmd_mouse
+    fi
+    echo ""
+    if [ "${SKIP_BATTERY:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Diagnóstico de Bateria/Energia: pulado (SKIP_BATTERY=1).${NC}"
+    else
+        cmd_battery_status
+        if [ "${BATTERY_FIX_GPU_PRIMARY:-0}" = "1" ] || [ "${BATTERY_FIX_PCIE_ASPM:-0}" = "1" ]; then
+            echo ""
+            cmd_battery_apply
+        else
+            echo ""
+            echo -e "${BLUE}[INFO]${NC} Nenhuma correção de bateria foi solicitada (BATTERY_FIX_*). Apenas o diagnóstico acima foi executado."
+        fi
     fi
     echo ""
     cmd_shortcut_switch
@@ -246,6 +293,9 @@ case "${1:-status}" in
     fix-keyboard) cmd_fix_keyboard ;;
     gestures) cmd_gestures ;;
     mouse) cmd_mouse ;;
+    battery-status) cmd_battery_status ;;
+    battery-apply) cmd_battery_apply ;;
+    battery-revert) cmd_battery_revert "${2:-}" ;;
     preflight) cmd_preflight ;;
     switch) cmd_switch_layout "${2:-next}" ;;
     shortcut-switch) cmd_shortcut_switch ;;

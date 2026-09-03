@@ -1,11 +1,12 @@
 {
   "name": "kde-wayland-suite",
-  "version": "1.4.0",
-  "description": "KDE Plasma 6 Wayland Suite for keyboard shortcuts repair, ABNT2/US-intl layout management, touchpad gestures, and Logitech MX Master 3S mouse configuration via logiops.",
+  "version": "1.5.0",
+  "description": "KDE Plasma 6 Wayland Suite for keyboard shortcuts repair, ABNT2/US-intl layout management, touchpad gestures, Logitech MX Master 3S mouse configuration via logiops, and battery/power diagnostics.",
   "skills": [
     "./skills/check-status.md",
     "./skills/fix-keyboard.md",
     "./skills/configure-gestures.md",
-    "./skills/configure-mouse.md"
+    "./skills/configure-mouse.md",
+    "./skills/battery.md"
   ]
 }

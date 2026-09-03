@@ -1,4 +1,4 @@
-.PHONY: all init status check fix-keyboard gestures mouse switch-br switch-us shortcut-switch rollback install-cli preflight help
+.PHONY: all init status check fix-keyboard gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback install-cli preflight help
 
 all: status
 
@@ -13,6 +13,9 @@ help:
 	@echo "  make fix-keyboard    - Corrige Ctrl+C no ABNT2 e configura XCompose para US-intl"
 	@echo "  make gestures        - Configura gestos de touchpad (libinput-gestures)"
 	@echo "  make mouse           - Configura o Logitech MX Master 3S (logiops/logid)"
+	@echo "  make battery-status  - Diagnostico de bateria/energia (so leitura)"
+	@echo "  make battery-apply   - Aplica correcoes de bateria (use BATTERY_FIX_*=1; nunca sem antes perguntar ao usuario)"
+	@echo "  make battery-revert  - Reverte a ultima aplicacao de battery-apply"
 	@echo "  make preflight       - Executa diagnóstico base de ambiente e ferramentas"
 	@echo "  make switch-br       - Alterna layout ativo para ABNT2 (br)"
 	@echo "  make switch-us       - Alterna layout ativo para US-intl (us)"
@@ -33,6 +36,15 @@ gestures:
 
 mouse:
 	@./bin/kde-config mouse
+
+battery-status:
+	@./bin/kde-config battery-status
+
+battery-apply:
+	@./bin/kde-config battery-apply
+
+battery-revert:
+	@./bin/kde-config battery-revert
 
 preflight:
 	@./bin/kde-config preflight

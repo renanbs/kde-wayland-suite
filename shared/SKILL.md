@@ -16,6 +16,34 @@ Esta skill fornece automações e diagnósticos para resolver problemas comuns n
 4. **Gestos de Touchpad Portáveis**: Mapeia gestos de 3 e 4 dedos complementares ao KWin via `libinput-gestures` e D-Bus (`qdbus6`), sem conflitos de concorrência com gestos nativos do Plasma.
 5. **Diagnóstico e Verificação Geral**: Executa auditoria em tempo real da sessão, layouts ativos, estado do clipboard, flags de navegadores, validação de composição e estado dos daemons.
 6. **Logitech MX Master 3S (`logiops`/`logid`)**: Instala o `logiops`, gera `~/.config/logid.cfg` (linkado em `/etc/logid.cfg`, editável sem sudo) mapeando o botão de gesto para troca de workspace/Overview/Mostrar Área de Trabalho e fixando o SmartShift em rolagem livre. Também habilita `kwinrc [Windows] PerOutputVirtualDesktops=true` para a troca de workspace refletir corretamente em setups multi-monitor.
+7. **Detecção do bug de colapso do `kxkbrc` (KWin/Plasma)**: `check-status.sh` detecta quando o Plasma regravou `~/.config/kxkbrc` mantendo só o layout que estava ativo no momento do logout, descartando o resto da `LayoutList` (bug conhecido do KWin/Plasma, não causado por esta suite — sintoma típico: o widget de troca de layout some da barra de tarefas após reiniciar). `fix-keyboard.sh` corrige o estado na hora; opcionalmente pode instalar um autostart que reaplica o layout completo a cada login, para o bug não voltar a cada reboot.
+
+> **Importante para agentes de IA**: a auto-cura do layout no login (`KDE_SUITE_LAYOUT_AUTOHEAL=1`) **não deve ser habilitada automaticamente** — ela adiciona uma entrada de autostart à sessão do usuário. Ao rodar `fix-keyboard` (direto ou via `init`), pergunte ao usuário se ele quer habilitar essa auto-cura (explicando o bug e o trade-off de ter mais uma entrada de autostart) antes de definir a variável de ambiente. Se ele recusar ou não responder, rode sem a variável — o comando continua corrigindo o estado atual do `kxkbrc` normalmente, só não instala o autostart.
+
+---
+
+## Fluxo Guiado de `init` (obrigatório para agentes de IA)
+
+`init` configura várias coisas de uma vez (teclado, gestos, mouse, atalhos). **Nunca rode `init` de forma cega.** Antes de executar qualquer comando, use a ferramenta `AskUserQuestion` para coletar todas as escolhas do usuário de uma vez só (uma única chamada, múltiplas perguntas), e só então rode `./bin/kde-config init` com as variáveis de ambiente correspondentes. Não pergunte no meio da execução — colete tudo antes.
+
+Pergunta 1 — **Componentes** (multiSelect, todos pré-selecionáveis como recomendados):
+- "Teclado, cedilha e atalhos (Ctrl+C ABNT2)" — correção de atalhos, cedilha no US-intl, clipboard Wayland. Recomendado.
+- "Gestos de touchpad (3/4 dedos)" — libinput-gestures + KWin. Recomendado se houver touchpad.
+- "Mouse Logitech MX Master 3S (logiops)" — só relevante se o usuário tiver esse mouse.
+
+Pergunta 2 — **Auto-cura do layout no login** (single-select): "Sim, proteger contra o bug do KWin/Plasma (recomendado)" vs. "Não, prefiro corrigir manualmente se acontecer" — explique brevemente o bug (Plasma pode colapsar `~/.config/kxkbrc` para um único layout ao reiniciar) e o trade-off (adiciona uma entrada de autostart).
+
+Mapeamento das respostas para a execução:
+
+```bash
+# Exemplo: usuário não tem o mouse, quer os outros componentes e quer a auto-cura
+SKIP_MOUSE=1 KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config init
+
+# Exemplo: usuário só quer teclado/cedilha
+SKIP_GESTURES=1 SKIP_MOUSE=1 ./bin/kde-config init
+```
+
+Se o usuário pedir para configurar só uma coisa específica (ex: "só o mouse"), pule o fluxo de perguntas do `init` e rode o comando específico diretamente (`./bin/kde-config mouse`, etc.) — o fluxo guiado acima é para quando o usuário pede para "inicializar"/"configurar tudo"/`init`.
 
 ---
 

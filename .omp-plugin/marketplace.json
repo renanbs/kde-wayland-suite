@@ -7,7 +7,7 @@
     {
       "name": "kde-wayland-suite",
       "description": "Comprehensive KDE Plasma 6 Wayland configuration plugin for keyboard shortcuts (Ctrl+C ABNT2 fix), cedilla on US-intl (Chrome, Orca IDE, Electron, GTK, Qt via LC_CTYPE, XCompose & Wayland IME flags), 3/4-finger touchpad gestures, and Logitech MX Master 3S button/scroll configuration via logiops.",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "source": "./"
     }
   ]

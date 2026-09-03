@@ -205,6 +205,45 @@ kwriteconfig6 --file kxkbrc --group Layout --key VariantList "abnt2,alt-intl" --
 kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "," --notify
 echo -e "    ${GREEN}[OK]${NC} kxkbrc atualizado com flag --notify (br abnt2 / us alt-intl)."
 
+# Auto-cura opcional contra bug conhecido do KWin/Plasma: ao encerrar a
+# sessão, o Plasma às vezes regrava kxkbrc mantendo só o layout que estava
+# ativo no momento do logout, descartando o resto da LayoutList (reproduzido
+# em log: "kwin_wayland: XKB: More layouts than variants"). Isso não é
+# causado por nenhum comando desta suite, mas como não há como corrigir o
+# bug do KWin em si, oferecemos reaplicar o kxkbrc correto a cada login via
+# autostart. Só é instalado se o usuário optar (KDE_SUITE_LAYOUT_AUTOHEAL=1),
+# pois modifica o autostart da sessão — quem estiver rodando o script via
+# skill/IA deve perguntar ao usuário antes de habilitar.
+autoheal_desktop="$HOME/.config/autostart/kde-wayland-suite-restore-layout.desktop"
+restore_script="$HOME/.local/bin/kde-wayland-suite-restore-layout.sh"
+if [ "${KDE_SUITE_LAYOUT_AUTOHEAL:-0}" = "1" ]; then
+    mkdir -p "$HOME/.config/autostart" "$HOME/.local/bin"
+    cat << 'EOF' > "$restore_script"
+#!/usr/bin/env bash
+# Reaplica o layout de teclado (br abnt2 / us alt-intl) a cada login, pois o
+# Plasma pode colapsar kxkbrc para um único layout ao encerrar a sessão
+# anterior (bug conhecido do KWin/Plasma, fora do controle desta suite).
+sleep 3
+kwriteconfig6 --file kxkbrc --group Layout --key Use true --notify
+kwriteconfig6 --file kxkbrc --group Layout --key LayoutList "br,us" --notify
+kwriteconfig6 --file kxkbrc --group Layout --key VariantList "abnt2,alt-intl" --notify
+kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "," --notify
+EOF
+    chmod +x "$restore_script"
+
+    cat << EOF > "$autoheal_desktop"
+[Desktop Entry]
+Type=Application
+Name=KDE Wayland Suite - Restaurar Layout de Teclado
+Exec=$restore_script
+X-KDE-autostart-phase=2
+NoDisplay=true
+EOF
+    echo -e "    ${GREEN}[OK]${NC} Autostart de auto-cura do layout instalado (protege contra o bug de colapso do kxkbrc no reboot)."
+else
+    echo -e "    ${YELLOW}[INFO]${NC} Auto-cura do layout no login não instalada (opcional). Para habilitar: KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config fix-keyboard"
+fi
+
 # Sincronização via D-Bus
 if command -v qdbus6 >/dev/null 2>&1; then
     QDBUS="qdbus6"

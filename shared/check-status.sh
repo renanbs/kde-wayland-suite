@@ -60,6 +60,29 @@ else
     echo -e "  • ${GREEN}[OK]${NC} Nenhuma variável GTK_IM_MODULE/QT_IM_MODULE forçada globalmente."
 fi
 
+# Bug conhecido do KWin/Plasma: ao encerrar a sessão, o Plasma pode regravar
+# kxkbrc mantendo só o layout ativo no momento do logout, descartando o
+# resto da LayoutList (log típico: "kwin_wayland: XKB: More layouts than
+# variants"). Detecta o colapso comparando com o estado esperado (br,us).
+if [ -f "$HOME/.config/kxkbrc" ]; then
+    KXKB_LAYOUTS="$(grep -oP '(?<=^LayoutList=).*' "$HOME/.config/kxkbrc" 2>/dev/null || echo '')"
+    if [ "$KXKB_LAYOUTS" = "br,us" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} kxkbrc com LayoutList completa (br,us)."
+    elif [ -z "$KXKB_LAYOUTS" ]; then
+        echo -e "  • ${YELLOW}[AVISO]${NC} ~/.config/kxkbrc sem LayoutList definida. Rode './bin/kde-config fix-keyboard'."
+    else
+        echo -e "  • ${RED}[FALHA]${NC} Bug de colapso do kxkbrc detectado: LayoutList='$KXKB_LAYOUTS' (esperado 'br,us'). O Plasma descartou um layout ao encerrar a sessão anterior (bug conhecido do KWin, fora do controle desta suite). Rode './bin/kde-config fix-keyboard' para restaurar; para evitar que aconteça de novo a cada reboot, habilite a auto-cura com 'KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config fix-keyboard'."
+    fi
+
+    if [ -f "$HOME/.config/autostart/kde-wayland-suite-restore-layout.desktop" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Auto-cura do layout no login está ativa."
+    else
+        echo -e "  • ${BLUE}[INFO]${NC} Auto-cura do layout no login não está ativa (opcional; protege contra o bug de colapso do kxkbrc acima)."
+    fi
+else
+    echo -e "  • ${YELLOW}[AVISO]${NC} ~/.config/kxkbrc não encontrado. Rode './bin/kde-config fix-keyboard'."
+fi
+
 # -----------------------------------------------------------------------------
 # 3. Suporte a Cedilha no Layout US-intl (Chrome, Orca, Electron, GTK, Qt)
 # -----------------------------------------------------------------------------

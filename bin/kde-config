@@ -54,6 +54,12 @@ usage() {
     echo "  install           Cria link simbólico em ~/.local/bin/kde-config"
     echo "  help              Exibe esta mensagem de ajuda"
     echo ""
+    echo -e "${BOLD}Variáveis de ambiente (init/fix-keyboard):${NC}"
+    echo "  SKIP_KEYBOARD=1              Pula a etapa de teclado/cedilha/atalhos no init"
+    echo "  SKIP_GESTURES=1              Pula a etapa de gestos de touchpad no init"
+    echo "  SKIP_MOUSE=1                 Pula a etapa do mouse MX Master 3S no init"
+    echo "  KDE_SUITE_LAYOUT_AUTOHEAL=1  Instala autostart que reaplica o layout de teclado a cada login"
+    echo ""
 }
 
 cmd_status() {
@@ -107,11 +113,23 @@ cmd_init() {
     echo -e "${BOLD}${BLUE}======================================================${NC}\n"
     cmd_preflight
     echo ""
-    cmd_fix_keyboard
+    if [ "${SKIP_KEYBOARD:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Teclado/Cedilha/Atalhos: pulado (SKIP_KEYBOARD=1).${NC}"
+    else
+        cmd_fix_keyboard
+    fi
     echo ""
-    cmd_gestures
+    if [ "${SKIP_GESTURES:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Gestos de Touchpad: pulado (SKIP_GESTURES=1).${NC}"
+    else
+        cmd_gestures
+    fi
     echo ""
-    cmd_mouse
+    if [ "${SKIP_MOUSE:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Mouse Logitech MX Master 3S: pulado (SKIP_MOUSE=1).${NC}"
+    else
+        cmd_mouse
+    fi
     echo ""
     cmd_shortcut_switch
     echo ""

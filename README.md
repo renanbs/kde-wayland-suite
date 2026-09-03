@@ -160,15 +160,25 @@ kde-wayland-suite/
 ├── .cursor/                      # Regras nativas do Cursor IDE & CLI
 │   └── rules/
 │       └── kde-wayland-suite.mdc # Regra MDC com alwaysApply para Cursor Agent
-├── bin/
-│   └── kde-config                # CLI orquestrador unificado
-├── shared/                       # Fonte Canônica da Verdade (Single Source of Truth)
-│   ├── SKILL.md
-│   ├── check-status.sh
-│   ├── fix-keyboard.sh
-│   ├── configure-gestures.sh
-│   ├── configure-mouse.sh
-│   └── preflight-base.sh
+├── base/                          # Fonte Canônica da Verdade (Single Source of Truth)
+│   ├── bin/
+│   │   └── kde-config             # CLI orquestrador unificado
+│   ├── shared/
+│   │   ├── SKILL.md
+│   │   ├── check-status.sh
+│   │   ├── fix-keyboard.sh
+│   │   ├── configure-gestures.sh
+│   │   ├── configure-mouse.sh
+│   │   ├── diagnose-battery.sh
+│   │   ├── configure-battery.sh
+│   │   ├── revert-battery.sh
+│   │   ├── lib-battery-gpu.sh
+│   │   └── preflight-base.sh
+│   └── commands/
+│       └── *.md
+├── bin/ -> base/bin                      # symlink de compatibilidade
+├── shared/ -> base/shared                # symlink de compatibilidade
+├── commands/ -> base/commands            # symlink de compatibilidade
 ├── claude-code/                  # Plugin para Claude Code
 │   ├── .claude-plugin/plugin.json
 │   ├── skills/kde-wayland-suite/SKILL.md

@@ -1,1 +1,1 @@
-../../shared/check-status.sh
+../../base/shared/check-status.sh

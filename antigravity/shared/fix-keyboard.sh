@@ -1,1 +1,1 @@
-../../shared/fix-keyboard.sh
+../../base/shared/fix-keyboard.sh

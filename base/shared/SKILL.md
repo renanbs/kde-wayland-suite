@@ -51,6 +51,8 @@ Se o usuário pedir para configurar só uma coisa específica (ex: "só o mouse"
 
 `init` só roda `battery-status` (leitura). **Nunca passe `BATTERY_FIX_*` durante o `init`** — depois que o diagnóstico aparecer na saída, explique cada achado ao usuário e use `AskUserQuestion` para decidir o que aplicar (achado por achado), só então rodando `./bin/kde-config battery-apply` com as variáveis correspondentes. Ver seção "Diagnóstico e Correção de Bateria/Energia" acima para os trade-offs de cada correção. `battery-revert` desfaz a última aplicação.
 
+**Sempre perguntar antes de aplicar, sempre informar depois.** Isso vale para toda correção de bateria/energia (GPU primária, ASPM, e a persistência do ASPM via `BATTERY_FIX_PCIE_ASPM_PERSIST`), não só a primeira execução — mesmo re-aplicar ou reverter exige confirmação prévia via `AskUserQuestion`, nunca rode `battery-apply`/`battery-revert` por conta própria só porque um diagnóstico anterior sugeriu isso. Depois de cada `battery-apply` ou `battery-revert`, sempre resuma pro usuário o que de fato mudou (ou "nada mudou, já estava correto"), onde ficou o snapshot de reversão, e se o efeito exige logout/login ou reboot para valer. `BATTERY_FIX_PCIE_ASPM` chama `sudo` internamente; em ambientes sem TTY (ex: sessão de agente sandboxed) o `sudo` falha silenciosamente pedindo senha — nesse caso, informe o usuário e peça para ele rodar o comando com o prefixo `!` no próprio terminal em vez de tentar contornar com `--no-verify`/reautenticação.
+
 ---
 
 ## Comandos Disponíveis

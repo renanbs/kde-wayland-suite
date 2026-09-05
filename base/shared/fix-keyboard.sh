@@ -3,7 +3,9 @@ set -euo pipefail
 
 # ==============================================================================
 # fix-keyboard.sh — Correção de Atalhos, Cedilha e Clipboard no KDE Plasma 6 Wayland
-# Garante ' + c -> ç no layout US-intl (Chrome, Orca, Electron, GTK, Qt) e Ctrl+C no ABNT2
+# Garante dead_acute + c -> ç no layout US-intl (Chrome, Orca, Electron, GTK, Qt)
+# via LC_CTYPE=pt_BR.UTF-8 (sem input method), e mantém Ctrl+<tecla> funcionando
+# no ABNT2 — inclusive desativando o fcitx5, que quebra Ctrl+ sob Wayland.
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -38,128 +40,90 @@ fi
 # Zera variáveis nocivas legadas
 unset GTK_IM_MODULE QT_IM_MODULE XMODIFIERS 2>/dev/null || true
 
-echo -e "${BOLD}${BLUE}==> [2/6] Configurando ambiente de Input Method e Locale (Cedilha)...${NC}"
+# 2. Desativa o fcitx5 — ele quebra Ctrl+<tecla> no sistema inteiro sob Wayland.
+#    Diagnosticado em produção: rodando como input method nativo do Wayland, o
+#    fcitx5 faz grab do teclado e engole as combinações com Ctrl (copiar,
+#    colar, desfazer, selecionar tudo) em Qt, GTK e Electron por igual —
+#    enquanto letras normais continuam passando, o que torna o sintoma
+#    confuso. Matar o processo restaura o Ctrl na hora; reiniciá-lo quebra de
+#    novo, de forma determinística. E ele é dispensável: a cedilha funciona
+#    nativamente via LC_CTYPE (passo 2 abaixo).
+if [ -f "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop" ]; then
+    backup_if_exists "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop"
+    rm -f "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop"
+    echo -e "    ${GREEN}[OK]${NC} Autostart do fcitx5 desativado (quebra Ctrl+<tecla>; não é necessário para a cedilha)."
+fi
+if pgrep -x fcitx5 >/dev/null 2>&1; then
+    pkill -x fcitx5 2>/dev/null || true
+    echo -e "    ${GREEN}[OK]${NC} Processo fcitx5 encerrado (restaura Ctrl+<tecla> imediatamente)."
+fi
+
+echo -e "${BOLD}${BLUE}==> [2/6] Configurando locale de composição (cedilha)...${NC}"
 mkdir -p "$HOME/.config/environment.d"
 backup_if_exists "$HOME/.config/environment.d/cedilla.conf"
 
-# Verifica se o fcitx5 está instalado
-HAS_FCITX5=0
-if command -v fcitx5 >/dev/null 2>&1; then
-    HAS_FCITX5=1
-fi
-
-if [ "$HAS_FCITX5" -eq 1 ]; then
-    echo -e "    ${GREEN}[OK]${NC} Fcitx5 detectado! Configurando integração completa de Wayland IME..."
-    # GTK_IM_MODULE/QT_IM_MODULE=fcitx NÃO são setados globalmente aqui: isso
-    # forçaria TODO app Qt/GTK (Konsole, Dolphin, Kate...) a passar pelo Fcitx5,
-    # o que quebra Ctrl+C no ABNT2. Chrome/Orca/Electron falam com o Fcitx5
-    # diretamente via protocolo Wayland (--enable-wayland-ime nos *-flags.conf),
-    # sem precisar dessas variáveis.
-    cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
-# Cedilha nativa para layout US-intl no KDE Plasma 6 Wayland
+# A cedilha NÃO precisa de input method (fcitx5/ibus). A tabela de composição
+# do sistema para pt_BR (/usr/share/X11/locale/pt_BR.UTF-8/Compose) já mapeia
+# <dead_acute> <c> -> "ç" nativamente. Basta o processo do app ter
+# LC_CTYPE=pt_BR.UTF-8 para o libxkbcommon escolher essa tabela em vez da
+# en_US, que mapeia a MESMA sequência para "ć" (c com agudo).
+# Verificado em produção: Konsole com LC_CTYPE=pt_BR.UTF-8 compõe "ç";
+# app Electron sem LC_CTYPE no ambiente compõe "ć".
+cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
+# Cedilha nativa (KDE Wayland Suite)
+# Seleciona a tabela de composição pt_BR do sistema, que já define
+# <dead_acute> <c> -> "ç". Sem isto, o app cai na tabela en_US, que dá "ć".
 LC_CTYPE=pt_BR.UTF-8
-XCOMPOSEFILE=%h/.XCompose
 EOF
 
-    if command -v systemctl >/dev/null 2>&1; then
-        systemctl --user unset-environment GTK_IM_MODULE QT_IM_MODULE XMODIFIERS INPUT_METHOD SDL_IM_MODULE 2>/dev/null || true
-        systemctl --user set-environment \
-            LC_CTYPE="pt_BR.UTF-8" \
-            XCOMPOSEFILE="$HOME/.XCompose" 2>/dev/null || true
-    fi
-
-    # Configura perfil do Fcitx5 (garantindo que não seja sobrescrito no shutdown)
-    mkdir -p "$HOME/.config/fcitx5"
-    backup_if_exists "$HOME/.config/fcitx5/profile"
-    pkill -9 -x fcitx5 2>/dev/null || true
-    sleep 0.2
-
-    cat << 'EOF' > "$HOME/.config/fcitx5/profile"
-[Groups/0]
-# Group Name
-Name=Default
-# Layout
-Default Layout=us-intl
-# Default Input Method
-DefaultIM=keyboard-us-intl
-
-[Groups/0/Items/0]
-# Name
-Name=keyboard-us-intl
-# Layout
-Layout=
-
-[Groups/0/Items/1]
-# Name
-Name=keyboard-br-abnt2
-# Layout
-Layout=
-
-[GroupOrder]
-0=Default
-EOF
-
-    # Configura autostart do Fcitx5 no login
-    mkdir -p "$HOME/.config/autostart"
-    if [ -f /usr/share/applications/org.fcitx.Fcitx5.desktop ]; then
-        cp /usr/share/applications/org.fcitx.Fcitx5.desktop "$HOME/.config/autostart/"
-    fi
-
-    # Inicia o daemon fcitx5 em background
-    ( fcitx5 -d >/dev/null 2>&1 & ) || true
-    sleep 0.3
-    echo -e "    ${GREEN}[OK]${NC} Fcitx5 configurado e daemon ativo em background."
-else
-    cat << 'EOF' > "$HOME/.config/environment.d/cedilla.conf"
-# Cedilha nativa para layout US-intl no KDE Plasma 6 Wayland
-LC_CTYPE=pt_BR.UTF-8
-XCOMPOSEFILE=%h/.XCompose
-EOF
-
-    if command -v systemctl >/dev/null 2>&1; then
-        systemctl --user set-environment LC_CTYPE="pt_BR.UTF-8" XCOMPOSEFILE="$HOME/.XCompose" 2>/dev/null || true
-    fi
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user unset-environment GTK_IM_MODULE QT_IM_MODULE XMODIFIERS INPUT_METHOD SDL_IM_MODULE 2>/dev/null || true
+    systemctl --user set-environment LC_CTYPE="pt_BR.UTF-8" 2>/dev/null || true
 fi
 echo -e "    ${GREEN}[OK]${NC} ~/.config/environment.d/cedilla.conf gravado (LC_CTYPE=pt_BR.UTF-8)."
+echo -e "    ${BLUE}[INFO]${NC} Vale para apps iniciados a partir do próximo login (processos já abertos mantêm o ambiente antigo)."
 
 # Suporte ao shell Fish
 if [ -d "$HOME/.config/fish" ]; then
     mkdir -p "$HOME/.config/fish/conf.d"
     backup_if_exists "$HOME/.config/fish/conf.d/cedilla.fish"
     cat << 'EOF' > "$HOME/.config/fish/conf.d/cedilla.fish"
-# Cedilha nativa no layout US-intl (KDE Wayland Suite)
-# GTK_IM_MODULE/QT_IM_MODULE=fcitx não são setados aqui: forçariam todo app
-# Qt/GTK a passar pelo Fcitx5, quebrando Ctrl+C no ABNT2.
+# Cedilha nativa (KDE Wayland Suite)
+# Seleciona a tabela de composição pt_BR do sistema, que já define
+# <dead_acute> <c> -> "ç". Nenhum input method (fcitx5/ibus) é necessário —
+# e o fcitx5, sob Wayland, quebra Ctrl+<tecla> no sistema inteiro.
 set -gx LC_CTYPE pt_BR.UTF-8
-set -gx XCOMPOSEFILE $HOME/.XCompose
 EOF
     echo -e "    ${GREEN}[OK]${NC} ~/.config/fish/conf.d/cedilla.fish configurado."
 fi
 
 # Exporta na sessão atual
 export LC_CTYPE="pt_BR.UTF-8"
-export XCOMPOSEFILE="$HOME/.XCompose"
 unset GTK_IM_MODULE QT_IM_MODULE XMODIFIERS 2>/dev/null || true
 
-echo -e "${BOLD}${BLUE}==> [3/6] Configurando suporte a cedilha nativo via ~/.XCompose...${NC}"
-backup_if_exists "$HOME/.XCompose"
+echo -e "${BOLD}${BLUE}==> [3/6] Verificando ~/.XCompose (não é mais necessário)...${NC}"
+# Versões anteriores desta suite escreviam um ~/.XCompose com regras de
+# cedilha. Elas são duplicatas exatas do que a tabela pt_BR do sistema já
+# define, e o libxkbcommon as descarta com "this compose sequence is a
+# duplicate of another; skipping line" (visível no journal do kwin_wayland).
+# Não geramos mais esse arquivo. Se o conteúdo for o gerado por versões
+# antigas, removemos com backup; conteúdo customizado pelo usuário é mantido.
+if [ -f "$HOME/.XCompose" ] && grep -q "Overrides explícitos para garantir cedilha" "$HOME/.XCompose" 2>/dev/null; then
+    backup_if_exists "$HOME/.XCompose"
+    rm -f "$HOME/.XCompose"
+    echo -e "    ${GREEN}[OK]${NC} ~/.XCompose de versões antigas removido (redundante). Backup em $backup_dir."
+elif [ -f "$HOME/.XCompose" ]; then
+    echo -e "    ${BLUE}[INFO]${NC} ~/.XCompose existente parece customizado por você — preservado sem alterações."
+else
+    echo -e "    ${GREEN}[OK]${NC} Sem ~/.XCompose (a tabela pt_BR do sistema já cobre a cedilha)."
+fi
 
-cat << 'EOF' > "$HOME/.XCompose"
-include "%L"
+echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de Wayland para Chrome, Orca e Electron...${NC}"
 
-# Overrides explícitos para garantir cedilha (' + c -> ç / ' + C -> Ç)
-<dead_acute> <c> : "ç" ccedilla
-<dead_acute> <C> : "Ç" Ccedilla
-<acute> <c> : "ç" ccedilla
-<acute> <C> : "Ç" Ccedilla
-<dead_acute> <dead_acute> : "´" acute
-<dead_acute> <apostrophe> : "´" acute
-<dead_acute> <space> : "'" apostrophe
-EOF
-echo -e "    ${GREEN}[OK]${NC} ~/.XCompose configurado para ' + c -> ç."
-
-echo -e "${BOLD}${BLUE}==> [4/6] Configurando flags de Wayland e IME para Chrome, Orca e Electron...${NC}"
-
+# --enable-wayland-ime NÃO é usada: ela existe para o app conversar com um
+# input method via protocolo Wayland, e esta suite não usa mais nenhum (o
+# fcitx5 quebra Ctrl+<tecla>). A composição de cedilha é feita pelo próprio
+# toolkit a partir da tabela pt_BR selecionada por LC_CTYPE.
 configure_app_flags() {
     local conf_file="$1"
     backup_if_exists "$conf_file"
@@ -167,7 +131,6 @@ configure_app_flags() {
     cat << 'EOF' > "$conf_file"
 --ozone-platform-hint=auto
 --enable-features=WaylandWindowDecorations
---enable-wayland-ime
 EOF
 }
 
@@ -278,11 +241,9 @@ if [ -n "$QDBUS" ]; then
     echo "    Índice ativo atual: $ACTIVE_IDX"
 fi
 
-if [ "$HAS_FCITX5" -eq 0 ]; then
-    echo ""
-    echo -e "${YELLOW}[DICA] Para que o Chrome/Orca no Wayland processe '${BOLD}'+c${NC}${YELLOW} como '${BOLD}ç${NC}${YELLOW}' nativamente, instale o Fcitx5:${NC}"
-    echo -e "    ${BOLD}sudo pacman -S --needed fcitx5-im fcitx5-gtk fcitx5-qt fcitx5-configtool${NC}"
-    echo -e "    Depois, execute novamente: ${BOLD}./bin/kde-config fix-keyboard${NC}"
-fi
+echo ""
+echo -e "${YELLOW}[NOTA]${NC} A cedilha (${BOLD}dead_acute + c${NC} -> ${BOLD}ç${NC}) depende de o app ter ${BOLD}LC_CTYPE=pt_BR.UTF-8${NC}"
+echo -e "       no ambiente. Processos já abertos mantêm o ambiente antigo — faça logout/login"
+echo -e "       para que toda a sessão (incluindo apps Electron) herde o locale correto."
 
 echo -e "${GREEN}==> [SUCESSO] Teclado, cedilha e clipboard configurados com sucesso!${NC}"

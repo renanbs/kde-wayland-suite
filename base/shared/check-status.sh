@@ -100,42 +100,55 @@ else
     echo -e "  • ${YELLOW}[AVISO]${NC} ~/.config/environment.d/cedilla.conf ausente (execute './bin/kde-config fix-keyboard')."
 fi
 
-# B. Status do Fcitx5 (Wayland IME)
-if command -v fcitx5 >/dev/null 2>&1; then
-    FCITX_VER="$(fcitx5 --version 2>&1 | head -n 1 || echo 'instalado')"
-    if pgrep -x fcitx5 >/dev/null 2>&1; then
-        echo -e "  • ${GREEN}[OK]${NC} Fcitx5 ($FCITX_VER): daemon ativo em background (Wayland IME pronto)."
-    else
-        echo -e "  • ${YELLOW}[AVISO]${NC} Fcitx5 instalado mas daemon não está rodando (inicie com 'fcitx5 -d')."
-    fi
+# B. Fcitx5 — deve estar DESLIGADO: sob Wayland ele faz grab do teclado e
+#    engole Ctrl+<tecla> (copiar/colar/desfazer) em Qt, GTK e Electron.
+#    A cedilha não precisa dele (a tabela pt_BR do sistema já cobre).
+if pgrep -x fcitx5 >/dev/null 2>&1; then
+    echo -e "  • ${RED}[FALHA]${NC} fcitx5 está rodando — ele quebra Ctrl+<tecla> no sistema inteiro sob Wayland."
+    echo -e "    Corrija com: ${BOLD}./bin/kde-config fix-keyboard${NC} (encerra o processo e remove o autostart)."
+elif [ -f "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop" ]; then
+    echo -e "  • ${YELLOW}[AVISO]${NC} fcitx5 não está rodando, mas o autostart existe — ele volta no próximo login e quebrará o Ctrl+<tecla>."
+    echo -e "    Corrija com: ${BOLD}./bin/kde-config fix-keyboard${NC}"
 else
-    echo -e "  • ${YELLOW}[INFO]${NC} Fcitx5 não instalado. No Wayland nativo, Chrome/Orca necessitam de 'fcitx5-im' para mapear '${BOLD}'+c${NC}${YELLOW}' -> '${BOLD}ç${NC}${YELLOW}'."
-    echo -e "    ${BOLD}Instalação:${NC} sudo pacman -S --needed fcitx5-im fcitx5-gtk fcitx5-qt fcitx5-configtool"
+    echo -e "  • ${GREEN}[OK]${NC} fcitx5 desligado e sem autostart (Ctrl+<tecla> preservado)."
 fi
 
-# C. ~/.XCompose
-if [ -f "$HOME/.XCompose" ]; then
-    if grep -q "dead_acute.*<c>.*ç" "$HOME/.XCompose" 2>/dev/null; then
-        echo -e "  • ${GREEN}[OK]${NC} ~/.XCompose configurado (' + c -> ç)."
-    else
-        echo -e "  • ${YELLOW}[AVISO]${NC} ~/.XCompose presente mas sem regras completas para cedilha."
-    fi
+# C. ~/.XCompose — não é mais usado. As regras que a suite escrevia eram
+#    duplicatas exatas da tabela pt_BR e o libxkbcommon as descartava.
+if [ -f "$HOME/.XCompose" ] && grep -q "Overrides explícitos para garantir cedilha" "$HOME/.XCompose" 2>/dev/null; then
+    echo -e "  • ${YELLOW}[AVISO]${NC} ~/.XCompose gerado por versões antigas desta suite ainda presente (redundante). './bin/kde-config fix-keyboard' remove com backup."
+elif [ -f "$HOME/.XCompose" ]; then
+    echo -e "  • ${BLUE}[INFO]${NC} ~/.XCompose customizado presente (não é necessário para cedilha; a tabela pt_BR já cobre)."
 else
-    echo -e "  • ${RED}[FALHA]${NC} ~/.XCompose não encontrado."
+    echo -e "  • ${GREEN}[OK]${NC} Sem ~/.XCompose — cedilha vem da tabela pt_BR do sistema via LC_CTYPE."
 fi
 
 # D. Flags para Apps Chromium/Electron (Chrome, Orca, Code, etc.)
+#    --enable-wayland-ime é indesejada: só serve para falar com um input
+#    method, que esta suite não usa mais.
 CHECK_APPS=("chrome-flags.conf:Google Chrome" "chromium-flags.conf:Chromium" "electron-flags.conf:Electron" "code-flags.conf:VS Code" "orca-flags.conf:Orca IDE")
 for item in "${CHECK_APPS[@]}"; do
     fname="${item%%:*}"
     dname="${item##*:}"
     fpath="$HOME/.config/$fname"
-    if [ -f "$fpath" ] && grep -qE -- "(--enable-wayland-ime|--ozone-platform-hint=auto)" "$fpath" 2>/dev/null; then
-        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de Wayland IME ativas."
+    if [ ! -f "$fpath" ]; then
+        echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): ausente ou não configurado."
+    elif grep -q -- "--enable-wayland-ime" "$fpath" 2>/dev/null; then
+        echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): contém --enable-wayland-ime (resquício da abordagem com IME). Rode './bin/kde-config fix-keyboard'."
+    elif grep -q -- "--ozone-platform-hint=auto" "$fpath" 2>/dev/null; then
+        echo -e "  • ${GREEN}[OK]${NC} $dname (~/.config/$fname): flags de Wayland corretas."
     else
-        echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): flags ausentes ou não configuradas."
+        echo -e "  • ${YELLOW}[AVISO]${NC} $dname (~/.config/$fname): sem --ozone-platform-hint=auto."
     fi
 done
+
+# D2. LC_CTYPE do processo — é o que decide se a composição dá "ç" ou "ć"
+if [ "${LC_CTYPE:-}" = "pt_BR.UTF-8" ]; then
+    echo -e "  • ${GREEN}[OK]${NC} LC_CTYPE=pt_BR.UTF-8 neste processo (tabela de composição correta: dead_acute + c -> ç)."
+else
+    echo -e "  • ${YELLOW}[AVISO]${NC} LC_CTYPE='${LC_CTYPE:-vazio}' neste processo — com a tabela en_US, dead_acute + c produz 'ć' em vez de 'ç'."
+    echo -e "    Apps iniciados antes do último 'fix-keyboard' mantêm o ambiente antigo; faça logout/login."
+fi
 
 # E. Simulação em tempo real de composição via libxkbcommon
 if command -v python3 >/dev/null 2>&1; then

@@ -199,10 +199,19 @@ fi
 echo -e "${BOLD}${BLUE}==> [6/6] Gravando configuração de layout no KDE Plasma 6 com notificação...${NC}"
 backup_if_exists "$HOME/.config/kxkbrc"
 
-kwriteconfig6 --file kxkbrc --group Layout --key Use true --notify
+# IMPORTANTE: LayoutList e VariantList precisam ter o mesmo número de entradas
+# em TODO momento em que o KWin recarrega o kxkbrc, senão ele falha ao compilar
+# o keymap ("XKB: More/Less layouts than variants") e o Ctrl+<tecla> para de
+# funcionar em TODO o sistema até um reboot completo (visto em produção:
+# kwin_wayland[...]: XKB: More layouts than variants: "br,us" vs. "intl." ->
+# "Could not create xkb keymap from configuration"). Por isso: grava Use,
+# VariantList e DisplayNames SEM --notify primeiro (não dispara reload no meio
+# do caminho com listas de tamanhos diferentes), e só notifica o KWin na
+# ÚLTIMA escrita (LayoutList), quando o arquivo inteiro já está consistente.
+kwriteconfig6 --file kxkbrc --group Layout --key Use true
+kwriteconfig6 --file kxkbrc --group Layout --key VariantList "abnt2,alt-intl"
+kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames ","
 kwriteconfig6 --file kxkbrc --group Layout --key LayoutList "br,us" --notify
-kwriteconfig6 --file kxkbrc --group Layout --key VariantList "abnt2,alt-intl" --notify
-kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "," --notify
 echo -e "    ${GREEN}[OK]${NC} kxkbrc atualizado com flag --notify (br abnt2 / us alt-intl)."
 
 # Auto-cura opcional contra bug conhecido do KWin/Plasma: ao encerrar a
@@ -223,11 +232,18 @@ if [ "${KDE_SUITE_LAYOUT_AUTOHEAL:-0}" = "1" ]; then
 # Reaplica o layout de teclado (br abnt2 / us alt-intl) a cada login, pois o
 # Plasma pode colapsar kxkbrc para um único layout ao encerrar a sessão
 # anterior (bug conhecido do KWin/Plasma, fora do controle desta suite).
+#
+# IMPORTANTE: se LayoutList tiver mais entradas que VariantList no momento em
+# que o KWin recarrega o kxkbrc (--notify), a compilação do keymap falha
+# ("XKB: More layouts than variants") e o Ctrl+<tecla> para de funcionar no
+# sistema inteiro até um reboot completo. Por isso grava VariantList/
+# DisplayNames sem --notify primeiro, e só notifica na última escrita
+# (LayoutList), quando o arquivo já está inteiro consistente.
 sleep 3
-kwriteconfig6 --file kxkbrc --group Layout --key Use true --notify
+kwriteconfig6 --file kxkbrc --group Layout --key Use true
+kwriteconfig6 --file kxkbrc --group Layout --key VariantList "abnt2,alt-intl"
+kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames ","
 kwriteconfig6 --file kxkbrc --group Layout --key LayoutList "br,us" --notify
-kwriteconfig6 --file kxkbrc --group Layout --key VariantList "abnt2,alt-intl" --notify
-kwriteconfig6 --file kxkbrc --group Layout --key DisplayNames "," --notify
 EOF
     chmod +x "$restore_script"
 

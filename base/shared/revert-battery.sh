@@ -114,8 +114,59 @@ if [ -n "${ASPM_ORIGINAL_POLICY:-}" ]; then
     echo ""
 fi
 
-if [ -z "${GPU_ENV_FILE:-}" ] && [ -z "${ASPM_ORIGINAL_POLICY:-}" ]; then
-    echo -e "${YELLOW}Este snapshot não registra nenhuma correção revertível (manifest sem GPU_ENV_FILE ou ASPM_ORIGINAL_POLICY).${NC}"
+# -----------------------------------------------------------------------------
+# 3. Runtime PM de dispositivos PCI
+# -----------------------------------------------------------------------------
+if [ -n "${PCI_RUNTIME_PM_BACKUP_FILE:-}" ]; then
+    echo -e "${BOLD}==> Runtime PM de dispositivos PCI${NC}"
+    if [ ! -f "$PCI_RUNTIME_PM_BACKUP_FILE" ]; then
+        echo -e "  ${RED}[ERRO]${NC} Backup $PCI_RUNTIME_PM_BACKUP_FILE não encontrado — nada restaurado."
+        SUMMARY+=("${RED}✘${NC} Runtime PM PCI: falhou (backup ausente)")
+    else
+        RESTORED=0
+        FAILED=0
+        while read -r addr val; do
+            [ -z "$addr" ] && continue
+            f="/sys/bus/pci/devices/$addr/power/control"
+            [ -f "$f" ] || continue
+            current="$(cat "$f" 2>/dev/null)"
+            if [ "$current" = "$val" ]; then
+                continue
+            fi
+            if sudo sh -c "echo '$val' > '$f'" 2>/dev/null; then
+                RESTORED=$((RESTORED + 1))
+            else
+                FAILED=$((FAILED + 1))
+            fi
+        done < "$PCI_RUNTIME_PM_BACKUP_FILE"
+
+        if [ "$RESTORED" -eq 0 ] && [ "$FAILED" -eq 0 ]; then
+            echo -e "  ${GREEN}[OK]${NC} Todos os dispositivos já estavam iguais ao original — nada a reverter aqui."
+            SUMMARY+=("${GREEN}=${NC} Runtime PM PCI: já estava no estado original")
+        else
+            [ "$RESTORED" -gt 0 ] && echo -e "  ${GREEN}[OK]${NC} $RESTORED dispositivo(s) restaurado(s) ao valor original de runtime PM."
+            [ "$FAILED" -gt 0 ] && echo -e "  ${RED}[ERRO]${NC} Falha ao restaurar $FAILED dispositivo(s) (precisa de sudo)."
+            if [ "$RESTORED" -gt 0 ]; then
+                REVERTED_ANY=1
+                SUMMARY+=("${GREEN}✔${NC} Runtime PM PCI: $RESTORED dispositivo(s) restaurado(s)")
+            fi
+            [ "$FAILED" -gt 0 ] && SUMMARY+=("${RED}✘${NC} Runtime PM PCI: $FAILED dispositivo(s) falharam")
+        fi
+    fi
+
+    if [ -n "${PCI_RUNTIME_PM_UNIT_FILE:-}" ] && [ -f "$PCI_RUNTIME_PM_UNIT_FILE" ]; then
+        sudo systemctl disable --now "$(basename "$PCI_RUNTIME_PM_UNIT_FILE")" 2>/dev/null
+        sudo rm -f "$PCI_RUNTIME_PM_UNIT_FILE"
+        sudo systemctl daemon-reload
+        echo -e "  ${GREEN}[OK]${NC} Serviço $(basename "$PCI_RUNTIME_PM_UNIT_FILE") desabilitado e removido (não persiste mais no boot)."
+        REVERTED_ANY=1
+        SUMMARY+=("${GREEN}✔${NC} Runtime PM PCI: serviço de persistência no boot removido")
+    fi
+    echo ""
+fi
+
+if [ -z "${GPU_ENV_FILE:-}" ] && [ -z "${ASPM_ORIGINAL_POLICY:-}" ] && [ -z "${PCI_RUNTIME_PM_BACKUP_FILE:-}" ]; then
+    echo -e "${YELLOW}Este snapshot não registra nenhuma correção revertível (manifest sem GPU_ENV_FILE, ASPM_ORIGINAL_POLICY ou PCI_RUNTIME_PM_BACKUP_FILE).${NC}"
     echo ""
 fi
 

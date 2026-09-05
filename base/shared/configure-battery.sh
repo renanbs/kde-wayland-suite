@@ -14,6 +14,11 @@ set -uo pipefail
 #                                     efeito imediato, não sobrevive a reboot).
 #   BATTERY_FIX_PCIE_ASPM_PERSIST=1  Junto com o acima, cria um serviço
 #                                     systemd que reaplica a política a cada boot.
+#   BATTERY_FIX_PCI_RUNTIME_PM=1     Move todo dispositivo PCI com power/control
+#                                     != 'auto' para 'auto' (sysfs, efeito
+#                                     imediato, não sobrevive a reboot).
+#   BATTERY_FIX_PCI_RUNTIME_PM_PERSIST=1  Junto com o acima, cria um serviço
+#                                     systemd que reaplica 'auto' a cada boot.
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -27,8 +32,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib-battery-gpu.sh
 source "$SCRIPT_DIR/lib-battery-gpu.sh"
 
-if [ "${BATTERY_FIX_GPU_PRIMARY:-0}" != "1" ] && [ "${BATTERY_FIX_PCIE_ASPM:-0}" != "1" ]; then
-    echo -e "${YELLOW}Nenhuma correção selecionada (BATTERY_FIX_GPU_PRIMARY / BATTERY_FIX_PCIE_ASPM ausentes). Nada a fazer.${NC}"
+if [ "${BATTERY_FIX_GPU_PRIMARY:-0}" != "1" ] && [ "${BATTERY_FIX_PCIE_ASPM:-0}" != "1" ] && [ "${BATTERY_FIX_PCI_RUNTIME_PM:-0}" != "1" ]; then
+    echo -e "${YELLOW}Nenhuma correção selecionada (BATTERY_FIX_GPU_PRIMARY / BATTERY_FIX_PCIE_ASPM / BATTERY_FIX_PCI_RUNTIME_PM ausentes). Nada a fazer.${NC}"
     echo "Rode './bin/kde-config battery-status' para diagnosticar antes."
     exit 0
 fi
@@ -150,6 +155,58 @@ EOF
                 echo -e "  ${BLUE}[INFO]${NC} Mudança não persiste após reboot (BATTERY_FIX_PCIE_ASPM_PERSIST não foi setada)."
             fi
         fi
+    fi
+    echo ""
+fi
+
+# -----------------------------------------------------------------------------
+# 3. Runtime PM de dispositivos PCI
+# -----------------------------------------------------------------------------
+if [ "${BATTERY_FIX_PCI_RUNTIME_PM:-0}" = "1" ]; then
+    echo -e "${BOLD}==> Runtime PM de dispositivos PCI${NC}"
+    PCI_BACKUP_FILE="$BACKUP_DIR/pci-runtime-pm.orig"
+    : > "$PCI_BACKUP_FILE"
+    CHANGED=0
+    for f in /sys/bus/pci/devices/*/power/control; do
+        [ -f "$f" ] || continue
+        addr="$(basename "$(dirname "$(dirname "$f")")")"
+        val="$(cat "$f" 2>/dev/null)"
+        echo "$addr $val" >> "$PCI_BACKUP_FILE"
+        if [ "$val" != "auto" ]; then
+            if sudo sh -c "echo auto > '$f'" 2>/dev/null; then
+                CHANGED=$((CHANGED + 1))
+            fi
+        fi
+    done
+    echo "PCI_RUNTIME_PM_BACKUP_FILE=$PCI_BACKUP_FILE" >> "$MANIFEST"
+
+    if [ "$CHANGED" -gt 0 ]; then
+        echo -e "  ${GREEN}[OK]${NC} $CHANGED dispositivo(s) PCI movidos para runtime PM 'auto' (efeito imediato)."
+        APPLIED_ANY=1
+    else
+        echo -e "  ${GREEN}[OK]${NC} Já estava tudo em 'auto'. Nada a fazer."
+    fi
+
+    if [ "${BATTERY_FIX_PCI_RUNTIME_PM_PERSIST:-0}" = "1" ]; then
+        UNIT_FILE="/etc/systemd/system/kde-suite-pci-runtime-pm.service"
+        echo "PCI_RUNTIME_PM_UNIT_FILE=$UNIT_FILE" >> "$MANIFEST"
+        sudo tee "$UNIT_FILE" > /dev/null << 'EOF'
+[Unit]
+Description=kde-wayland-suite: aplica runtime PM 'auto' em todos os dispositivos PCI no boot
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for f in /sys/bus/pci/devices/*/power/control; do echo auto > "$f"; done'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now kde-suite-pci-runtime-pm.service
+        echo -e "  ${GREEN}[OK]${NC} Serviço kde-suite-pci-runtime-pm.service criado e habilitado — política persiste após reboot."
+    else
+        echo -e "  ${BLUE}[INFO]${NC} Mudança não persiste após reboot (BATTERY_FIX_PCI_RUNTIME_PM_PERSIST não foi setada)."
     fi
     echo ""
 fi

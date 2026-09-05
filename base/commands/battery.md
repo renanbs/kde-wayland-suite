@@ -1,5 +1,5 @@
 ---
-description: Diagnostica consumo de energia/bateria (GPU primária híbrida, PCIe ASPM, saúde da bateria, rádios) e aplica só as correções que o usuário escolher, com reversão simples.
+description: Diagnostica consumo de energia/bateria (GPU primária híbrida, PCIe ASPM, runtime PM de dispositivos PCI, saúde da bateria, rádios) e aplica só as correções que o usuário escolher, com reversão simples.
 ---
 
 # /battery
@@ -25,6 +25,9 @@ BATTERY_FIX_GPU_PRIMARY=1 ./bin/kde-config battery-apply
 
 # Exemplo: usuário quer as duas, com ASPM persistindo após reboot
 BATTERY_FIX_GPU_PRIMARY=1 BATTERY_FIX_PCIE_ASPM=1 BATTERY_FIX_PCIE_ASPM_PERSIST=1 ./bin/kde-config battery-apply
+
+# Exemplo: usuário também quer runtime PM de dispositivos PCI, persistindo após reboot
+BATTERY_FIX_PCI_RUNTIME_PM=1 BATTERY_FIX_PCI_RUNTIME_PM_PERSIST=1 ./bin/kde-config battery-apply
 ```
 
 5. Informe o caminho do snapshot de reversão impresso ao final (também salvo em `~/.config/kde-config-backups/.battery-latest`) e como reverter:
@@ -39,6 +42,7 @@ BATTERY_FIX_GPU_PRIMARY=1 BATTERY_FIX_PCIE_ASPM=1 BATTERY_FIX_PCIE_ASPM_PERSIST=
 
 - **GPU primária do compositor (sistemas híbridos Intel/NVIDIA/AMD)**: detecta se o KWin está compondo numa GPU diferente da que atende o painel interno (eDP) — isso mantém a GPU discreta sempre ligada e copiando frames à toa. A correção reordena `KWIN_DRM_DEVICES` em `~/.config/plasma-workspace/env/*.sh` para a GPU do painel ser primária, sem remover a GPU discreta da lista (continua disponível sob demanda para PRIME offload e para saídas externas eventualmente ligadas nela). Só tem efeito após logout/login ou reboot.
 - **PCIe ASPM**: detecta se a política (`/sys/module/pcie_aspm/parameters/policy`) não está em `powersave`/`powersupersave`. A correção aplica `powersave` na hora; opcionalmente persiste após reboot via um serviço systemd dedicado (`BATTERY_FIX_PCIE_ASPM_PERSIST=1`). Risco conhecido: raríssimos NVMe/Wi-Fi com firmware ASPM mal implementado podem ficar instáveis — reversível na hora.
+- **Runtime PM de dispositivos PCI**: detecta dispositivos com `power/control` fixo em `on` (NVMe, Wi-Fi, SATA, PCIe root ports etc. nunca suspendem sozinhos, mesmo ociosos). A correção move cada um para `auto` na hora; opcionalmente persiste após reboot via serviço systemd dedicado (`BATTERY_FIX_PCI_RUNTIME_PM_PERSIST=1`). Risco: raro, mas algum driver com runtime PM mal implementado pode ficar instável — reversível na hora, valor original de cada dispositivo é salvo no snapshot.
 - **Saúde da bateria, rádios ociosos (Bluetooth/Docker), governor de CPU**: apenas informativo — não há correção automática (são decisões do usuário ou limitações de hardware).
 
 ## Reversão

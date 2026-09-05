@@ -35,7 +35,7 @@ echo ""
 # -----------------------------------------------------------------------------
 # 1. Saúde e taxa de descarga da bateria
 # -----------------------------------------------------------------------------
-echo -e "${BOLD}[1/5] Bateria${NC}"
+echo -e "${BOLD}[1/6] Bateria${NC}"
 BAT_PATH="$(upower -e 2>/dev/null | grep -i battery | head -1 || true)"
 if [ -n "$BAT_PATH" ]; then
     BAT_INFO="$(upower -i "$BAT_PATH" 2>/dev/null || true)"
@@ -70,7 +70,7 @@ fi
 # 2. GPU primária do compositor (KWin) vs. GPU que atende o painel interno
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[2/5] GPU Primária do Compositor (híbrido Intel/NVIDIA/AMD)${NC}"
+echo -e "${BOLD}[2/6] GPU Primária do Compositor (híbrido Intel/NVIDIA/AMD)${NC}"
 
 kwin_drm_locate
 
@@ -103,7 +103,7 @@ fi
 # 3. PCIe ASPM (Active State Power Management)
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[3/5] PCIe ASPM (economia de energia do barramento PCIe)${NC}"
+echo -e "${BOLD}[3/6] PCIe ASPM (economia de energia do barramento PCIe)${NC}"
 ASPM_FILE="/sys/module/pcie_aspm/parameters/policy"
 if [ -f "$ASPM_FILE" ]; then
     ASPM_RAW="$(cat "$ASPM_FILE" 2>/dev/null)"
@@ -121,10 +121,39 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 4. Rádios e serviços ociosos
+# 4. Runtime PM (power/control) dos dispositivos PCI
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[4/5] Rádios e Serviços${NC}"
+echo -e "${BOLD}[4/6] Runtime Power Management de dispositivos PCI${NC}"
+PCI_NOT_AUTO=()
+PCI_TOTAL=0
+for f in /sys/bus/pci/devices/*/power/control; do
+    [ -f "$f" ] || continue
+    PCI_TOTAL=$((PCI_TOTAL + 1))
+    val="$(cat "$f" 2>/dev/null)"
+    if [ "$val" != "auto" ]; then
+        PCI_NOT_AUTO+=("$(basename "$(dirname "$(dirname "$f")")")")
+    fi
+done
+if [ "$PCI_TOTAL" -eq 0 ]; then
+    echo -e "  • ${BLUE}[INFO]${NC} Nenhum dispositivo PCI com controle de runtime PM exposto em sysfs neste kernel."
+elif [ "${#PCI_NOT_AUTO[@]}" -eq 0 ]; then
+    echo -e "  • ${GREEN}[OK]${NC} Todos os $PCI_TOTAL dispositivos PCI já estão com runtime PM em 'auto'."
+else
+    echo -e "  • ${YELLOW}[INFO]${NC} ${#PCI_NOT_AUTO[@]} de $PCI_TOTAL dispositivos PCI com runtime PM fixo em 'on' (nunca suspendem sozinhos, mesmo ociosos):"
+    for addr in "${PCI_NOT_AUTO[@]}"; do
+        DESC="$(lspci -s "${addr#0000:}" 2>/dev/null | cut -d' ' -f2-)"
+        echo -e "      - $addr${DESC:+ ($DESC)}"
+    done
+    echo -e "    ${YELLOW}Atenção${NC}: mudar para 'auto' deixa o kernel decidir quando suspender cada dispositivo; em casos raros, drivers com runtime PM mal implementado (certos NVMe/Wi-Fi) podem ficar instáveis. Reversível na hora (sysfs), sem necessidade de reboot."
+    emit_finding "pci_runtime_pm_not_auto" "count=${#PCI_NOT_AUTO[@]};devices=$(IFS=,; echo "${PCI_NOT_AUTO[*]}")"
+fi
+
+# -----------------------------------------------------------------------------
+# 5. Rádios e serviços ociosos
+# -----------------------------------------------------------------------------
+echo ""
+echo -e "${BOLD}[5/6] Rádios e Serviços${NC}"
 if systemctl is-active --quiet bluetooth.service 2>/dev/null; then
     BT_CONNECTED="$(bluetoothctl devices Connected 2>/dev/null || true)"
     if [ -z "$BT_CONNECTED" ]; then
@@ -144,10 +173,10 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 5. CPU
+# 6. CPU
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[5/5] CPU${NC}"
+echo -e "${BOLD}[6/6] CPU${NC}"
 GOVERNOR="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo '?')"
 PROFILE="$(powerprofilesctl get 2>/dev/null || echo '?')"
 echo -e "  • Governor: $GOVERNOR | Perfil de energia (power-profiles-daemon): $PROFILE"

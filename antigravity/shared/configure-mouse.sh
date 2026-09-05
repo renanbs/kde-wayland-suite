@@ -1,1 +1,1 @@
-../../shared/configure-mouse.sh
+../../base/shared/configure-mouse.sh

@@ -1,1 +1,1 @@
-../../shared/configure-gestures.sh
+../../base/shared/configure-gestures.sh

@@ -1,81 +1,49 @@
 ---
-description: Mostra o relatório da última execução da suíte (o que passou, falhou ou foi pulado), histórico numerado e seleção interativa, com ações recomendadas para resolver pontos não conformes.
+description: Apresenta interativamente a lista de relatórios de execuções gravados na suíte e exibe o relatório selecionado pelo usuário com eventos detalhados e ações recomendadas.
 ---
 
 # /report
 
-Relatório das execuções da suíte, montado a partir dos **eventos estruturados** que cada comando grava — não do texto do terminal.
-
-```bash
-./bin/kde-config report
-```
-
-### Variações e Seleção de Relatórios:
-
-```bash
-./bin/kde-config report            # Exibe a última execução + tendência histórica
-./bin/kde-config report --list     # Lista os relatórios recentes numerados [1..N]
-./bin/kde-config report 3          # Exibe detalhadamente o 3º relatório mais recente
-./bin/kde-config report --select   # Abre menu interativo no terminal para escolher o relatório
-./bin/kde-config report --history  # Exibe apenas a tendência histórica das métricas
-```
+Exibe relatórios detalhados das execuções da suíte a partir dos **eventos estruturados** gravados no disco.
 
 ---
 
-## Onde os dados ficam
+## Fluxo Interativo Obrigatório para Agentes de IA
 
-Cada execução de qualquer comando da suíte grava um diretório em `~/.local/state/kde-wayland-suite/runs/<timestamp>-<comando>/`:
+Ao ser acionado via `/report`, o agente de IA **NÃO deve exibir apenas o último relatório diretamente**. O agente **DEVE obrigatoriamente**:
 
-| Arquivo | Conteúdo |
-| :--- | :--- |
-| `events.tsv` | Um registro por checagem: `epoch · status · id · detalhe`. `status` ∈ `ok`, `warn`, `fail`, `skip`, `info`, `metric` |
-| `output.log` | A saída bruta do comando, com os códigos de cor ANSI removidos (forense) |
-| `meta.env` | Comando, código de saída, duração, versão da suíte, host |
-
-Registros com status `metric` carregam um valor numérico e alimentam a tendência histórica (ex.: `battery_health_percent`).
-
-O `report` e o `help` **não** geram runs — são leitura pura e só poluiriam o histórico.
-
-## Retenção e desligamento
-
-Mantém os **50 runs** mais recentes por padrão. Ajustável:
-
-- `KDE_SUITE_RUNLOG_KEEP=100` — muda quantos runs preservar
-- `KDE_SUITE_RUNLOG=0` — desliga o registro por completo
-- `KDE_SUITE_RUNLOG_ROOT=<caminho>` — muda onde gravar
-
-## Para agentes de IA
-
-Prefira **ler `events.tsv`** a parsear a saída do terminal: os IDs dos eventos são estruturados e estáveis. Use os eventos para montar as fases **Execução**, **Resumo** e **Ações Recomendadas** do formato padronizado abaixo.
+1. **Buscar o histórico recente:** Listar os diretórios em `~/.local/state/kde-wayland-suite/runs/` e coletar data/hora, comando e contagem de eventos (`ok`, `warn`, `fail`).
+2. **Apresentar a lista interativa:** Usar a ferramenta `AskUserQuestion` (ou `ask`) com a lista dos 5 a 10 relatórios mais recentes para que o usuário escolha qual deseja visualizar.
+3. **Renderizar o relatório escolhido:** Exibir os detalhes completos da execução selecionada seguindo o formato padronizado abaixo.
 
 ---
 
 ## Formato de saída (obrigatório e idêntico em todas as ferramentas)
 
-Reporte sempre nestas fases, nesta ordem, com estes títulos exatos.
+Reporte sempre nestas quatro fases, nesta ordem, com estes títulos exatos:
 
 **1. Plano** — antes de executar qualquer coisa:
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+- **Comando:** a linha ou visualização do relatório que será executada
+- **Faz:** uma frase sobre o que o relatório apresenta
+- **Reversível:** `não aplicável`
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+**2. Execução** — lista dos eventos do relatório selecionado:
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+- `✅ <evento/etapa>` — validado com sucesso
+- `⏭️ <evento/etapa>` — pulado
+- `⚠️ <evento/etapa>` — aviso ou ressalva
+- `❌ <evento/etapa>` — falha real registrada
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+**3. Resumo** — sempre ao final:
 
 | Campo | Conteúdo |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
+| Relatório selecionado | identificador da pasta ou índice |
+| Balanço da execução | contagem de ok, falhas e avisos |
+| Backup | caminho do backup ou `nenhum` |
+| Relatório salvo | `./bin/kde-config report <número>` (ou `~/.local/state/kde-wayland-suite/runs/`) |
+| Como reverter | comando de reversão ou `não aplicável` |
 | Requer | `nada` \| `logout/login` \| `reboot` |
 
 **4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:

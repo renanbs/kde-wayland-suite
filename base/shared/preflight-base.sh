@@ -18,7 +18,7 @@ echo -e "${BOLD}${BLUE}=== Diagnóstico e Pré-Voo Base para KDE Plasma ===${NC}
 printf "SESSION_TYPE=%s\n" "${XDG_SESSION_TYPE:-unknown}"
 printf "CURRENT_DESKTOP=%s\n" "${XDG_CURRENT_DESKTOP:-unknown}"
 
-# 2. Distribuição
+# 2. Distribuição e Kernel
 if [ -f /etc/os-release ]; then
   . /etc/os-release
   DISTRO="${ID:-unknown}"
@@ -29,6 +29,18 @@ else
 fi
 printf "DISTRO=%s (LIKE=%s)\n" "$DISTRO" "$DISTRO_LIKE"
 printf "KERNEL=%s\n" "$(uname -r)"
+
+# 2.1 Hardware DMI
+DMI_VENDOR="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo 'unknown')"
+DMI_PRODUCT="$(cat /sys/class/dmi/id/product_name 2>/dev/null || echo 'unknown')"
+printf "DMI_HARDWARE=%s / %s\n" "$DMI_VENDOR" "$DMI_PRODUCT"
+if echo "$DMI_VENDOR $DMI_PRODUCT" | grep -qiE "tongfang|avell|clevo|tuxedo|schenker|uniwill|gk5|gm5|qc7"; then
+  if grep -q "i8042.nopnp=1" /proc/cmdline 2>/dev/null; then
+    printf "TONGFANG_KEYBOARD_FIX=active (i8042.nopnp=1)\n"
+  else
+    printf "TONGFANG_KEYBOARD_FIX=missing (execute './bin/kde-config fix-tongfang')\n"
+  fi
+fi
 
 # 3. Versão do Plasma
 if command -v kinfo >/dev/null 2>&1; then
@@ -70,10 +82,7 @@ if [ -n "$QDBUS" ]; then
   printf "KWIN_VIRTUAL_DESKTOPS=%s\n" "$DESKTOPS_COUNT"
 fi
 
-# 7. Fcitx5 — deve estar AUSENTE ou parado. Sob Wayland ele faz grab do
-#    teclado e engole Ctrl+<tecla> (copiar/colar/desfazer) em Qt, GTK e
-#    Electron por igual. Não é necessário para a cedilha: a tabela pt_BR do
-#    sistema já mapeia <dead_acute> <c> -> "ç" nativamente.
+# 7. Fcitx5 — deve estar AUSENTE ou parado.
 if command -v fcitx5 >/dev/null 2>&1; then
   printf "FCITX5_INSTALLED=true\n"
   if pgrep -x fcitx5 >/dev/null 2>&1; then
@@ -85,9 +94,7 @@ else
   printf "FCITX5_INSTALLED=false\n"
 fi
 
-# 8. Locale de composição — é o que decide entre "ç" e "ć". Sem
-#    LC_CTYPE=pt_BR.UTF-8 o libxkbcommon usa a tabela en_US, que mapeia
-#    <dead_acute> <c> para "ć".
+# 8. Locale de composição
 if [ "${LC_CTYPE:-}" = "pt_BR.UTF-8" ]; then
   printf "LC_CTYPE=%s\n" "$LC_CTYPE"
 else

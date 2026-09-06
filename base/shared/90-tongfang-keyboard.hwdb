@@ -1,0 +1,9 @@
+# Mapeamento de Teclas - Laptops Tongfang / Avell / Clevo (KDE Wayland Suite)
+# Mapeia o scancode estendido da tecla Fn (e078 / f8) para KEY_FN
+
+evdev:atkbd:dmi:bvn*:bvr*:bd*:svn*Avell*:*
+evdev:atkbd:dmi:bvn*:bvr*:bd*:svn*Tongfang*:*
+evdev:atkbd:dmi:bvn*:bvr*:bd*:svn*TUXEDO*:*
+evdev:atkbd:dmi:bvn*:bvr*:bd*:svn*Clevo*:*
+ KEYBOARD_KEY_f8=fn
+ KEYBOARD_KEY_e078=fn

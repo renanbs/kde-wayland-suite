@@ -50,6 +50,10 @@ usage() {
     echo "  battery-status    Diagnóstico de bateria/energia (GPU primária, PCIe ASPM, rádios, saúde da bateria)"
     echo "  battery-apply     Aplica correções de bateria decididas via variáveis BATTERY_FIX_*"
     echo "  battery-revert    Reverte a última aplicação de battery-apply (ou um snapshot específico)"
+    echo "  fix-tongfang      Desbloqueia teclado/matriz i8042 em laptops Tongfang/Avell/Clevo via GRUB"
+    echo "  revert-tongfang   Reverte a configuração do GRUB para o backup anterior"
+    echo "  test-keyboard     Monitor interativo de eventos de teclas em tempo real (/dev/input/eventX)"
+    echo "  monitor-irq       Monitor de pulsos elétricos de hardware no IRQ 1 (teclado i8042)"
     echo "  preflight         Diagnóstico de ambiente, distribuição e ferramentas D-Bus"
     echo "  switch [br|us]    Alterna o layout ativo no KWin (0=br, 1=us)"
     echo "  shortcut-switch   Configura atalho Meta+Space para alternar layouts no KWin"
@@ -142,6 +146,42 @@ cmd_preflight() {
         exit 1
     fi
 }
+cmd_fix_tongfang() {
+    if [ -f "$SHARED_DIR/fix-tongfang.sh" ]; then
+        bash "$SHARED_DIR/fix-tongfang.sh" --apply
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/fix-tongfang.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_revert_tongfang() {
+    if [ -f "$SHARED_DIR/fix-tongfang.sh" ]; then
+        bash "$SHARED_DIR/fix-tongfang.sh" --revert
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/fix-tongfang.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_test_keyboard() {
+    if [ -f "$SHARED_DIR/test-keyboard.py" ]; then
+        python3 "$SHARED_DIR/test-keyboard.py"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/test-keyboard.py não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_monitor_irq() {
+    if [ -f "$SHARED_DIR/monitor-irq.py" ]; then
+        python3 "$SHARED_DIR/monitor-irq.py"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/monitor-irq.py não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 
 cmd_init() {
     echo -e "${BOLD}${BLUE}======================================================${NC}"
@@ -299,6 +339,10 @@ dispatch() {
         init) cmd_init ;;
         status) cmd_status ;;
         fix-keyboard) cmd_fix_keyboard ;;
+        fix-tongfang) cmd_fix_tongfang ;;
+        revert-tongfang) cmd_revert_tongfang ;;
+        test-keyboard) cmd_test_keyboard ;;
+        monitor-irq) cmd_monitor_irq ;;
         gestures) cmd_gestures ;;
         mouse) cmd_mouse ;;
         battery-status) cmd_battery_status ;;

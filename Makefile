@@ -1,4 +1,4 @@
-.PHONY: all init report status check fix-keyboard gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback install-cli preflight help
+.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback install-cli preflight help
 
 all: status
 
@@ -12,6 +12,10 @@ help:
 	@echo "  make check           - Alias para make status"
 	@echo "  make fix-keyboard    - Corrige Ctrl+C no ABNT2 e configura XCompose para US-intl"
 	@echo "  make gestures        - Configura gestos de touchpad (libinput-gestures)"
+	@echo "  make fix-tongfang    - Desbloqueia teclado/matriz em laptops Tongfang/Avell via GRUB"
+	@echo "  make revert-tongfang - Reverte configuração do GRUB para backup anterior"
+	@echo "  make test-keyboard   - Monitor de eventos de teclas em tempo real"
+	@echo "  make monitor-irq     - Monitor de pulsos elétricos de hardware (IRQ 1)"
 	@echo "  make mouse           - Configura o Logitech MX Master 3S (logiops/logid)"
 	@echo "  make battery-status  - Diagnostico de bateria/energia (so leitura)"
 	@echo "  make battery-apply   - Aplica correcoes de bateria (use BATTERY_FIX_*=1; nunca sem antes perguntar ao usuario)"
@@ -31,6 +35,18 @@ check: status
 
 fix-keyboard:
 	@./bin/kde-config fix-keyboard
+
+fix-tongfang:
+	@./bin/kde-config fix-tongfang
+
+revert-tongfang:
+	@./bin/kde-config revert-tongfang
+
+test-keyboard:
+	@./bin/kde-config test-keyboard
+
+monitor-irq:
+	@./bin/kde-config monitor-irq
 
 gestures:
 	@./bin/kde-config gestures

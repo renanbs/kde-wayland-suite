@@ -1,7 +1,6 @@
 ---
-description: Comprehensive KDE Plasma 6 Wayland configuration suite — system-wide Ctrl+key breakage fixes, cedilla on US-intl via the native pt_BR compose table (LC_CTYPE, no input method), touchpad gestures, Logitech MX Master 3S, and battery/power diagnostics.
-globs: *
-alwaysApply: true
+description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts, Tongfang/Avell hardware matrix unlocking, smart keyboard power management, cedilla on US-intl, Wayland clipboard repair, touchpad gestures, Logitech MX Master 3S via logiops, AI host harness alignment, and battery diagnostics.
+globs: ["**/*"]
 ---
 
 # KDE Plasma 6 Wayland Suite — Cursor CLI & Agent Rule
@@ -17,6 +16,15 @@ Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar 
 # Atalhos (Ctrl+<tecla>), cedilha e clipboard
 ./bin/kde-config fix-keyboard
 
+# Desbloquear teclado/matriz em laptops Tongfang/Avell/Clevo via GRUB
+./bin/kde-config fix-tongfang
+
+# Gerenciamento dinâmico de energia do teclado (anti-latch + economia)
+./bin/kde-config smart-keyboard-power --apply
+
+# Configurar e auditar perfil do host de IA e mapa de modelos
+./bin/kde-config configure-harness
+
 # Gestos de touchpad (libinput-gestures)
 ./bin/kde-config gestures
 
@@ -26,25 +34,23 @@ Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar 
 # Bateria/energia — diagnóstico (só leitura)
 ./bin/kde-config battery-status
 
-# Bateria/energia — aplicar/reverter correções escolhidas pelo usuário
+# Bateria/energia — aplicar/reverter correções
 BATTERY_FIX_GPU_PRIMARY=1 ./bin/kde-config battery-apply
 ./bin/kde-config battery-revert
+
+# Relatório analítico com seleção interativa e ações recomendadas
+./bin/kde-config report
+./bin/kde-config report --list
+
+# Central de Ajuda
+./bin/kde-config help
 
 # Alternar layout ativo via D-Bus
 ./bin/kde-config switch [br|us]
 ```
 
-## Arquitetura de Execução
+## Arquitetura de Execução e Disciplina (Ver `skills/kde-wayland-suite-architecture`)
 
-- Sempre invoque `./bin/kde-config` ou `make <target>` para aplicar alterações no sistema de forma atômica e com backup.
-- A fonte canônica dos scripts é `base/shared/`; `bin/`, `shared/` e `commands/` na raiz são symlinks de compatibilidade para `base/`.
-- **Nunca** aplique correções de bateria sem perguntar antes: cada correção é opt-in via variável `BATTERY_FIX_*`, e `battery-apply` sem nenhuma delas não faz nada.
-
-## Armadilhas conhecidas (documentadas em `base/shared/SKILL.md`)
-
-- Ao escrever `~/.config/kxkbrc`, `LayoutList` e `VariantList` precisam ter o mesmo número de entradas no momento em que o KWin recarrega. Se divergirem, o KWin falha ao compilar o keymap e o `Ctrl+<tecla>` para de funcionar no sistema inteiro até um **reboot completo**. Grave `VariantList`/`DisplayNames` sem `--notify` e só notifique na última escrita (`LayoutList`).
-- O `fcitx5` sob Wayland faz grab do teclado e engole `Ctrl+<tecla>` em Qt, GTK e Electron. A suite o desativa; a cedilha não precisa dele (vem da tabela `pt_BR` do sistema, selecionada por `LC_CTYPE=pt_BR.UTF-8`).
-
-## Formato de saída
-
-Reporte **todo** comando no formato padronizado de `base/shared/OUTPUT-CONTRACT.md`: **Plano** → **Execução** → **Resumo**, idêntico em Claude Code, Cursor, OMP, OpenCode e Antigravity.
+- A fonte canônica de scripts é `base/shared/`; a de comandos é `base/commands/`.
+- As pastas `bin/`, `shared/` e `commands/` na raiz e nos subdiretórios de plataforma são symlinks de compatibilidade.
+- Todo comando deve seguir o formato padronizado de `base/shared/OUTPUT-CONTRACT.md`: **Plano** → **Execução** → **Resumo** → **Ações Recomendadas**.

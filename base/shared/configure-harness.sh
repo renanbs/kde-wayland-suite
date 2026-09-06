@@ -100,6 +100,7 @@ cmd_set() {
     echo -e "| Revisão (review) | $review |"
     echo -e "| Segurança (security) | $security |"
     echo -e "| Arquivo de Perfil | ${HARNESS_PROFILE_FILE} |"
+    echo -e "| Relatório salvo | ./bin/kde-config report (ou ~/.local/state/kde-wayland-suite/runs/) |"
     echo -e "| Como reverter | ./bin/kde-config configure-harness |"
     echo -e "| Requer | nada |"
 }

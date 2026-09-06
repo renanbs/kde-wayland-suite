@@ -147,6 +147,7 @@ EOF
     echo -e "| O que mudou | Regra udev ${UDEV_RULE_FILE} instalada e sincronização dinâmica ativada |"
     echo -e "| O que não mudou | Layouts de teclado e configurações do KWin |"
     echo -e "| Backup | Não aplicável (novo arquivo udev) |"
+    echo -e "| Relatório salvo | ./bin/kde-config report (ou ~/.local/state/kde-wayland-suite/runs/) |"
     echo -e "| Como reverter | ./bin/kde-config smart-keyboard-power --remove |"
     echo -e "| Requer | nada (entra em vigor imediatamente) |"
 }
@@ -178,6 +179,7 @@ cmd_remove_udev() {
     echo -e "\n${BOLD}### 3. Resumo${NC}\n"
     echo -e "| Campo | Conteúdo |"
     echo -e "| :--- | :--- |"
+    echo -e "| Relatório salvo | ./bin/kde-config report (ou ~/.local/state/kde-wayland-suite/runs/) |"
     echo -e "| O que mudou | Regra udev removida e power/control restaurado ao padrão |"
     echo -e "| O que não mudou | Parâmetros do GRUB e atalhos |"
     echo -e "| Backup | nenhum |"

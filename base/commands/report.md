@@ -72,6 +72,7 @@ Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
 | O que mudou | lista objetiva, ou `nada — já estava correto` |
 | O que não mudou | o que foi pulado ou recusado, e por quê |
 | Backup | caminho do snapshot, ou `nenhum` |
+| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
 | Como reverter | o comando exato |
 | Requer | `nada` \| `logout/login` \| `reboot` |
 

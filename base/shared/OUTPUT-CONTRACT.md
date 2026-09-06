@@ -41,9 +41,9 @@ Sempre ao final, mesmo quando nada mudou:
 | O que mudou | lista objetiva, ou `nada — já estava correto` |
 | O que não mudou | o que foi pulado ou recusado, e por quê |
 | Backup | caminho do snapshot, ou `nenhum` |
+| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
 | Como reverter | o comando exato |
 | Requer | `nada` \| `logout/login` \| `reboot` |
-
 ### 4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)
 
 Sempre que a fase **2. Execução** contiver qualquer item marcado com `⚠️` (aviso) ou `❌` (falha), adicione esta seção logo após o **3. Resumo**, fornecendo o comando exato de 1 linha para resolver cada ponto:

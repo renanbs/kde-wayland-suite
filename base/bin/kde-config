@@ -54,6 +54,8 @@ usage() {
     echo "  switch [br|us]    Alterna o layout ativo no KWin (0=br, 1=us)"
     echo "  shortcut-switch   Configura atalho Meta+Space para alternar layouts no KWin"
     echo "  rollback          Restaura backups de configurações anteriores"
+    echo "  report            Relatório da última execução + tendência histórica"
+    echo "                    (report <n> lista as n últimas; report --history só a tendência)"
     echo "  install           Cria link simbólico em ~/.local/bin/kde-config"
     echo "  help              Exibe esta mensagem de ajuda"
     echo ""
@@ -286,21 +288,69 @@ cmd_install() {
     echo "Certifique-se de que ~/.local/bin está no seu PATH."
 }
 
-# Roteamento principal
-case "${1:-status}" in
-    init) cmd_init ;;
-    status) cmd_status ;;
-    fix-keyboard) cmd_fix_keyboard ;;
-    gestures) cmd_gestures ;;
-    mouse) cmd_mouse ;;
-    battery-status) cmd_battery_status ;;
-    battery-apply) cmd_battery_apply ;;
-    battery-revert) cmd_battery_revert "${2:-}" ;;
-    preflight) cmd_preflight ;;
-    switch) cmd_switch_layout "${2:-next}" ;;
-    shortcut-switch) cmd_shortcut_switch ;;
-    rollback) cmd_rollback ;;
-    install) cmd_install ;;
-    help|--help|-h) usage ;;
-    *) echo -e "${RED}Comando desconhecido: $1${NC}"; usage; exit 1 ;;
-esac
+cmd_report() {
+    bash "$SHARED_DIR/report.sh" "${1:-}"
+}
+
+# Despacha o comando pedido. Separado do roteamento para que o wrapper de log
+# consiga executá-lo capturando a saída.
+dispatch() {
+    case "${1:-status}" in
+        init) cmd_init ;;
+        status) cmd_status ;;
+        fix-keyboard) cmd_fix_keyboard ;;
+        gestures) cmd_gestures ;;
+        mouse) cmd_mouse ;;
+        battery-status) cmd_battery_status ;;
+        battery-apply) cmd_battery_apply ;;
+        battery-revert) cmd_battery_revert "${2:-}" ;;
+        preflight) cmd_preflight ;;
+        switch) cmd_switch_layout "${2:-next}" ;;
+        shortcut-switch) cmd_shortcut_switch ;;
+        rollback) cmd_rollback ;;
+        install) cmd_install ;;
+        report) cmd_report "${2:-}" ;;
+        help|--help|-h) usage ;;
+        *) echo -e "${RED}Comando desconhecido: $1${NC}"; usage; exit 1 ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
+# Roteamento com registro de execução
+#
+# Cada execução vira um run em ~/.local/state/kde-wayland-suite/runs/, com os
+# eventos estruturados que os scripts emitem, a saída bruta sem cores e um
+# meta.env. É isso que o comando 'report' lê depois — o relatório sai dos dados,
+# não do texto colorido, que mudaria a cada ajuste de redação.
+#
+# 'report' e 'help' não são registrados: são leitura pura e só poluiriam o
+# histórico com runs sem valor.
+# -----------------------------------------------------------------------------
+COMMAND_NAME="${1:-status}"
+
+if [ -f "$SHARED_DIR/lib-runlog.sh" ] && [ "$COMMAND_NAME" != "report" ] \
+   && [ "$COMMAND_NAME" != "help" ] && [ "$COMMAND_NAME" != "--help" ] && [ "$COMMAND_NAME" != "-h" ]; then
+    # shellcheck source=../shared/lib-runlog.sh
+    source "$SHARED_DIR/lib-runlog.sh"
+    RUNLOG_COMMAND="$COMMAND_NAME"
+    RUNLOG_SUITE_VERSION="$(grep -oP '(?<="version": ")[^"]+' "$BASE_DIR/../../.claude-plugin/plugin.json" 2>/dev/null | head -1 || echo 'desconhecida')"
+    export RUNLOG_COMMAND RUNLOG_SUITE_VERSION
+    runlog_init "$COMMAND_NAME"
+fi
+
+if [ -n "${RUNLOG_DIR:-}" ]; then
+    # Espelha a saída no terminal e, sem as cores ANSI, no output.log.
+    # 'set -o pipefail' garante que o código de saída seja o do dispatch, não o
+    # do tee — do contrário todo comando pareceria ter sucesso.
+    set -o pipefail
+    # O '|| DISPATCH_RC=$?' é obrigatório: este script roda com 'set -e', então
+    # um pipeline que falha encerraria o processo AQUI, antes do runlog_finish —
+    # e a execução que falhou (justamente a que mais interessa registrar) ficaria
+    # sem meta.env. Com o '||', a falha é capturada em vez de abortar.
+    DISPATCH_RC=0
+    dispatch "$@" 2>&1 | tee >(sed -u 's/\x1b\[[0-9;]*m//g' > "$RUNLOG_DIR/output.log") || DISPATCH_RC=$?
+    runlog_finish "$DISPATCH_RC"
+    exit "$DISPATCH_RC"
+else
+    dispatch "$@"
+fi

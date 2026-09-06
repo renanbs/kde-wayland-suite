@@ -62,6 +62,7 @@ usage() {
     echo "  rollback          Restaura backups de configurações anteriores"
     echo "  report            Relatório da última execução + tendência histórica"
     echo "                    (report <n> lista as n últimas; report --history só a tendência)"
+    echo "  upgrade / update  Verifica e aplica atualizações do repositório e marketplace"
     echo "  install           Cria link simbólico em ~/.local/bin/kde-config"
     echo "  help              Exibe esta mensagem de ajuda"
     echo ""
@@ -199,6 +200,15 @@ cmd_configure_harness() {
         exit 1
     fi
 }
+cmd_upgrade() {
+    if [ -f "$SHARED_DIR/upgrade-suite.sh" ]; then
+        bash "$SHARED_DIR/upgrade-suite.sh" "${1:---status}"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/upgrade-suite.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 
 
 
@@ -376,6 +386,7 @@ dispatch() {
         rollback) cmd_rollback ;;
         install) cmd_install ;;
         report) cmd_report "${2:-}" ;;
+        upgrade|update) cmd_upgrade "${2:---apply}" ;;
         help|--help|-h) usage ;;
         *) echo -e "${RED}Comando desconhecido: $1${NC}"; usage; exit 1 ;;
     esac

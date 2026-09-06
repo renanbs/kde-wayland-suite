@@ -1,4 +1,4 @@
-.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback install-cli preflight help
+.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight help
 
 all: status
 
@@ -27,6 +27,7 @@ help:
 	@echo "  make shortcut-switch - Configura atalho Meta+Space para alternar layouts"
 	@echo "  make rollback        - Restaura snapshot anterior de configurações"
 	@echo "  make report          - Relatorio da ultima execucao + tendencia historica"
+	@echo "  make upgrade         - Verifica e aplica atualizações da suite e do marketplace"
 	@echo "  make install-cli     - Instala o comando kde-config em ~/.local/bin"
 
 status:
@@ -82,6 +83,10 @@ shortcut-switch:
 rollback:
 	@./bin/kde-config rollback
 
+upgrade:
+	@./bin/kde-config upgrade
+
+update: upgrade
 report:
 	@./bin/kde-config report
 

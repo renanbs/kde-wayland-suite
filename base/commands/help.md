@@ -29,6 +29,7 @@ Exibe a central de ajuda e documentação rápida de todos os comandos disponív
 | `./bin/kde-config monitor-irq` | `/monitor-irq` | Monitor elétrico de hardware no IRQ 1 (i8042) | Para testar interrupções elétricas da placa-mãe |
 | `./bin/kde-config switch [br\|us]` | — | Alterna o layout ativo no KWin via D-Bus | Para trocar layout sem depender de atalhos físicos |
 | `./bin/kde-config report` | `/report` | Relatório da última execução + ações recomendadas | Para ver o histórico e como resolver pontos com ⚠️ ou ❌ |
+| `./bin/kde-config upgrade` | `/upgrade` | Verifica e aplica atualizações do GitHub e marketplace | Para atualizar a suite para a versão mais recente |
 | `./bin/kde-config rollback` | — | Restaura snapshot de backup anterior | Para desfazer qualquer alteração da suite |
 
 ---

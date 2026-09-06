@@ -10,11 +10,9 @@ Executa a inicialização e configuração completa da suíte KDE Wayland com ba
 ./bin/kde-config init
 ```
 
-**Antes de rodar, use `AskUserQuestion` para coletar as escolhas do usuário — nunca rode `init` de forma cega.** Faça as perguntas de uma vez só (uma chamada, todas as perguntas), antes de executar qualquer comando:
-
 1. **Componentes** (multiSelect): Teclado/cedilha/atalhos (Ctrl+C ABNT2) — recomendado; Gestos de touchpad (3/4 dedos) — recomendado se houver touchpad; Mouse Logitech MX Master 3S (logiops) — só se o usuário tiver o mouse; Diagnóstico de bateria/energia — recomendado (é só diagnóstico nesta pergunta, sem aplicar nada ainda).
 2. **Auto-cura do layout no login**: proteger contra o bug do KWin/Plasma que pode colapsar `~/.config/kxkbrc` para um único layout ao reiniciar (o widget de troca de layout some da barra) — recomendado, mas adiciona uma entrada de autostart.
-
+3. **Perfil do Host de IA (Harness & Modelos)**: detecta automaticamente se você está no OMP, Claude Code, Cursor ou Antigravity, orienta quais classes de modelos usar por papel (reasoning, code, review, security) e salva o perfil para auditar desalinhamentos futuros.
 Depois, rode `init` com as variáveis correspondentes às respostas:
 
 ```bash
@@ -56,6 +54,10 @@ Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
 | Backup | caminho do snapshot, ou `nenhum` |
 | Como reverter | o comando exato |
 | Requer | `nada` \| `logout/login` \| `reboot` |
+
+**4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:
+
+- `• <Descrição do problema>`: `comando exato para corrigir`
 
 **Regras:**
 

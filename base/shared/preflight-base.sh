@@ -12,11 +12,31 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/lib-harness.sh" ]; then
+    # shellcheck source=lib-harness.sh
+    source "$SCRIPT_DIR/lib-harness.sh"
+fi
+
 echo -e "${BOLD}${BLUE}=== Diagnóstico e Pré-Voo Base para KDE Plasma ===${NC}"
 
 # 1. Sessão e Ambiente Desktop
 printf "SESSION_TYPE=%s\n" "${XDG_SESSION_TYPE:-unknown}"
 printf "CURRENT_DESKTOP=%s\n" "${XDG_CURRENT_DESKTOP:-unknown}"
+
+# 1.1 Host de IA / Harness
+if command -v detect_active_harness >/dev/null 2>&1; then
+    ACT_HARNESS="$(detect_active_harness)"
+    SAV_HARNESS="$(get_saved_harness)"
+    ALIGN="$(check_harness_alignment)"
+    printf "ACTIVE_HARNESS=%s (%s)\n" "$ACT_HARNESS" "$(get_harness_friendly_name "$ACT_HARNESS")"
+    printf "SAVED_HARNESS=%s\n" "$SAV_HARNESS"
+    if [ "$ALIGN" = "mismatch" ]; then
+        printf "HARNESS_ALIGNMENT=MISMATCH (ambiente atual: %s, configurado: %s - execute './bin/kde-config configure-harness --sync')\n" "$ACT_HARNESS" "$SAV_HARNESS"
+    else
+        printf "HARNESS_ALIGNMENT=%s\n" "$ALIGN"
+    fi
+fi
 
 # 2. Distribuição e Kernel
 if [ -f /etc/os-release ]; then

@@ -24,6 +24,11 @@ else
     runlog_event() { :; }
     runlog_metric() { :; }
 fi
+if [ -f "$SCRIPT_DIR/lib-harness.sh" ]; then
+    # shellcheck source=lib-harness.sh
+    source "$SCRIPT_DIR/lib-harness.sh"
+fi
+
 
 echo -e "${BOLD}${BLUE}======================================================${NC}"
 echo -e "${BOLD}${BLUE}   KDE Plasma 6 Wayland — Verificação de Status Geral ${NC}"
@@ -56,6 +61,26 @@ DMI_VENDOR="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo 'unknown')"
 DMI_PRODUCT="$(cat /sys/class/dmi/id/product_name 2>/dev/null || echo 'unknown')"
 DMI_BOARD="$(cat /sys/class/dmi/id/board_name 2>/dev/null || echo 'unknown')"
 printf "  • Hardware DMI: %s / %s (Placa: %s)\n" "$DMI_VENDOR" "$DMI_PRODUCT" "$DMI_BOARD"
+
+# Auditoria de Host de IA (Harness)
+if command -v detect_active_harness >/dev/null 2>&1; then
+    ACT_HARNESS="$(detect_active_harness)"
+    SAV_HARNESS="$(get_saved_harness)"
+    ALIGN="$(check_harness_alignment)"
+    if [ "$ALIGN" = "aligned" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Host de IA / Harness: ${BOLD}$(get_harness_friendly_name "$ACT_HARNESS")${NC} (perfil alinhado)."
+        runlog_event "ok" "harness_aligned" "$ACT_HARNESS"
+    elif [ "$ALIGN" = "unconfigured" ]; then
+        echo -e "  • ${BLUE}[INFO]${NC} Host de IA ativo: ${BOLD}$(get_harness_friendly_name "$ACT_HARNESS")${NC} (perfil de modelos ainda não configurado via '/init')."
+        runlog_event "info" "harness_unconfigured" "$ACT_HARNESS"
+    else
+        echo -e "  • ${YELLOW}[AVISO]${NC} Desalinhamento de Harness detectado!"
+        echo -e "    Ambiente atual: ${BOLD}$(get_harness_friendly_name "$ACT_HARNESS")${NC} ($ACT_HARNESS)"
+        echo -e "    Perfil salvo:   ${BOLD}$(get_harness_friendly_name "$SAV_HARNESS")${NC} ($SAV_HARNESS)"
+        echo -e "    Para sincronizar os modelos para este host: ${BOLD}./bin/kde-config configure-harness --sync${NC}"
+        runlog_event "warn" "harness_mismatch" "active=$ACT_HARNESS, saved=$SAV_HARNESS"
+    fi
+fi
 runlog_event "info" "dmi_hardware" "$DMI_VENDOR / $DMI_PRODUCT"
 
 # Detecção e auditoria de chassis Tongfang / Avell / Clevo

@@ -99,6 +99,9 @@ show_run() {
                 xsel_hung)
                     recommendations+=("${YELLOW}Clipboard travado:${NC} execute '${BOLD}./bin/kde-config fix-keyboard${NC}'")
                     ;;
+                harness_mismatch)
+                    recommendations+=("${YELLOW}Alinhamento de Harness/IA:${NC} execute '${BOLD}./bin/kde-config configure-harness --sync${NC}'")
+                    ;;
                 *)
                     [ -n "$detail" ] && recommendations+=("${id}: ${detail}")
                     ;;

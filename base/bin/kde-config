@@ -55,6 +55,7 @@ usage() {
     echo "  test-keyboard     Monitor interativo de eventos de teclas em tempo real (/dev/input/eventX)"
     echo "  monitor-irq       Monitor de pulsos elétricos de hardware no IRQ 1 (teclado i8042)"
     echo "  smart-keyboard-power  Gerenciamento dinâmico de energia do teclado integrado (--apply/--remove/--status)"
+    echo "  configure-harness  Configura o perfil do host de IA (OMP/Claude/Cursor) e mapa de modelos"
     echo "  preflight         Diagnóstico de ambiente, distribuição e ferramentas D-Bus"
     echo "  switch [br|us]    Alterna o layout ativo no KWin (0=br, 1=us)"
     echo "  shortcut-switch   Configura atalho Meta+Space para alternar layouts no KWin"
@@ -190,6 +191,15 @@ cmd_smart_keyboard_power() {
         exit 1
     fi
 }
+cmd_configure_harness() {
+    if [ -f "$SHARED_DIR/configure-harness.sh" ]; then
+        bash "$SHARED_DIR/configure-harness.sh" "$@"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-harness.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 
 
 
@@ -354,6 +364,7 @@ dispatch() {
         test-keyboard) cmd_test_keyboard ;;
         monitor-irq) cmd_monitor_irq ;;
         smart-keyboard-power) cmd_smart_keyboard_power "${2:-}" ;;
+        configure-harness) shift; cmd_configure_harness "$@" ;;
         gestures) cmd_gestures ;;
         mouse) cmd_mouse ;;
         battery-status) cmd_battery_status ;;

@@ -70,32 +70,26 @@ if [ -n "$QDBUS" ]; then
   printf "KWIN_VIRTUAL_DESKTOPS=%s\n" "$DESKTOPS_COUNT"
 fi
 
-# 7. Detecção do Framework de IME (Fcitx5 / Wayland IME para Chrome e Orca)
+# 7. Fcitx5 — deve estar AUSENTE ou parado. Sob Wayland ele faz grab do
+#    teclado e engole Ctrl+<tecla> (copiar/colar/desfazer) em Qt, GTK e
+#    Electron por igual. Não é necessário para a cedilha: a tabela pt_BR do
+#    sistema já mapeia <dead_acute> <c> -> "ç" nativamente.
 if command -v fcitx5 >/dev/null 2>&1; then
   printf "FCITX5_INSTALLED=true\n"
   if pgrep -x fcitx5 >/dev/null 2>&1; then
-    printf "FCITX5_RUNNING=true\n"
+    printf "FCITX5_RUNNING=true (ATENCAO: quebra Ctrl+<tecla>; corrija com './bin/kde-config fix-keyboard')\n"
   else
-    printf "FCITX5_RUNNING=false (inicie com: fcitx5 -d)\n"
+    printf "FCITX5_RUNNING=false (correto)\n"
   fi
 else
   printf "FCITX5_INSTALLED=false\n"
-  echo ""
-  echo -e "${YELLOW}┌─────────────────────────────────────────────────────────────────────────────────┐${NC}"
-  echo -e "${YELLOW}│ ${BOLD}[INFO] Framework Wayland IME (Fcitx5) não detectado${NC}${YELLOW}                             │${NC}"
-  echo -e "${YELLOW}│ Para que o Chrome, Orca IDE e apps Electron processem a composição '${BOLD}'+c${NC}${YELLOW} -> '${BOLD}ç${NC}${YELLOW}'  │${NC}"
-  echo -e "${YELLOW}│ nativamente no Wayland (sem recorrer a AltGr), instale o pacote Fcitx5:         │${NC}"
-  echo -e "${YELLOW}│                                                                                 │${NC}"
-  if [ "$DISTRO" = "arch" ] || [ "$DISTRO_LIKE" = "arch" ] || [ "$DISTRO" = "garuda" ]; then
-    echo -e "${YELLOW}│   ${BOLD}sudo pacman -S --needed fcitx5-im fcitx5-gtk fcitx5-qt fcitx5-configtool${NC}${YELLOW}      │${NC}"
-  elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "debian" ]; then
-    echo -e "${YELLOW}│   ${BOLD}sudo apt install fcitx5 fcitx5-frontend-gtk3 fcitx5-frontend-qt5${NC}${YELLOW}              │${NC}"
-  elif [ "$DISTRO" = "fedora" ]; then
-    echo -e "${YELLOW}│   ${BOLD}sudo dnf install fcitx5 fcitx5-gtk fcitx5-qt fcitx5-configtool${NC}${YELLOW}                │${NC}"
-  else
-    echo -e "${YELLOW}│   Instale: fcitx5-im fcitx5-gtk fcitx5-qt                                       │${NC}"
-  fi
-  echo -e "${YELLOW}│                                                                                 │${NC}"
-  echo -e "${YELLOW}│ Após instalar, basta rodar novamente: ${BOLD}./bin/kde-config init${NC}${YELLOW} ou ${BOLD}fix-keyboard${NC}${YELLOW}        │${NC}"
-  echo -e "${YELLOW}└─────────────────────────────────────────────────────────────────────────────────┘${NC}"
+fi
+
+# 8. Locale de composição — é o que decide entre "ç" e "ć". Sem
+#    LC_CTYPE=pt_BR.UTF-8 o libxkbcommon usa a tabela en_US, que mapeia
+#    <dead_acute> <c> para "ć".
+if [ "${LC_CTYPE:-}" = "pt_BR.UTF-8" ]; then
+  printf "LC_CTYPE=%s\n" "$LC_CTYPE"
+else
+  printf "LC_CTYPE=%s (esperado pt_BR.UTF-8 para a cedilha; faca logout/login apos 'fix-keyboard')\n" "${LC_CTYPE:-<vazio>}"
 fi

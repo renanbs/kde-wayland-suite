@@ -126,17 +126,38 @@ if [ "${BATTERY_FIX_PCIE_ASPM:-0}" = "1" ]; then
         if [ "$ASPM_CURRENT" = "powersave" ] || [ "$ASPM_CURRENT" = "powersupersave" ]; then
             echo -e "  ${GREEN}[OK]${NC} Já em modo econômico ($ASPM_CURRENT). Nada a fazer."
         else
-            if sudo sh -c "echo powersave > '$ASPM_FILE'" 2>/dev/null; then
+            # Captura o erro real em vez de descartá-lo: a escrita pode falhar
+            # com "Operation not permitted" MESMO como root quando o firmware
+            # (ACPI FADT) declara não suportar ASPM e não entrega o controle ao
+            # SO. Culpar o sudo nesse caso é diagnóstico errado.
+            ASPM_ERR="$(sudo sh -c "echo powersave > '$ASPM_FILE'" 2>&1 >/dev/null)"
+            ASPM_RC=$?
+
+            if [ "$ASPM_RC" -eq 0 ]; then
                 echo -e "  ${GREEN}[OK]${NC} Política ASPM aplicada: powersave (efeito imediato)."
                 APPLIED_ANY=1
             else
-                echo -e "  ${RED}[ERRO]${NC} Falha ao escrever em $ASPM_FILE (precisa de sudo)."
+                echo -e "  ${RED}[ERRO]${NC} Falha ao escrever em $ASPM_FILE."
+                [ -n "$ASPM_ERR" ] && echo -e "         Erro real: ${BOLD}${ASPM_ERR}${NC}"
+                if echo "$ASPM_ERR" | grep -qi "not permitted"; then
+                    echo -e "         Isso costuma significar que o firmware (ACPI FADT) declara não suportar"
+                    echo -e "         PCIe ASPM e não entrega o controle ao sistema operacional — a escrita"
+                    echo -e "         falha até como root. Confirme com: ${BOLD}journalctl -k -b | grep -i aspm${NC}"
+                    echo -e "         Não há correção por software; só forçando 'pcie_aspm=force' no boot,"
+                    echo -e "         o que é arriscado justamente porque o firmware declara não suportar."
+                fi
             fi
 
-            if [ "${BATTERY_FIX_PCIE_ASPM_PERSIST:-0}" = "1" ]; then
+            # Só faz sentido persistir algo que funcionou agora. Criar o serviço
+            # após uma escrita que falhou deixaria uma unidade quebrada
+            # habilitada, falhando em todo boot.
+            if [ "${BATTERY_FIX_PCIE_ASPM_PERSIST:-0}" != "1" ]; then
+                [ "$ASPM_RC" -eq 0 ] && echo -e "  ${BLUE}[INFO]${NC} Mudança não persiste após reboot (BATTERY_FIX_PCIE_ASPM_PERSIST não foi setada)."
+            elif [ "$ASPM_RC" -ne 0 ]; then
+                echo -e "  ${YELLOW}[PULADO]${NC} Serviço de persistência NÃO criado: a aplicação imediata falhou, então ele falharia em todo boot."
+            else
                 UNIT_FILE="/etc/systemd/system/kde-suite-pcie-aspm.service"
-                echo "ASPM_UNIT_FILE=$UNIT_FILE" >> "$MANIFEST"
-                sudo tee "$UNIT_FILE" > /dev/null << 'EOF'
+                if sudo tee "$UNIT_FILE" > /dev/null << 'EOF'
 [Unit]
 Description=kde-wayland-suite: aplica politica PCIe ASPM powersave no boot
 After=multi-user.target
@@ -148,11 +169,20 @@ ExecStart=/bin/sh -c 'echo powersave > /sys/module/pcie_aspm/parameters/policy'
 [Install]
 WantedBy=multi-user.target
 EOF
-                sudo systemctl daemon-reload
-                sudo systemctl enable --now kde-suite-pcie-aspm.service
-                echo -e "  ${GREEN}[OK]${NC} Serviço kde-suite-pcie-aspm.service criado e habilitado — política persiste após reboot."
-            else
-                echo -e "  ${BLUE}[INFO]${NC} Mudança não persiste após reboot (BATTERY_FIX_PCIE_ASPM_PERSIST não foi setada)."
+                then
+                    echo "ASPM_UNIT_FILE=$UNIT_FILE" >> "$MANIFEST"
+                    sudo systemctl daemon-reload
+                    # Verifica o resultado real do enable --now antes de declarar sucesso.
+                    if sudo systemctl enable --now kde-suite-pcie-aspm.service >/dev/null 2>&1; then
+                        echo -e "  ${GREEN}[OK]${NC} Serviço kde-suite-pcie-aspm.service criado e habilitado — política persiste após reboot."
+                    else
+                        echo -e "  ${RED}[ERRO]${NC} Serviço criado, mas falhou ao habilitar/iniciar. Diagnostique com:"
+                        echo -e "         ${BOLD}systemctl status kde-suite-pcie-aspm.service${NC}"
+                        echo -e "         Remova o serviço quebrado com: ${BOLD}./bin/kde-config battery-revert${NC}"
+                    fi
+                else
+                    echo -e "  ${RED}[ERRO]${NC} Falha ao criar $UNIT_FILE."
+                fi
             fi
         fi
     fi

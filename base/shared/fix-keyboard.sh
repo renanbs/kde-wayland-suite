@@ -219,6 +219,11 @@ X-KDE-autostart-phase=2
 NoDisplay=true
 EOF
     echo -e "    ${GREEN}[OK]${NC} Autostart de auto-cura do layout instalado (protege contra o bug de colapso do kxkbrc no reboot)."
+elif [ -f "$autoheal_desktop" ]; then
+    # Distingue "não instalei agora" de "não está instalada": sem
+    # KDE_SUITE_LAYOUT_AUTOHEAL=1 nada é reescrito, mas uma auto-cura
+    # instalada antes continua ativa — dizer o contrário confunde o usuário.
+    echo -e "    ${GREEN}[OK]${NC} Auto-cura do layout no login já estava instalada e segue ativa (não reescrita nesta execução)."
 else
     echo -e "    ${YELLOW}[INFO]${NC} Auto-cura do layout no login não instalada (opcional). Para habilitar: KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config fix-keyboard"
 fi

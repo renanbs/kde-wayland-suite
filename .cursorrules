@@ -2,13 +2,27 @@
 
 You have access to the `kde-wayland-suite` in this repository.
 
-When the user asks about keyboard layouts (ABNT2, US-intl, cedilla in Chrome/Orca/Electron), broken shortcuts (Ctrl+C), or touchpad gestures in KDE Plasma 6 Wayland:
+When the user asks about keyboard layouts (ABNT2, US-intl, cedilla), broken
+shortcuts (Ctrl+C / Ctrl+V stopping system-wide), touchpad gestures, the
+Logitech MX Master 3S, or battery/power consumption in KDE Plasma 6 Wayland:
 
-1. To run a full diagnostic:
-   execute `./bin/kde-config status` or `make check`
-2. To fix keyboard shortcuts and configure complete cedilla support (US-intl, Chrome, Orca, Electron, GTK, Qt):
-   execute `./bin/kde-config fix-keyboard` or `make fix-keyboard`
-3. To configure touchpad gestures (libinput-gestures):
-   execute `./bin/kde-config gestures` or `make gestures`
-4. To switch active keyboard layout:
-   execute `./bin/kde-config switch br` or `./bin/kde-config switch us`
+1. Full diagnostic:
+   `./bin/kde-config status` or `make check`
+2. Fix keyboard shortcuts and cedilla support (US-intl, Chrome, Orca, Electron, GTK, Qt):
+   `./bin/kde-config fix-keyboard` or `make fix-keyboard`
+3. Touchpad gestures (libinput-gestures):
+   `./bin/kde-config gestures` or `make gestures`
+4. Logitech MX Master 3S (logiops):
+   `./bin/kde-config mouse` or `make mouse`
+5. Battery/power diagnostic (read-only):
+   `./bin/kde-config battery-status` or `make battery-status`
+6. Switch active keyboard layout:
+   `./bin/kde-config switch br` or `./bin/kde-config switch us`
+
+Never apply a battery fix without asking the user first — `battery-apply` only
+acts on the `BATTERY_FIX_*` variables you pass, and each one is opt-in.
+`battery-revert` undoes the last application.
+
+Report every command using the standardized output format defined in
+`base/shared/OUTPUT-CONTRACT.md`: **Plano** → **Execução** → **Resumo**. It is
+identical across Claude Code, Cursor, OMP, OpenCode and Antigravity.

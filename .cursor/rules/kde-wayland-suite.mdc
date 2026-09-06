@@ -1,5 +1,5 @@
 ---
-description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (Ctrl+C ABNT2 fix), cedilla on US-intl (Chrome, Orca IDE, Electron, GTK, Qt via LC_CTYPE, XCompose & Wayland IME flags), and touchpad gestures via CLI and agent.
+description: Comprehensive KDE Plasma 6 Wayland configuration suite — system-wide Ctrl+key breakage fixes, cedilla on US-intl via the native pt_BR compose table (LC_CTYPE, no input method), touchpad gestures, Logitech MX Master 3S, and battery/power diagnostics.
 globs: *
 alwaysApply: true
 ---
@@ -14,11 +14,21 @@ Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar 
 # Diagnóstico de saúde do ambiente
 ./bin/kde-config status
 
-# Correção de atalhos (Ctrl+C) no ABNT2 e configuração de cedilha (Chrome, Orca, Electron, US-intl)
+# Atalhos (Ctrl+<tecla>), cedilha e clipboard
 ./bin/kde-config fix-keyboard
 
-# Configuração de gestos de touchpad (libinput-gestures)
+# Gestos de touchpad (libinput-gestures)
 ./bin/kde-config gestures
+
+# Logitech MX Master 3S (logiops)
+./bin/kde-config mouse
+
+# Bateria/energia — diagnóstico (só leitura)
+./bin/kde-config battery-status
+
+# Bateria/energia — aplicar/reverter correções escolhidas pelo usuário
+BATTERY_FIX_GPU_PRIMARY=1 ./bin/kde-config battery-apply
+./bin/kde-config battery-revert
 
 # Alternar layout ativo via D-Bus
 ./bin/kde-config switch [br|us]
@@ -27,4 +37,14 @@ Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar 
 ## Arquitetura de Execução
 
 - Sempre invoque `./bin/kde-config` ou `make <target>` para aplicar alterações no sistema de forma atômica e com backup.
-- Os scripts canônicos residem em `shared/` (`check-status.sh`, `fix-keyboard.sh`, `configure-gestures.sh`).
+- A fonte canônica dos scripts é `base/shared/`; `bin/`, `shared/` e `commands/` na raiz são symlinks de compatibilidade para `base/`.
+- **Nunca** aplique correções de bateria sem perguntar antes: cada correção é opt-in via variável `BATTERY_FIX_*`, e `battery-apply` sem nenhuma delas não faz nada.
+
+## Armadilhas conhecidas (documentadas em `base/shared/SKILL.md`)
+
+- Ao escrever `~/.config/kxkbrc`, `LayoutList` e `VariantList` precisam ter o mesmo número de entradas no momento em que o KWin recarrega. Se divergirem, o KWin falha ao compilar o keymap e o `Ctrl+<tecla>` para de funcionar no sistema inteiro até um **reboot completo**. Grave `VariantList`/`DisplayNames` sem `--notify` e só notifique na última escrita (`LayoutList`).
+- O `fcitx5` sob Wayland faz grab do teclado e engole `Ctrl+<tecla>` em Qt, GTK e Electron. A suite o desativa; a cedilha não precisa dele (vem da tabela `pt_BR` do sistema, selecionada por `LC_CTYPE=pt_BR.UTF-8`).
+
+## Formato de saída
+
+Reporte **todo** comando no formato padronizado de `base/shared/OUTPUT-CONTRACT.md`: **Plano** → **Execução** → **Resumo**, idêntico em Claude Code, Cursor, OMP, OpenCode e Antigravity.

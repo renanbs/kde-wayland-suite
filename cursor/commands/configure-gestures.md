@@ -1,0 +1,1 @@
+../../commands/configure-gestures.md

@@ -1,0 +1,1 @@
+../../base/shared/configure-battery.sh

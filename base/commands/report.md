@@ -1,5 +1,5 @@
 ---
-description: Mostra o relatório da última execução da suíte (o que passou, falhou ou foi pulado) e a tendência histórica das métricas, como a saúde da bateria ao longo do tempo.
+description: Mostra o relatório da última execução da suíte (o que passou, falhou ou foi pulado), histórico numerado e seleção interativa, com ações recomendadas para resolver pontos não conformes.
 ---
 
 # /report
@@ -10,13 +10,17 @@ Relatório das execuções da suíte, montado a partir dos **eventos estruturado
 ./bin/kde-config report
 ```
 
-Variações:
+### Variações e Seleção de Relatórios:
 
 ```bash
-./bin/kde-config report            # última execução + tendência histórica
-./bin/kde-config report 10         # lista as 10 execuções mais recentes
-./bin/kde-config report --history  # só a tendência das métricas
+./bin/kde-config report            # Exibe a última execução + tendência histórica
+./bin/kde-config report --list     # Lista os relatórios recentes numerados [1..N]
+./bin/kde-config report 3          # Exibe detalhadamente o 3º relatório mais recente
+./bin/kde-config report --select   # Abre menu interativo no terminal para escolher o relatório
+./bin/kde-config report --history  # Exibe apenas a tendência histórica das métricas
 ```
+
+---
 
 ## Onde os dados ficam
 
@@ -42,15 +46,13 @@ Mantém os **50 runs** mais recentes por padrão. Ajustável:
 
 ## Para agentes de IA
 
-Prefira **ler `events.tsv`** a parsear a saída do terminal: o texto é colorido, está em português e muda a cada ajuste de redação, enquanto os ids dos eventos são estáveis. Use os eventos para montar as fases **Execução** e **Resumo** do formato padronizado abaixo.
-
-Se o usuário perguntar "o que mudou?", "deu certo?" ou "está piorando?", este comando responde sem precisar reexecutar nada — e sem depender do que ainda estiver no scrollback.
+Prefira **ler `events.tsv`** a parsear a saída do terminal: os IDs dos eventos são estruturados e estáveis. Use os eventos para montar as fases **Execução**, **Resumo** e **Ações Recomendadas** do formato padronizado abaixo.
 
 ---
 
 ## Formato de saída (obrigatório e idêntico em todas as ferramentas)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Reporte sempre nestas fases, nesta ordem, com estes títulos exatos.
 
 **1. Plano** — antes de executar qualquer coisa:
 
@@ -76,9 +78,6 @@ Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
 | Como reverter | o comando exato |
 | Requer | `nada` \| `logout/login` \| `reboot` |
 
-**Regras:**
+**4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e repita no texto.
+- `• <Descrição do problema>`: `comando exato para corrigir`

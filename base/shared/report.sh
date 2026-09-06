@@ -2,11 +2,19 @@
 set -uo pipefail
 
 # ==============================================================================
-# report.sh — Relatório da última execução + tendência histórica.
+# report.sh — Relatório da última execução, histórico e seleção interativa.
 #
 # Lê os runs gravados por lib-runlog.sh (eventos estruturados, não o texto
-# colorido) e monta um relatório legível com ações recomendadas para resolver
-# pontos não conformes (avisos e falhas).
+# colorido) e monta relatórios detalhados com ações recomendadas para resolver
+# pontos não conformes.
+#
+# Uso:
+#   report.sh                   -> exibe a última execução + tendência de métricas
+#   report.sh --list [n]        -> lista as n últimas execuções numeradas [1..n]
+#   report.sh <1..n>            -> exibe detalhadamente o n-ésimo relatório mais recente
+#   report.sh <timestamp/id>    -> exibe um relatório específico pelo timestamp/nome
+#   report.sh --select          -> menu interativo de seleção de relatório no terminal
+#   report.sh --history         -> exibe apenas a tendência histórica das métricas
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -24,8 +32,7 @@ if [ ! -d "$RUNLOG_ROOT" ] || [ -z "$(find "$RUNLOG_ROOT" -mindepth 1 -maxdepth 
     exit 0
 fi
 
-# Traduz o status do evento para um marcador visual, alinhado ao contrato de
-# saída padronizado da suíte (ver shared/OUTPUT-CONTRACT.md).
+# Traduz o status do evento para um marcador visual (OUTPUT-CONTRACT.md)
 marker_for() {
     case "$1" in
         ok)     printf '%b' "${GREEN}✅${NC}" ;;
@@ -40,10 +47,19 @@ human_time() {
     date -d "@$1" '+%d/%m/%Y às %H:%M:%S' 2>/dev/null || echo "$1"
 }
 
+get_all_runs_sorted() {
+    find "$RUNLOG_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r
+}
+
 show_run() {
     local dir="$1"
     local meta="$dir/meta.env"
     local events="$dir/events.tsv"
+
+    if [ ! -d "$dir" ]; then
+        echo -e "${RED}Erro: Diretório de relatório não encontrado: $dir${NC}"
+        return 1
+    fi
 
     local command_name="?" exit_code="?" started="" duration="?"
     if [ -f "$meta" ]; then
@@ -54,12 +70,16 @@ show_run() {
         duration="$(grep -oP '(?<=^DURATION_SECONDS=).*' "$meta" 2>/dev/null || echo '?')"
     fi
 
-    echo -e "${BOLD}Comando:${NC} $command_name"
-    [ -n "$started" ] && echo -e "${BOLD}Quando:${NC}  $(human_time "$started")  (${duration}s)"
+    local folder_name
+    folder_name="$(basename "$dir")"
+
+    echo -e "${BOLD}Relatório:${NC} $folder_name"
+    echo -e "${BOLD}Comando:${NC}   $command_name"
+    [ -n "$started" ] && echo -e "${BOLD}Quando:${NC}    $(human_time "$started")  (${duration}s)"
     if [ "$exit_code" = "0" ]; then
-        echo -e "${BOLD}Saída:${NC}   ${GREEN}sucesso (código 0)${NC}"
+        echo -e "${BOLD}Saída:${NC}     ${GREEN}sucesso (código 0)${NC}"
     else
-        echo -e "${BOLD}Saída:${NC}   ${RED}falha (código $exit_code)${NC}"
+        echo -e "${BOLD}Saída:${NC}     ${RED}falha (código $exit_code)${NC}"
     fi
     echo ""
 
@@ -174,51 +194,146 @@ show_history() {
 }
 
 list_runs() {
-    local limit="$1"
+    local limit="${1:-10}"
     echo -e "${BOLD}${BLUE}======================================================${NC}"
-    echo -e "${BOLD}${BLUE}   Últimas $limit execuções                           ${NC}"
+    echo -e "${BOLD}${BLUE}   Relatórios de Execuções Recentes (Histórico)       ${NC}"
     echo -e "${BOLD}${BLUE}======================================================${NC}"
     echo ""
-    find "$RUNLOG_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r | head -n "$limit" \
-    | while IFS= read -r dir; do
-        local meta="$dir/meta.env" cmd="?" code="?" started=""
+    echo -e "ÍNDICE | DATA & HORA           | COMANDO          | STATUS"
+    echo -e "------------------------------------------------------------------"
+
+    local idx=1
+    local run_dirs=()
+    mapfile -t run_dirs < <(get_all_runs_sorted | head -n "$limit")
+
+    for dir in "${run_dirs[@]}"; do
+        local meta="$dir/meta.env" cmd="?" code="?" started="" duration="?"
         if [ -f "$meta" ]; then
             cmd="$(grep -oP '(?<=^COMMAND=).*' "$meta" 2>/dev/null || echo '?')"
             code="$(grep -oP '(?<=^EXIT_CODE=).*' "$meta" 2>/dev/null || echo '?')"
             started="$(grep -oP '(?<=^STARTED_AT=).*' "$meta" 2>/dev/null || echo '')"
+            duration="$(grep -oP '(?<=^DURATION_SECONDS=).*' "$meta" 2>/dev/null || echo '?')"
         fi
-        local n_fail=0
-        [ -s "$dir/events.tsv" ] && n_fail="$(awk -F'\t' '$2=="fail"' "$dir/events.tsv" 2>/dev/null | wc -l)"
 
-        local mark="${GREEN}✅${NC}"
-        [ "$code" != "0" ] && mark="${RED}❌${NC}"
-        [ "$n_fail" -gt 0 ] && mark="${RED}❌${NC}"
+        local n_fail=0 n_warn=0 n_ok=0
+        if [ -s "$dir/events.tsv" ]; then
+            n_fail="$(awk -F'\t' '$2=="fail"' "$dir/events.tsv" 2>/dev/null | wc -l)"
+            n_warn="$(awk -F'\t' '$2=="warn"' "$dir/events.tsv" 2>/dev/null | wc -l)"
+            n_ok="$(awk -F'\t' '$2=="ok"' "$dir/events.tsv" 2>/dev/null | wc -l)"
+        fi
 
-        printf '  %b %-16s %s' "$mark" "$cmd" "$( [ -n "$started" ] && human_time "$started" )"
-        [ "$n_fail" -gt 0 ] && printf '  (%s falha(s))' "$n_fail"
-        printf '\n'
+        local mark="${GREEN}✅ sucesso${NC}"
+        if [ "$code" != "0" ] || [ "$n_fail" -gt 0 ]; then
+            mark="${RED}❌ falha ($code)${NC}"
+        elif [ "$n_warn" -gt 0 ]; then
+            mark="${YELLOW}⚠️ aviso ($n_warn)${NC}"
+        fi
+
+        local time_str="?"
+        [ -n "$started" ] && time_str="$(human_time "$started")"
+
+        printf " [\033[1;96m%2d\033[0m]  | %-21s | %-16s | %b\n" "$idx" "$time_str" "$cmd" "$mark"
+        idx=$((idx + 1))
     done
+
+    echo "------------------------------------------------------------------"
+    echo -e "💡 ${BOLD}Para exibir qualquer relatório detalhado:${NC}"
+    echo -e "   ./bin/kde-config report <número>    (exemplo: ./bin/kde-config report 1)"
+    echo -e "   ./bin/kde-config report --select    (para abrir menu interativo)"
 }
 
-case "${1:-}" in
+select_run_interactive() {
+    list_runs 15
+    local total
+    total="$(get_all_runs_sorted | head -n 15 | wc -l)"
+
+    if [ "$total" -eq 0 ]; then
+        return 0
+    fi
+
+    echo ""
+    read -r -p "Escolha o número do relatório para exibir [1-$total] (ou 'q' para sair): " choice
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "$total" ]; then
+        local target_dir
+        target_dir="$(get_all_runs_sorted | sed -n "${choice}p")"
+        echo ""
+        echo -e "${BOLD}${BLUE}======================================================${NC}"
+        echo -e "${BOLD}${BLUE}   Exibindo Relatório [$choice]                       ${NC}"
+        echo -e "${BOLD}${BLUE}======================================================${NC}"
+        echo ""
+        show_run "$target_dir"
+    elif [ "$choice" = "q" ] || [ "$choice" = "Q" ]; then
+        echo "[*] Operação cancelada."
+    else
+        echo -e "${RED}Opção inválida.${NC}"
+    fi
+}
+
+show_by_index_or_name() {
+    local target="$1"
+
+    # Se for um número de índice (ex: 1, 2, 3...)
+    if [[ "$target" =~ ^[0-9]+$ ]] && [ "$target" -lt 100 ]; then
+        local target_dir
+        target_dir="$(get_all_runs_sorted | sed -n "${target}p")"
+        if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
+            echo -e "${BOLD}${BLUE}======================================================${NC}"
+            echo -e "${BOLD}${BLUE}   Relatório [Posição $target]                        ${NC}"
+            echo -e "${BOLD}${BLUE}======================================================${NC}"
+            echo ""
+            show_run "$target_dir"
+            return 0
+        else
+            echo -e "${RED}Relatório com índice [$target] não encontrado.${NC}"
+            echo "Execute './bin/kde-config report --list' para ver os relatórios disponíveis."
+            return 1
+        fi
+    fi
+
+    # Se for um caminho ou nome de pasta de timestamp
+    local direct_path="$RUNLOG_ROOT/$target"
+    if [ -d "$direct_path" ]; then
+        echo -e "${BOLD}${BLUE}======================================================${NC}"
+        echo -e "${BOLD}${BLUE}   Relatório: $target                                 ${NC}"
+        echo -e "${BOLD}${BLUE}======================================================${NC}"
+        echo ""
+        show_run "$direct_path"
+        return 0
+    fi
+
+    echo -e "${RED}Opção ou relatório desconhecido: '$target'.${NC}"
+    echo "Uso: ./bin/kde-config report [--list | --select | <número_do_índice> | --history]"
+    return 1
+}
+
+PARAM="${1:-}"
+
+case "$PARAM" in
     --history|-h)
         show_history
         ;;
-    ''|--last)
+    --list|-l)
+        list_runs "${2:-10}"
+        ;;
+    --select|-s|-i)
+        select_run_interactive
+        ;;
+    '')
         LATEST="$(find "$RUNLOG_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
         echo -e "${BOLD}${BLUE}======================================================${NC}"
-        echo -e "${BOLD}${BLUE}   Última execução                                    ${NC}"
+        echo -e "${BOLD}${BLUE}   Última Execução (Relatório Recente)                ${NC}"
         echo -e "${BOLD}${BLUE}======================================================${NC}"
         echo ""
         show_run "$LATEST"
         echo ""
         show_history
-        ;;
-    *[0-9]*)
-        list_runs "$1"
+        echo ""
+        echo -e "💡 ${BLUE}[DICA]${NC} Para listar e escolher relatórios anteriores:"
+        echo -e "   • Listar histórico:  ${BOLD}./bin/kde-config report --list${NC}"
+        echo -e "   • Abrir por índice:  ${BOLD}./bin/kde-config report 2${NC} (abre o 2º mais recente)"
+        echo -e "   • Menu interativo:   ${BOLD}./bin/kde-config report --select${NC}"
         ;;
     *)
-        echo "Uso: report.sh [<n> | --history]"
-        exit 1
+        show_by_index_or_name "$PARAM"
         ;;
 esac

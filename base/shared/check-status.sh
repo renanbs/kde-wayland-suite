@@ -103,14 +103,49 @@ fi
 # B. Fcitx5 — deve estar DESLIGADO: sob Wayland ele faz grab do teclado e
 #    engole Ctrl+<tecla> (copiar/colar/desfazer) em Qt, GTK e Electron.
 #    A cedilha não precisa dele (a tabela pt_BR do sistema já cobre).
+#
+#    O pacote fcitx5 instala seu próprio autostart em /etc/xdg/autostart/
+#    (separado de ~/.config/autostart/, e o KDE funde os dois no login).
+#    Verificar só a ausência do arquivo do usuário não basta: sem uma máscara
+#    (Hidden=true) sobrepondo a cópia de sistema, o fcitx5 volta no próximo
+#    login mesmo com ~/.config/autostart limpo — visto em produção.
+USER_FCITX_DESKTOP="$HOME/.config/autostart/org.fcitx.Fcitx5.desktop"
+SYSTEM_FCITX_DESKTOP=""
+for f in /etc/xdg/autostart/org.fcitx.Fcitx5.desktop /usr/share/autostart/org.fcitx.Fcitx5.desktop; do
+    [ -f "$f" ] && SYSTEM_FCITX_DESKTOP="$f" && break
+done
+
 if pgrep -x fcitx5 >/dev/null 2>&1; then
     echo -e "  • ${RED}[FALHA]${NC} fcitx5 está rodando — ele quebra Ctrl+<tecla> no sistema inteiro sob Wayland."
-    echo -e "    Corrija com: ${BOLD}./bin/kde-config fix-keyboard${NC} (encerra o processo e remove o autostart)."
-elif [ -f "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop" ]; then
-    echo -e "  • ${YELLOW}[AVISO]${NC} fcitx5 não está rodando, mas o autostart existe — ele volta no próximo login e quebrará o Ctrl+<tecla>."
+    echo -e "    Corrija com: ${BOLD}./bin/kde-config fix-keyboard${NC} (encerra o processo e mascara o autostart)."
+elif [ -f "$USER_FCITX_DESKTOP" ] && grep -qi "^Hidden=true" "$USER_FCITX_DESKTOP" 2>/dev/null; then
+    echo -e "  • ${GREEN}[OK]${NC} fcitx5 desligado e mascarado (Ctrl+<tecla> preservado)."
+elif [ -n "$SYSTEM_FCITX_DESKTOP" ]; then
+    echo -e "  • ${RED}[FALHA]${NC} fcitx5 não está rodando agora, mas o pacote tem autostart de sistema em $SYSTEM_FCITX_DESKTOP sem máscara em ~/.config/autostart — ele volta no próximo login e quebrará o Ctrl+<tecla>."
+    echo -e "    Corrija com: ${BOLD}./bin/kde-config fix-keyboard${NC}"
+elif [ -f "$USER_FCITX_DESKTOP" ]; then
+    echo -e "  • ${YELLOW}[AVISO]${NC} fcitx5 não está rodando, mas o autostart do usuário existe sem Hidden=true — ele volta no próximo login."
     echo -e "    Corrija com: ${BOLD}./bin/kde-config fix-keyboard${NC}"
 else
-    echo -e "  • ${GREEN}[OK]${NC} fcitx5 desligado e sem autostart (Ctrl+<tecla> preservado)."
+    echo -e "  • ${GREEN}[OK]${NC} fcitx5 desligado e sem autostart de sistema ou de usuário (Ctrl+<tecla> preservado)."
+fi
+
+# Sugestão de remoção — não automática. Se o pacote está instalado, ele não
+# serve mais a nenhum propósito nesta suite (cedilha vem de LC_CTYPE), então
+# mascarar o autostart é uma solução parcial; desinstalar elimina a causa.
+if command -v fcitx5 >/dev/null 2>&1; then
+    UNINSTALL_CMD=""
+    if command -v pacman >/dev/null 2>&1; then
+        UNINSTALL_CMD="sudo pacman -Rns fcitx5 fcitx5-gtk fcitx5-qt fcitx5-configtool"
+    elif command -v apt >/dev/null 2>&1; then
+        UNINSTALL_CMD="sudo apt remove fcitx5 fcitx5-frontend-gtk3 fcitx5-frontend-qt5"
+    elif command -v dnf >/dev/null 2>&1; then
+        UNINSTALL_CMD="sudo dnf remove fcitx5 fcitx5-gtk fcitx5-qt fcitx5-configtool"
+    fi
+    if [ -n "$UNINSTALL_CMD" ]; then
+        echo -e "  • ${BLUE}[INFO]${NC} fcitx5 está instalado mas não serve a nenhum propósito nesta suite (a cedilha vem de LC_CTYPE, sem input method). Mascarar o autostart evita o bug, mas remover o pacote elimina a causa:"
+        echo -e "    ${BOLD}${UNINSTALL_CMD}${NC}"
+    fi
 fi
 
 # C. ~/.XCompose — não é mais usado. As regras que a suite escrevia eram

@@ -48,14 +48,49 @@ unset GTK_IM_MODULE QT_IM_MODULE XMODIFIERS 2>/dev/null || true
 #    confuso. Matar o processo restaura o Ctrl na hora; reiniciá-lo quebra de
 #    novo, de forma determinística. E ele é dispensável: a cedilha funciona
 #    nativamente via LC_CTYPE (passo 2 abaixo).
+#
+#    IMPORTANTE: o PACOTE fcitx5 instala seu próprio autostart em
+#    /etc/xdg/autostart/org.fcitx.Fcitx5.desktop — um local separado de
+#    ~/.config/autostart/, e o KDE funde os dois no login. Remover só a cópia
+#    do usuário não basta: a de sistema reaparece a cada boot e sobe o fcitx5
+#    de novo (visto em produção, mesmo sem nenhum arquivo em
+#    ~/.config/autostart). O jeito correto de desativar um autostart de
+#    sistema por usuário no XDG é MASCARÁ-LO: gravar um .desktop de mesmo
+#    nome em ~/.config/autostart/ com Hidden=true, não apenas deixar de
+#    instalar uma cópia.
 if [ -f "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop" ]; then
     backup_if_exists "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop"
-    rm -f "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop"
-    echo -e "    ${GREEN}[OK]${NC} Autostart do fcitx5 desativado (quebra Ctrl+<tecla>; não é necessário para a cedilha)."
 fi
+mkdir -p "$HOME/.config/autostart"
+cat << 'EOF' > "$HOME/.config/autostart/org.fcitx.Fcitx5.desktop"
+[Desktop Entry]
+Type=Application
+Name=Fcitx 5 (desativado pelo KDE Wayland Suite)
+Hidden=true
+EOF
+echo -e "    ${GREEN}[OK]${NC} Autostart do fcitx5 mascarado (quebra Ctrl+<tecla>; não é necessário para a cedilha) — inclusive a cópia de sistema em /etc/xdg/autostart."
 if pgrep -x fcitx5 >/dev/null 2>&1; then
     pkill -x fcitx5 2>/dev/null || true
     echo -e "    ${GREEN}[OK]${NC} Processo fcitx5 encerrado (restaura Ctrl+<tecla> imediatamente)."
+fi
+
+# Sugestão de remoção — não automática. O autostart já está mascarado (acima),
+# então o pacote instalado não é mais um risco ativo; mas como ele não serve a
+# nenhum propósito nesta suite, desinstalar elimina a causa em vez de só
+# neutralizá-la.
+if command -v fcitx5 >/dev/null 2>&1; then
+    UNINSTALL_CMD=""
+    if command -v pacman >/dev/null 2>&1; then
+        UNINSTALL_CMD="sudo pacman -Rns fcitx5 fcitx5-gtk fcitx5-qt fcitx5-configtool"
+    elif command -v apt >/dev/null 2>&1; then
+        UNINSTALL_CMD="sudo apt remove fcitx5 fcitx5-frontend-gtk3 fcitx5-frontend-qt5"
+    elif command -v dnf >/dev/null 2>&1; then
+        UNINSTALL_CMD="sudo dnf remove fcitx5 fcitx5-gtk fcitx5-qt fcitx5-configtool"
+    fi
+    if [ -n "$UNINSTALL_CMD" ]; then
+        echo -e "    ${BLUE}[INFO]${NC} O autostart do fcitx5 está mascarado, mas o pacote continua instalado sem nenhum uso nesta suite. Considere remover:"
+        echo -e "        ${BOLD}${UNINSTALL_CMD}${NC}"
+    fi
 fi
 
 echo -e "${BOLD}${BLUE}==> [2/6] Configurando locale de composição (cedilha)...${NC}"

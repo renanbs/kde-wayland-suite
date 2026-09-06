@@ -109,7 +109,27 @@ if [ -f "$ASPM_FILE" ]; then
     ASPM_RAW="$(cat "$ASPM_FILE" 2>/dev/null)"
     ASPM_CURRENT="$(echo "$ASPM_RAW" | grep -oP '(?<=\[)[a-z]+(?=\])')"
     echo -e "  • Política atual: ${BOLD}${ASPM_CURRENT}${NC} (opções: $ASPM_RAW)"
-    if [ "$ASPM_CURRENT" = "performance" ] || [ "$ASPM_CURRENT" = "default" ]; then
+
+    # O arquivo existir não significa que dá para escrever nele: se o firmware
+    # (ACPI FADT) declara não suportar ASPM, o kernel não assume o controle e a
+    # escrita falha com "Operation not permitted" até como root. Recomendar
+    # 'powersave' nesse caso seria um achado falso — impossível de aplicar.
+    # NÃO use 'journalctl | grep -q' aqui: com 'set -o pipefail' (ativo no topo
+    # deste script), o grep -q sai na primeira linha casada e fecha o pipe, o
+    # journalctl morre de SIGPIPE, e o status do pipeline vira falha — o teste
+    # daria negativo mesmo havendo casamento. A substituição de comando abaixo
+    # lê toda a entrada e evita isso.
+    ASPM_NO_CONTROL=0
+    ASPM_KMSG="$(journalctl -k -b 2>/dev/null | grep -iE "does not support PCIe ASPM|doesn't support PCIe ASPM|FADT indicates ASPM is unsupported|OS doesn't have ASPM control" || true)"
+    if [ -n "$ASPM_KMSG" ]; then
+        ASPM_NO_CONTROL=1
+    fi
+
+    if [ "$ASPM_NO_CONTROL" = "1" ]; then
+        echo -e "  • ${BLUE}[INFO]${NC} O firmware desta máquina (ACPI FADT) declara ${BOLD}não suportar PCIe ASPM${NC} e não entrega o controle ao sistema operacional."
+        echo -e "    A política fica travada em '${ASPM_CURRENT}': escrever nela falha com 'Operation not permitted' mesmo como root."
+        echo -e "    ${BLUE}Não há correção aplicável por software${NC} — só forçando 'pcie_aspm=force' nos parâmetros de boot, o que é arriscado justamente porque o firmware declara não suportar. Nenhuma ação recomendada."
+    elif [ "$ASPM_CURRENT" = "performance" ] || [ "$ASPM_CURRENT" = "default" ]; then
         echo -e "  • ${YELLOW}[INFO]${NC} Política '${ASPM_CURRENT}' não é a mais econômica. 'powersave' permite que dispositivos PCIe (NVMe, Wi-Fi, GPU) entrem em estados de baixo consumo quando ociosos."
         echo -e "    ${YELLOW}Atenção${NC}: em raros casos, firmwares de NVMe/Wi-Fi com suporte a ASPM mal implementado podem ficar instáveis com 'powersave'. Reversível na hora (sysfs), sem necessidade de reboot."
         emit_finding "pcie_aspm_not_powersave" "current=${ASPM_CURRENT}"

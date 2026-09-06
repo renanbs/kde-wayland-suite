@@ -18,12 +18,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib-battery-gpu.sh
 source "$SCRIPT_DIR/lib-battery-gpu.sh"
 
+# Registro estruturado do run (histórico e relatório). Silencioso se ausente.
+if [ -f "$SCRIPT_DIR/lib-runlog.sh" ]; then
+    # shellcheck source=lib-runlog.sh
+    source "$SCRIPT_DIR/lib-runlog.sh"
+else
+    runlog_event() { :; }
+    runlog_metric() { :; }
+fi
+
 # Flags de máquina lidas pelo agente de IA (uma linha "FINDING:<id>:<detail>" por achado acionável)
 FINDINGS_FILE="${DIAGNOSE_BATTERY_FINDINGS_FILE:-}"
 emit_finding() {
     if [ -n "$FINDINGS_FILE" ]; then
         echo "FINDING:$1:$2" >> "$FINDINGS_FILE"
     fi
+    # Todo achado acionável também vira evento do run, para o 'report'.
+    runlog_event "warn" "$1" "$2"
 }
 [ -n "$FINDINGS_FILE" ] && : > "$FINDINGS_FILE"
 
@@ -48,12 +59,19 @@ if [ -n "$BAT_PATH" ]; then
     if [ -n "$ENERGY_FULL" ] && [ -n "$ENERGY_DESIGN" ]; then
         HEALTH="$(awk -v f="$ENERGY_FULL" -v d="$ENERGY_DESIGN" 'BEGIN { if (d>0) printf "%.1f", f*100/d; else print "?" }')"
         echo -e "  • Capacidade real: ${ENERGY_FULL} Wh / projeto de fábrica: ${ENERGY_DESIGN} Wh (${BOLD}${HEALTH}%${NC} de saúde)"
+        runlog_metric "battery_health_percent" "$HEALTH"
+        runlog_metric "battery_energy_full_wh" "$ENERGY_FULL"
         if awk -v h="$HEALTH" 'BEGIN { exit !(h+0 < 80) }' 2>/dev/null; then
             echo -e "    ${YELLOW}[INFO]${NC} Bateria com desgaste considerável. É degradação física da célula — não corrigível por software."
             emit_finding "battery_health_degraded" "health=${HEALTH}%"
         fi
     fi
-    [ -n "$STATE" ] && [ -n "$RATE" ] && echo -e "  • Estado: $STATE | Taxa atual de consumo: ${BOLD}${RATE} W${NC} | Carga: ${PERCENT:-?}%"
+    if [ -n "$STATE" ] && [ -n "$RATE" ]; then
+        echo -e "  • Estado: $STATE | Taxa atual de consumo: ${BOLD}${RATE} W${NC} | Carga: ${PERCENT:-?}%"
+        runlog_metric "battery_rate_w" "$RATE"
+        runlog_metric "battery_charge_percent" "${PERCENT:-0}"
+        runlog_event "info" "battery_state" "$STATE"
+    fi
 else
     echo -e "  • ${YELLOW}[INFO]${NC} Nenhuma bateria detectada via upower (desktop ou upowerd ausente)."
 fi
@@ -91,6 +109,7 @@ else
         echo -e "  • GPU que atende o painel interno (eDP): $EDP_CARD (PCI $EDP_PCI)"
         if [ "$FIRST_PCI" = "$EDP_PCI" ]; then
             echo -e "  • ${GREEN}[OK]${NC} A GPU primária do KWin já é a mesma que atende o painel interno. Sem cópia extra de frames entre GPUs."
+            runlog_event "ok" "gpu_primary" "primária=$FIRST_CARD igual à do painel interno"
         else
             echo -e "  • ${RED}[FALHA]${NC} A GPU primária do KWin (${FIRST_CARD}) é diferente da que atende o painel interno (${EDP_CARD})."
             echo -e "    Isso obriga o KWin a compor no ${FIRST_CARD} e copiar cada frame para o ${EDP_CARD} exibir — mantendo a GPU '${FIRST_CARD}' sempre ligada, mesmo sem uso real, e gastando energia extra à toa."
@@ -129,12 +148,14 @@ if [ -f "$ASPM_FILE" ]; then
         echo -e "  • ${BLUE}[INFO]${NC} O firmware desta máquina (ACPI FADT) declara ${BOLD}não suportar PCIe ASPM${NC} e não entrega o controle ao sistema operacional."
         echo -e "    A política fica travada em '${ASPM_CURRENT}': escrever nela falha com 'Operation not permitted' mesmo como root."
         echo -e "    ${BLUE}Não há correção aplicável por software${NC} — só forçando 'pcie_aspm=force' nos parâmetros de boot, o que é arriscado justamente porque o firmware declara não suportar. Nenhuma ação recomendada."
+        runlog_event "info" "pcie_aspm" "indisponível: firmware não entrega controle ao SO"
     elif [ "$ASPM_CURRENT" = "performance" ] || [ "$ASPM_CURRENT" = "default" ]; then
         echo -e "  • ${YELLOW}[INFO]${NC} Política '${ASPM_CURRENT}' não é a mais econômica. 'powersave' permite que dispositivos PCIe (NVMe, Wi-Fi, GPU) entrem em estados de baixo consumo quando ociosos."
         echo -e "    ${YELLOW}Atenção${NC}: em raros casos, firmwares de NVMe/Wi-Fi com suporte a ASPM mal implementado podem ficar instáveis com 'powersave'. Reversível na hora (sysfs), sem necessidade de reboot."
         emit_finding "pcie_aspm_not_powersave" "current=${ASPM_CURRENT}"
     else
         echo -e "  • ${GREEN}[OK]${NC} Já em modo econômico."
+        runlog_event "ok" "pcie_aspm" "política=$ASPM_CURRENT"
     fi
 else
     echo -e "  • ${BLUE}[INFO]${NC} $ASPM_FILE não existe (kernel sem suporte a ASPM configurável, ou desabilitado na BIOS)."
@@ -159,6 +180,8 @@ if [ "$PCI_TOTAL" -eq 0 ]; then
     echo -e "  • ${BLUE}[INFO]${NC} Nenhum dispositivo PCI com controle de runtime PM exposto em sysfs neste kernel."
 elif [ "${#PCI_NOT_AUTO[@]}" -eq 0 ]; then
     echo -e "  • ${GREEN}[OK]${NC} Todos os $PCI_TOTAL dispositivos PCI já estão com runtime PM em 'auto'."
+    runlog_event "ok" "pci_runtime_pm" "$PCI_TOTAL/$PCI_TOTAL em auto"
+    runlog_metric "pci_devices_on_instead_of_auto" "0"
 else
     echo -e "  • ${YELLOW}[INFO]${NC} ${#PCI_NOT_AUTO[@]} de $PCI_TOTAL dispositivos PCI com runtime PM fixo em 'on' (nunca suspendem sozinhos, mesmo ociosos):"
     for addr in "${PCI_NOT_AUTO[@]}"; do
@@ -167,6 +190,7 @@ else
     done
     echo -e "    ${YELLOW}Atenção${NC}: mudar para 'auto' deixa o kernel decidir quando suspender cada dispositivo; em casos raros, drivers com runtime PM mal implementado (certos NVMe/Wi-Fi) podem ficar instáveis. Reversível na hora (sysfs), sem necessidade de reboot."
     emit_finding "pci_runtime_pm_not_auto" "count=${#PCI_NOT_AUTO[@]};devices=$(IFS=,; echo "${PCI_NOT_AUTO[*]}")"
+    runlog_metric "pci_devices_on_instead_of_auto" "${#PCI_NOT_AUTO[@]}"
 fi
 
 # -----------------------------------------------------------------------------
@@ -200,6 +224,7 @@ echo -e "${BOLD}[6/6] CPU${NC}"
 GOVERNOR="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo '?')"
 PROFILE="$(powerprofilesctl get 2>/dev/null || echo '?')"
 echo -e "  • Governor: $GOVERNOR | Perfil de energia (power-profiles-daemon): $PROFILE"
+runlog_event "info" "cpu_governor" "$GOVERNOR / $PROFILE"
 
 echo ""
 echo -e "${BOLD}${BLUE}======================================================${NC}"

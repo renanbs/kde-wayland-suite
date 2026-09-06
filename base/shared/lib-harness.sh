@@ -2,81 +2,79 @@
 # ==============================================================================
 # lib-harness.sh — Detecção de Harness (Host de IA) e Perfil de Modelos
 #
-# Suporta detecção de:
-#   - OMP (Oh My Pi)
+# Suporta detecção precisa de:
+#   - OMP (Oh My Pi / Orca + Antigravity)
 #   - Claude Code
-#   - Cursor (IDE / CLI)
+#   - Cursor (IDE / Agent)
 #   - Antigravity
 #   - OpenCode
 #   - Terminal / Shell Genérico
 #
 # Armazena o perfil em:
-#   - ~/.config/kde-wayland-suite/harness-profile.json (escopo de usuário)
+#   - ~/.config/kde-wayland-suite/harness-profile.json
 # ==============================================================================
 
 HARNESS_PROFILE_DIR="${HOME}/.config/kde-wayland-suite"
 HARNESS_PROFILE_FILE="${HARNESS_PROFILE_DIR}/harness-profile.json"
 
 detect_active_harness() {
-    # 1. Variáveis de ambiente explícitas
-    if [ -n "${OMP_SESSION_ID:-}" ] || [ -n "${OMP_VERSION:-}" ] || [ -n "${OMP_AGENT:-}" ]; then
+    # 1. OMP (Oh My Pi / Orca Agent) — prioridade máxima por variáveis de processo direto
+    if [ -n "${OMPCODE:-}" ] || [ -n "${ORCA_OMP_SOURCE_AGENT_DIR:-}" ] || [ -n "${OMP_SESSION_ID:-}" ] || [ -n "${OMP_VERSION:-}" ] || [ -n "${OMP_AGENT:-}" ]; then
         echo "omp"
         return 0
     fi
-    if [ -n "${CLAUDE_CODE:-}" ] || [ -n "${CLAUDE_CONVERSATION_ID:-}" ]; then
-        echo "claude-code"
-        return 0
-    fi
-    if [ -n "${CURSOR_PROJECT_DIR:-}" ] || [ -n "${CURSOR_TRACE:-}" ] || [ -n "${CURSOR_AGENT:-}" ]; then
-        echo "cursor"
-        return 0
-    fi
+
+    # 2. Antigravity nativo
     if [ -n "${ANTIGRAVITY:-}" ] || [ -n "${ANTIGRAVITY_SESSION:-}" ]; then
         echo "antigravity"
         return 0
     fi
+
+    # 3. Cursor
+    if [ -n "${CURSOR_PROJECT_DIR:-}" ] || [ -n "${CURSOR_TRACE:-}" ] || [ -n "${CURSOR_AGENT:-}" ]; then
+        echo "cursor"
+        return 0
+    fi
+
+    # 4. OpenCode
     if [ -n "${OPENCODE:-}" ] || [ -n "${OPENCODE_SESSION:-}" ]; then
         echo "opencode"
         return 0
     fi
 
-    # 2. Varredura da árvore de processos (ancestrais)
-    local parent_tree
-    parent_tree="$(ps -o comm= -p "$PPID" 2>/dev/null || echo '')"
-    if [ -n "$parent_tree" ]; then
-        if echo "$parent_tree" | grep -qi "omp"; then
+    # 5. Claude Code
+    if [ -n "${CLAUDE_CONVERSATION_ID:-}" ]; then
+        echo "claude-code"
+        return 0
+    fi
+
+    # 6. Varredura da árvore de processos (ancestrais diretos via PPID)
+    local cur_pid=$$
+    while [ "$cur_pid" -gt 1 ]; do
+        local p_name
+        p_name="$(ps -o comm= -p "$cur_pid" 2>/dev/null || echo '')"
+        if echo "$p_name" | grep -qiE "^omp"; then
             echo "omp"
             return 0
-        elif echo "$parent_tree" | grep -qi "claude"; then
+        elif echo "$p_name" | grep -qiE "^claude"; then
             echo "claude-code"
             return 0
-        elif echo "$parent_tree" | grep -qi "cursor"; then
+        elif echo "$p_name" | grep -qiE "^cursor"; then
             echo "cursor"
             return 0
-        elif echo "$parent_tree" | grep -qi "opencode"; then
+        elif echo "$p_name" | grep -qiE "^opencode"; then
             echo "opencode"
             return 0
         fi
-    fi
-
-    # 3. Varredura mais ampla de processos do usuário
-    if pgrep -u "$USER" -f "/bin/omp" >/dev/null 2>&1 || pgrep -u "$USER" -f "omp-agent" >/dev/null 2>&1; then
-        echo "omp"
-        return 0
-    elif pgrep -u "$USER" -f "claude" >/dev/null 2>&1; then
-        echo "claude-code"
-        return 0
-    elif pgrep -u "$USER" -f "cursor" >/dev/null 2>&1; then
-        echo "cursor"
-        return 0
-    fi
+        cur_pid="$(ps -o ppid= -p "$cur_pid" 2>/dev/null | tr -d ' ' || echo '1')"
+    done
 
     echo "generic-shell"
 }
 
 get_harness_friendly_name() {
     case "$1" in
-        omp) echo "Oh My Pi (OMP)" ;;
+        omp) echo "Oh My Pi (OMP) + Antigravity" ;;
         claude-code) echo "Claude Code (CLI)" ;;
         cursor) echo "Cursor (IDE / Agent)" ;;
         antigravity) echo "Google Antigravity" ;;
@@ -104,10 +102,10 @@ get_saved_model_role() {
 
 save_harness_profile() {
     local harness="$1"
-    local reasoning_model="${2:-claude-3-7-sonnet}"
-    local code_model="${3:-claude-3-7-sonnet}"
-    local review_model="${4:-gemini-2-5-flash}"
-    local security_model="${5:-claude-3-7-sonnet}"
+    local reasoning_model="${2:-google-antigravity/gemini-3.7-flash}"
+    local code_model="${3:-google-antigravity/gemini-3.7-flash}"
+    local review_model="${4:-google-antigravity/gemini-3.7-flash}"
+    local security_model="${5:-anthropic/claude-3.7-sonnet}"
 
     mkdir -p "$HARNESS_PROFILE_DIR"
     cat << EOF > "$HARNESS_PROFILE_FILE"

@@ -69,11 +69,16 @@ if command -v detect_active_harness >/dev/null 2>&1; then
     ALIGN="$(check_harness_alignment)"
     if [ "$ALIGN" = "aligned" ]; then
         echo -e "  • ${GREEN}[OK]${NC} Host de IA / Harness: ${BOLD}$(get_harness_friendly_name "$ACT_HARNESS")${NC} (perfil alinhado)."
+        if [ -f "$HARNESS_PROFILE_FILE" ]; then
+            echo -e "    └─ Raciocínio:  ${BOLD}$(get_saved_model_role "reasoning")${NC}"
+            echo -e "    └─ Código:      ${BOLD}$(get_saved_model_role "code")${NC}"
+            echo -e "    └─ Revisão:     ${BOLD}$(get_saved_model_role "review")${NC}"
+            echo -e "    └─ Segurança:   ${BOLD}$(get_saved_model_role "security")${NC}"
+        fi
         runlog_event "ok" "harness_aligned" "$ACT_HARNESS"
     elif [ "$ALIGN" = "unconfigured" ]; then
         echo -e "  • ${BLUE}[INFO]${NC} Host de IA ativo: ${BOLD}$(get_harness_friendly_name "$ACT_HARNESS")${NC} (perfil de modelos ainda não configurado via '/init')."
         runlog_event "info" "harness_unconfigured" "$ACT_HARNESS"
-    else
         echo -e "  • ${YELLOW}[AVISO]${NC} Desalinhamento de Harness detectado!"
         echo -e "    Ambiente atual: ${BOLD}$(get_harness_friendly_name "$ACT_HARNESS")${NC} ($ACT_HARNESS)"
         echo -e "    Perfil salvo:   ${BOLD}$(get_harness_friendly_name "$SAV_HARNESS")${NC} ($SAV_HARNESS)"

@@ -75,6 +75,24 @@ if [ "$IS_TONGFANG" = "true" ]; then
     fi
 fi
 
+# Auditoria de Gerenciamento de Energia do Teclado Integrado (i8042/serio0)
+SERIO_POWER="/sys/devices/platform/i8042/serio0/power/control"
+UDEV_RULE_FILE="/etc/udev/rules.d/90-kde-smart-keyboard-power.rules"
+if [ -f "$SERIO_POWER" ]; then
+    CURRENT_PWR="$(cat "$SERIO_POWER" 2>/dev/null || echo 'unknown')"
+    if [ -f "$UDEV_RULE_FILE" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Gerenciamento Dinâmico de Energia do Teclado: ${BOLD}ATIVO${NC} (serio0: ${CURRENT_PWR})."
+        runlog_event "ok" "keyboard_smart_power" "rule_active, power=$CURRENT_PWR"
+    elif [ "$CURRENT_PWR" = "on" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Barramento i8042 em modo ativo permanente (power/control: ${BOLD}on${NC} - anti-latch)."
+        runlog_event "ok" "keyboard_power_static_on" ""
+    else
+        echo -e "  • ${YELLOW}[AVISO]${NC} Barramento i8042 em economia ociosa (power/control: ${BOLD}auto${NC})."
+        echo -e "    Risco: A primeira ativação do Left Ctrl pode sofrer atraso de wake. Para ativar gestão dinâmica: ${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}"
+        runlog_event "warn" "keyboard_power_auto_no_rule" "power=auto"
+    fi
+fi
+
 # -----------------------------------------------------------------------------
 # 2. Higiene de Input Method (IM) & Compatibilidade com Ctrl+C
 # -----------------------------------------------------------------------------

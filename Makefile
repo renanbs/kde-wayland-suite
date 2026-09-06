@@ -1,4 +1,4 @@
-.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback install-cli preflight help
+.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback install-cli preflight help
 
 all: status
 
@@ -16,6 +16,7 @@ help:
 	@echo "  make revert-tongfang - Reverte configuração do GRUB para backup anterior"
 	@echo "  make test-keyboard   - Monitor de eventos de teclas em tempo real"
 	@echo "  make monitor-irq     - Monitor de pulsos elétricos de hardware (IRQ 1)"
+	@echo "  make smart-keyboard-power - Gerenciamento dinâmico de energia do teclado integrado"
 	@echo "  make mouse           - Configura o Logitech MX Master 3S (logiops/logid)"
 	@echo "  make battery-status  - Diagnostico de bateria/energia (so leitura)"
 	@echo "  make battery-apply   - Aplica correcoes de bateria (use BATTERY_FIX_*=1; nunca sem antes perguntar ao usuario)"
@@ -47,6 +48,9 @@ test-keyboard:
 
 monitor-irq:
 	@./bin/kde-config monitor-irq
+smart-keyboard-power:
+	@./bin/kde-config smart-keyboard-power
+
 
 gestures:
 	@./bin/kde-config gestures

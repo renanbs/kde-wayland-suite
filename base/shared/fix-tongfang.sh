@@ -15,8 +15,7 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRUB_FILE="/etc/default/grub"
-BACKUP_FILE="/etc/default/grub.bak-tongfang"
-TONGFANG_PARAMS="i8042.nopnp=1 i8042.nomux=1 i8042.reset=1 acpi_osi='Windows 2020'"
+TONGFANG_PARAMS="i8042.nopnp=1 i8042.nomux=1 i8042.reset=1 atkbd.reset=1 acpi_osi='Windows 2020'"
 
 # Registro estruturado do run
 if [ -f "$SCRIPT_DIR/lib-runlog.sh" ]; then

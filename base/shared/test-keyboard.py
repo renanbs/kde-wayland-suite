@@ -69,12 +69,11 @@ def main():
     print("=" * 65)
     print("  TESTADOR DE TECLADO INTEGRADO (KDE WAYLAND SUITE)")
     print("=" * 65)
-    print(f"[*] Dispositivo conectado: {dev_path}")
-    print("[*] Pressione as teclas para testar (Ctrl+C para encerrar)")
-    print("-" * 65)
-    print(f"{'TECLA':<32} | {'KEYCODE':<8} | {'ESTADO':<12}")
-    print("-" * 65)
-
+    print(f"[*] Dispositivo conectado: {dev_path}", flush=True)
+    print("[*] Pressione as teclas para testar (Ctrl+C para encerrar)...", flush=True)
+    print("-" * 65, flush=True)
+    print(f"{'TECLA':<32} | {'KEYCODE':<8} | {'ESTADO':<12}", flush=True)
+    print("-" * 65, flush=True)
     EVENT_FORMAT = "llHHI"
     EVENT_SIZE = struct.calcsize(EVENT_FORMAT)
 
@@ -106,9 +105,7 @@ def main():
                         nome_fmt = f"\033[1;94m{nome}\033[0m"
                     else:
                         nome_fmt = nome
-
-                    print(f"{nome_fmt:<40} | {ev_code:<8} | {status}")
-    except KeyboardInterrupt:
+                    print(f"{nome_fmt:<40} | {ev_code:<8} | {status}", flush=True)
         print("\n\n[*] Teste finalizado pelo usuário.")
     except PermissionError:
         print(f"\n[-] Permissão negada ao abrir {dev_path}.")

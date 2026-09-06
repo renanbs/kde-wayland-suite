@@ -27,18 +27,6 @@
   "bin": {
     "kde-config": "./bin/kde-config"
   },
-  "skills": [
-    "./skills/kde-wayland-suite",
-    "./omp/skills/kde-wayland-suite"
-  ],
-  "commands": [
-    "./commands/check-status.md",
-    "./commands/fix-keyboard.md",
-    "./commands/fix-tongfang.md",
-    "./commands/configure-gestures.md",
-    "./commands/configure-mouse.md",
-    "./commands/battery.md",
-    "./commands/init.md",
-    "./commands/report.md"
-  ]
+  "skills": "./skills/",
+  "commands": "./commands/"
 }

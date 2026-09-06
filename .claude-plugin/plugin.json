@@ -5,19 +5,20 @@
   "author": {
     "name": "Renan BS"
   },
-  "skills": [
-    "./skills/kde-wayland-suite",
-    "./omp/skills/kde-wayland-suite",
-    "./claude-code/skills/kde-wayland-suite"
+  "repository": "https://github.com/renanbs/kde-wayland-suite",
+  "license": "MIT",
+  "keywords": [
+    "omp-plugin",
+    "claude-plugin",
+    "claude-code-plugin",
+    "kde",
+    "wayland",
+    "plasma6",
+    "kwin",
+    "keyboard",
+    "shortcuts",
+    "gestures"
   ],
-  "commands": [
-    "./commands/check-status.md",
-    "./commands/fix-keyboard.md",
-    "./commands/fix-tongfang.md",
-    "./commands/configure-gestures.md",
-    "./commands/configure-mouse.md",
-    "./commands/battery.md",
-    "./commands/init.md",
-    "./commands/report.md"
-  ]
+  "skills": "./skills/",
+  "commands": "./commands/"
 }

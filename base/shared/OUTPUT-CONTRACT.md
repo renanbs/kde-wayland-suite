@@ -44,6 +44,12 @@ Sempre ao final, mesmo quando nada mudou:
 | Como reverter | o comando exato |
 | Requer | `nada` \| `logout/login` \| `reboot` |
 
+### 4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)
+
+Sempre que a fase **2. Execução** contiver qualquer item marcado com `⚠️` (aviso) ou `❌` (falha), adicione esta seção logo após o **3. Resumo**, fornecendo o comando exato de 1 linha para resolver cada ponto:
+
+- `• <Descrição do problema>`: `comando exato para corrigir`
+
 ### Regras
 
 - Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia

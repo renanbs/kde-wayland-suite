@@ -5,10 +5,8 @@ set -uo pipefail
 # report.sh — Relatório da última execução + tendência histórica.
 #
 # Lê os runs gravados por lib-runlog.sh (eventos estruturados, não o texto
-# colorido) e monta um relatório legível. Aceita:
-#   report.sh            -> última execução + tendência
-#   report.sh <n>        -> lista as n execuções mais recentes
-#   report.sh --history  -> só a tendência das métricas
+# colorido) e monta um relatório legível com ações recomendadas para resolver
+# pontos não conformes (avisos e falhas).
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -71,8 +69,10 @@ show_run() {
         return 0
     fi
 
-    # Contadores por status, para o resumo.
+    # Contadores por status e lista de recomendações
     local n_ok=0 n_fail=0 n_warn=0 n_skip=0
+    local recommendations=()
+
     while IFS=$'\t' read -r _ status id detail; do
         [ "$status" = "metric" ] && continue
         case "$status" in
@@ -84,11 +84,41 @@ show_run() {
         printf '  %b %s' "$(marker_for "$status")" "$id"
         [ -n "$detail" ] && printf ' — %s' "$detail"
         printf '\n'
+
+        if [ "$status" = "warn" ] || [ "$status" = "fail" ]; then
+            case "$id" in
+                keyboard_power_auto_no_rule|serio_power_missing)
+                    recommendations+=("${YELLOW}Energia do Teclado (anti-latch):${NC} execute '${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}'")
+                    ;;
+                tongfang_kernel_params_missing|tongfang_ctrl_lock_risk)
+                    recommendations+=("${YELLOW}Teclado Tongfang/Avell:${NC} execute '${BOLD}./bin/kde-config fix-tongfang${NC}'")
+                    ;;
+                im_conf_present|im_env_forced|im_systemd_env_forced|fcitx5_running|fcitx5_system_autostart_unmasked|cedilla_conf_invalid|cedilla_conf_missing|lc_ctype_process_missing|kxkbrc_layout_empty|kxkbrc_layout_collapsed)
+                    recommendations+=("${YELLOW}Teclado e Atalhos (Ctrl+C / Cedilha):${NC} execute '${BOLD}./bin/kde-config fix-keyboard${NC}'")
+                    ;;
+                xsel_hung)
+                    recommendations+=("${YELLOW}Clipboard travado:${NC} execute '${BOLD}./bin/kde-config fix-keyboard${NC}'")
+                    ;;
+                *)
+                    [ -n "$detail" ] && recommendations+=("${id}: ${detail}")
+                    ;;
+            esac
+        fi
     done < "$events"
 
     echo ""
     echo -e "  ${BOLD}Balanço:${NC} ${GREEN}${n_ok} ok${NC} · ${RED}${n_fail} falha(s)${NC} · ${YELLOW}${n_warn} aviso(s)${NC} · ${BLUE}${n_skip} pulado(s)${NC}"
-    [ -f "$dir/output.log" ] && echo -e "  Saída bruta: $dir/output.log"
+
+    if [ "${#recommendations[@]}" -gt 0 ]; then
+        echo ""
+        echo -e "  ${BOLD}${YELLOW}Como resolver pontos não conformes (Ações Recomendadas):${NC}"
+        local rec
+        for rec in "${recommendations[@]}"; do
+            echo -e "  👉 ${rec}"
+        done
+    fi
+
+    [ -f "$dir/output.log" ] && echo -e "\n  Saída bruta: $dir/output.log"
 }
 
 show_history() {
@@ -96,7 +126,6 @@ show_history() {
     echo -e "${BOLD}${BLUE}   Tendência histórica (métricas)                     ${NC}"
     echo -e "${BOLD}${BLUE}======================================================${NC}"
 
-    # Junta todas as métricas de todos os runs, agrupando por id.
     local all_metrics
     all_metrics="$(find "$RUNLOG_ROOT" -mindepth 2 -maxdepth 2 -name events.tsv 2>/dev/null \
         | sort \
@@ -127,7 +156,6 @@ show_history() {
         printf '    primeiro: %s  em %s\n' "$first_val" "$(human_time "$first_epoch")"
         printf '    último:   %s  em %s\n' "$last_val" "$(human_time "$last_epoch")"
 
-        # Delta só faz sentido para valores numéricos.
         if [ "$n" -gt 1 ] \
            && echo "$first_val" | grep -qE '^-?[0-9]+([.,][0-9]+)?$' \
            && echo "$last_val" | grep -qE '^-?[0-9]+([.,][0-9]+)?$'; then

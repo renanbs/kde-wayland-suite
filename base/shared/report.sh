@@ -107,8 +107,8 @@ show_run() {
 
         if [ "$status" = "warn" ] || [ "$status" = "fail" ]; then
             case "$id" in
-                keyboard_power_auto_no_rule|serio_power_missing)
-                    recommendations+=("${YELLOW}Energia do Teclado (anti-latch):${NC} execute '${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}'")
+                keyboard_power_auto_no_rule|serio_power_missing|keyboard_resume_hook_missing)
+                    recommendations+=("${YELLOW}Energia e Suspensão do Teclado (anti-latch / lid resume):${NC} execute '${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}'")
                     ;;
                 tongfang_kernel_params_missing|tongfang_ctrl_lock_risk)
                     recommendations+=("${YELLOW}Teclado Tongfang/Avell:${NC} execute '${BOLD}./bin/kde-config fix-tongfang${NC}'")

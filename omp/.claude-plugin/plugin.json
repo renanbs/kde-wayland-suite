@@ -1,6 +1,6 @@
 {
   "name": "kde-wayland-suite",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Comprehensive KDE Plasma 6 Wayland configuration plugin: fixes for system-wide Ctrl+<key> breakage (kxkbrc keymap-compile race, the fcitx5 keyboard grab, and Tongfang/Avell i8042/ACPI matrix drop), cedilla on US-intl via the native pt_BR compose table (LC_CTYPE, no input method), Wayland clipboard repair (wl-clipboard/xsel deadlock), 3/4-finger touchpad gestures via libinput-gestures and KWin D-Bus, Logitech MX Master 3S via logiops, and battery/power diagnostics (hybrid GPU primary, PCIe ASPM, PCI runtime PM).",
   "author": {
     "name": "Renan BS"

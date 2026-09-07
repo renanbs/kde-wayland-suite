@@ -105,9 +105,11 @@ if [ "$IS_TONGFANG" = "true" ]; then
     fi
 fi
 
-# Auditoria de Gerenciamento de Energia do Teclado Integrado (i8042/serio0)
+# Auditoria de Gerenciamento de Energia e Suspensão do Teclado (i8042/serio0)
 SERIO_POWER="/sys/devices/platform/i8042/serio0/power/control"
 UDEV_RULE_FILE="/etc/udev/rules.d/90-kde-smart-keyboard-power.rules"
+SLEEP_HOOK_FILE="/etc/systemd/system-sleep/90-kde-keyboard-resume.sh"
+
 if [ -f "$SERIO_POWER" ]; then
     CURRENT_PWR="$(cat "$SERIO_POWER" 2>/dev/null || echo 'unknown')"
     if [ -f "$UDEV_RULE_FILE" ]; then
@@ -120,6 +122,15 @@ if [ -f "$SERIO_POWER" ]; then
         echo -e "  • ${YELLOW}[AVISO]${NC} Barramento i8042 em economia ociosa (power/control: ${BOLD}auto${NC})."
         echo -e "    Risco: A primeira ativação do Left Ctrl pode sofrer atraso de wake. Para ativar gestão dinâmica: ${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}"
         runlog_event "warn" "keyboard_power_auto_no_rule" "power=auto"
+    fi
+
+    if [ -f "$SLEEP_HOOK_FILE" ] && [ -x "$SLEEP_HOOK_FILE" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Gancho de Retorno de Suspensão (Lid Open / Wake): ${BOLD}ATIVO${NC} (systemd-sleep)."
+        runlog_event "ok" "keyboard_resume_hook_active" ""
+    else
+        echo -e "  • ${YELLOW}[AVISO]${NC} Gancho de retorno de suspensão (systemd-sleep) inativo."
+        echo -e "    Risco: O Left Ctrl pode adormecer ao fechar e reabrir a tampa. Para instalar: ${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}"
+        runlog_event "warn" "keyboard_resume_hook_missing" "Execute ./bin/kde-config smart-keyboard-power --apply"
     fi
 fi
 

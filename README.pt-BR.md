@@ -52,6 +52,21 @@ Compatível como plugin nativo para **Oh My Pi (OMP)**, **Claude Code**, **Curso
 ### 10. Motor de Relatórios Numerados e Interativos
 * **Solução:** Registros estruturados salvos em `~/.local/state/kde-wayland-suite/runs/`. Permite seleção interativa (`report --select`), consulta indexada (`report 3`) e gera ações recomendadas de 1 linha para qualquer aviso ou falha.
 
+
+---
+
+## 🧪 Testado e Comprovado em Produção
+
+Esta suite é continuamente testada e validada em hardware e ambientes reais de produção:
+
+| Categoria | Hardware e Ambiente Verificado |
+| :--- | :--- |
+| **Hosts de IA (Harnesses)** | • **Testado e Comprovado em Produção:** **Oh My Pi (OMP) + Google Antigravity** (`gemini-3.7-flash`) e **Claude Code (CLI)** (`claude-3-7-sonnet`)<br/>• **Suportado por Arquitetura:** Cursor IDE & Agent, Google Antigravity CLI e OpenCode |
+| **Ambiente Gráfico & SO** | • **KDE Plasma:** 6.7.x / 6.7.4 (KWin Wayland nativo)<br/>• **Distribuição Linux:** Garuda Linux / Arch Linux (Rolling release)<br/>• **Kernel:** `7.2.x-zen` (Linux Zen) / Linux Mainline `6.12+` |
+| **Laptop / Chassi** | • **Avell A62 LIV** (Chassi **Tongfang GK5MQX** / Séries GK5 / GM5)<br/>• **CPU/GPU:** Intel Core i7-10750H + NVIDIA GeForce GTX 1650 Mobile / Intel UHD 630 (Gráficos híbridos) |
+| **Teclado Integrado** | • **AT Translated Set 2 keyboard** (`isa0060/serio0` via chip EC ITE IT5570E/IT8528)<br/>• Layouts: Brasileiro ABNT2 (`br`) e US-Internacional (`us alt-intl`) |
+| **Mouse & Touchpad** | • **Mouse:** Logitech MX Master 3S (Bluetooth / Logi Bolt Receiver via `logiops`)<br/>• **Touchpad:** Uniwill Precision Touchpad (`i2c-UNIW0001:00 093A:0255` via `libinput-gestures`) |
+
 ---
 
 ## 🚀 Uso Rápido (CLI e Makefile)

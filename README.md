@@ -52,6 +52,21 @@ Compatible as a native plugin for **Oh My Pi (OMP)**, **Claude Code**, **Cursor 
 ### 10. Numbered Interactive Report Engine
 * **Fix:** Structured event runlogs saved in `~/.local/state/kde-wayland-suite/runs/`. Features interactive selection (`report --select`), indexed viewing (`report 3`), and actionable remediation commands for any warnings.
 
+
+---
+
+## 🧪 Tested & Verified in Production
+
+This suite is continuously tested and verified in real-world production setups:
+
+| Category | Verified Hardware & Environment |
+| :--- | :--- |
+| **AI Hosts & Harnesses** | • **Verified in Production:** **Oh My Pi (OMP) + Google Antigravity** (`gemini-3.7-flash`) and **Claude Code (CLI)** (`claude-3-7-sonnet`)<br/>• **Architecturally Compatible:** Cursor IDE & Agent, Google Antigravity CLI, and OpenCode |
+| **Desktop Environment & OS** | • **KDE Plasma:** 6.7.x / 6.7.4 (KWin Wayland native)<br/>• **Linux Distribution:** Garuda Linux / Arch Linux (Rolling release)<br/>• **Kernel:** `7.2.x-zen` (Linux Zen) / Linux Mainline `6.12+` |
+| **Laptop / Chassis** | • **Avell A62 LIV** (Chassis **Tongfang GK5MQX** / GK5 / GM5 Series)<br/>• **CPU/GPU:** Intel Core i7-10750H + NVIDIA GeForce GTX 1650 Mobile / Intel UHD 630 (Hybrid graphics) |
+| **Integrated Keyboard** | • **AT Translated Set 2 keyboard** (`isa0060/serio0` via ITE IT5570E/IT8528 Embedded Controller)<br/>• Layouts: Brazilian ABNT2 (`br`) & US-International (`us alt-intl`) |
+| **Mouse & Touchpad** | • **Mouse:** Logitech MX Master 3S (Bluetooth / Logi Bolt via `logiops`)<br/>• **Touchpad:** Uniwill Precision Touchpad (`i2c-UNIW0001:00 093A:0255` via `libinput-gestures`) |
+
 ---
 
 ## 🚀 Quick Start (CLI & Makefile)

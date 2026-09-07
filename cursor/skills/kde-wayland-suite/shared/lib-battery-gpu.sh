@@ -1,1 +1,0 @@
-../../../../base/shared/lib-battery-gpu.sh

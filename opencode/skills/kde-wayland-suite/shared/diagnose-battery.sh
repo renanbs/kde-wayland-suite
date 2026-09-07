@@ -1,1 +1,0 @@
-../../../../base/shared/diagnose-battery.sh

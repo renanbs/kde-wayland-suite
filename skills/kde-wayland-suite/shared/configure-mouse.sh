@@ -1,1 +1,0 @@
-../../../shared/configure-mouse.sh

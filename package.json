@@ -1,31 +1,37 @@
 {
-  "name": "kde-wayland-suite",
-  "version": "1.8.4",
-  "description": "Comprehensive KDE Plasma 6 Wayland configuration plugin: fixes for system-wide Ctrl+<key> breakage (kxkbrc keymap-compile race, the fcitx5 keyboard grab, and Tongfang/Avell i8042/ACPI matrix drop), cedilla on US-intl via the native pt_BR compose table (LC_CTYPE, no input method), Wayland clipboard repair (wl-clipboard/xsel deadlock), 3/4-finger touchpad gestures via libinput-gestures and KWin D-Bus, Logitech MX Master 3S via logiops, and battery/power diagnostics (hybrid GPU primary, PCIe ASPM, PCI runtime PM).",
+  "name": "linux-wayland-suite",
+  "version": "2.0.0",
+  "description": "Comprehensive Linux Wayland configuration suite & multi-agent AI plugin for KDE Plasma, GNOME, and multi-vendor hardware: keyboard shortcuts repair, Tongfang/Avell/Clevo matrix unlocking, smart dynamic keyboard power management, native cedilla on US-intl without input methods, Wayland clipboard repair, touchpad gestures, and battery/energy diagnostics.",
   "author": "Renan BS",
   "license": "MIT",
-  "homepage": "https://github.com/renanbs/kde-wayland-suite#readme",
+  "homepage": "https://github.com/renanbs/linux-wayland-suite#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/renanbs/kde-wayland-suite.git"
+    "url": "git+https://github.com/renanbs/linux-wayland-suite.git"
   },
   "bugs": {
-    "url": "https://github.com/renanbs/kde-wayland-suite/issues"
+    "url": "https://github.com/renanbs/linux-wayland-suite/issues"
   },
   "keywords": [
     "omp-plugin",
     "claude-plugin",
     "claude-code-plugin",
-    "kde",
+    "linux",
     "wayland",
+    "kde",
     "plasma6",
+    "gnome",
     "kwin",
     "keyboard",
     "shortcuts",
-    "gestures"
+    "gestures",
+    "tongfang",
+    "power-management"
   ],
   "bin": {
-    "kde-config": "./bin/kde-config"
+    "linux-wayland-config": "./bin/linux-wayland-config",
+    "wayland-config": "./bin/linux-wayland-config",
+    "kde-config": "./bin/linux-wayland-config"
   },
   "skills": "./skills/",
   "commands": "./commands/"

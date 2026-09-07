@@ -11,10 +11,10 @@
 #   - Terminal / Shell Genérico
 #
 # Armazena o perfil em:
-#   - ~/.config/kde-wayland-suite/harness-profile.json
+#   - ~/.config/linux-wayland-suite/harness-profile.json
 # ==============================================================================
 
-HARNESS_PROFILE_DIR="${HOME}/.config/kde-wayland-suite"
+HARNESS_PROFILE_DIR="${HOME}/.config/linux-wayland-suite"
 HARNESS_PROFILE_FILE="${HARNESS_PROFILE_DIR}/harness-profile.json"
 
 detect_active_harness() {

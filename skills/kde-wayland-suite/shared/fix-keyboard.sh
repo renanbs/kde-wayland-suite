@@ -1,1 +1,0 @@
-../../../shared/fix-keyboard.sh

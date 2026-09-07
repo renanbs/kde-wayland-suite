@@ -1,1 +1,0 @@
-../../../../shared/check-status.sh

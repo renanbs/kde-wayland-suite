@@ -1,1 +1,0 @@
-../../../base/shared/revert-battery.sh

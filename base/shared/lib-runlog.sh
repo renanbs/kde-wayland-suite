@@ -21,7 +21,7 @@
 # Sourced por bin/kde-config e pelos scripts de shared/ — não roda sozinho.
 # ==============================================================================
 
-RUNLOG_ROOT="${KDE_SUITE_RUNLOG_ROOT:-$HOME/.local/state/kde-wayland-suite/runs}"
+RUNLOG_ROOT="${LINUX_WAYLAND_SUITE_RUNLOG_ROOT:-${KDE_SUITE_RUNLOG_ROOT:-$HOME/.local/state/linux-wayland-suite/runs}}"
 RUNLOG_KEEP="${KDE_SUITE_RUNLOG_KEEP:-50}"
 RUNLOG_DIR="${RUNLOG_DIR:-}"
 

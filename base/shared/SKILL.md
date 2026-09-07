@@ -1,10 +1,9 @@
 ---
-name: kde-wayland-suite
-description: Comprehensive KDE Plasma 6 Wayland configuration suite for keyboard shortcuts (system-wide Ctrl+key breakage fixes), cedilla on US-intl via the native pt_BR compose table (LC_CTYPE, no input method), Wayland clipboard repair (wl-clipboard/xsel deadlock fix), 3/4-finger touchpad gestures using libinput-gestures and KWin D-Bus, and Logitech MX Master 3S button/scroll configuration via logiops.
+name: linux-wayland-suite
+description: Comprehensive Linux Wayland configuration suite for KDE Plasma, GNOME, and multi-vendor hardware: keyboard shortcuts repair, Tongfang/Avell/Clevo matrix unlocking, smart dynamic keyboard power management, native cedilla on US-intl via the native pt_BR compose table (LC_CTYPE, no input method), Wayland clipboard repair, 3/4-finger touchpad gestures, Logitech MX Master 3S button/scroll configuration via logiops, and battery/power diagnostics.
 ---
 
-# KDE Plasma 6 Wayland Suite (Keyboard, Shortcuts & Gestures)
-
+# Linux Wayland Suite (Input, Hardware & Desktop Automation)
 Esta skill fornece automações e diagnósticos para resolver problemas comuns na pilha de entrada e clipboard do **KDE Plasma 6 (Wayland)**:
 
 1. **Correção de Atalhos de Teclado (`Ctrl+C` no ABNT2)**: Elimina o módulo legado `im-cedilla` que sequestra eventos de teclas e quebra o `Ctrl+C` sob Wayland.

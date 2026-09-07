@@ -1,0 +1,433 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ==============================================================================
+# kde-config — CLI Orquestrador para KDE Plasma 6 Wayland
+# Gerencia teclado (ABNT2/US-intl/Ctrl+C), cedilha (Chrome/Orca), gestos e atalhos KWin
+# ==============================================================================
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+SCRIPT_REALPATH="$(realpath "${BASH_SOURCE[0]}")"
+BASE_DIR="$(dirname "$SCRIPT_REALPATH")"
+
+if [ -d "$BASE_DIR/../shared" ]; then
+    SHARED_DIR="$(realpath "$BASE_DIR/../shared")"
+elif [ -d "$BASE_DIR/shared" ]; then
+    SHARED_DIR="$(realpath "$BASE_DIR/shared")"
+elif [ -d "$BASE_DIR/../scripts" ]; then
+    SHARED_DIR="$(realpath "$BASE_DIR/../scripts")"
+elif [ -d "$BASE_DIR/scripts" ]; then
+    SHARED_DIR="$(realpath "$BASE_DIR/scripts")"
+else
+    SHARED_DIR="$BASE_DIR/../shared"
+fi
+# Detecção dinâmica de D-Bus
+if command -v qdbus6 >/dev/null 2>&1; then
+    QDBUS="qdbus6"
+elif command -v qdbus >/dev/null 2>&1; then
+    QDBUS="qdbus"
+elif [ -x /usr/lib/qt6/bin/qdbus ]; then
+    QDBUS="/usr/lib/qt6/bin/qdbus"
+else
+    QDBUS=""
+fi
+
+usage() {
+    echo -e "${BOLD}Uso:${NC} kde-config <comando> [argumentos]"
+    echo ""
+    echo -e "${BOLD}Comandos disponíveis:${NC}"
+    echo "  init              Inicializa todo o ambiente, salva backups e aplica ajustes"
+    echo "  status            Auditoria completa de teclado, cedilha, atalhos e gestos"
+    echo "  fix-keyboard      Aplica correção de Ctrl+C no ABNT2 e cedilha no US-intl (Chrome/Orca)"
+    echo "  gestures          Instala e configura gestos de touchpad (libinput-gestures)"
+    echo "  mouse             Instala e configura o Logitech MX Master 3S (logiops/logid)"
+    echo "  battery-status    Diagnóstico de bateria/energia (GPU primária, PCIe ASPM, rádios, saúde da bateria)"
+    echo "  battery-apply     Aplica correções de bateria decididas via variáveis BATTERY_FIX_*"
+    echo "  battery-revert    Reverte a última aplicação de battery-apply (ou um snapshot específico)"
+    echo "  fix-tongfang      Desbloqueia teclado/matriz i8042 em laptops Tongfang/Avell/Clevo via GRUB"
+    echo "  revert-tongfang   Reverte a configuração do GRUB para o backup anterior"
+    echo "  test-keyboard     Monitor interativo de eventos de teclas em tempo real (/dev/input/eventX)"
+    echo "  monitor-irq       Monitor de pulsos elétricos de hardware no IRQ 1 (teclado i8042)"
+    echo "  smart-keyboard-power  Gerenciamento dinâmico de energia do teclado integrado (--apply/--remove/--status)"
+    echo "  configure-harness  Configura o perfil do host de IA (OMP/Claude/Cursor) e mapa de modelos"
+    echo "  preflight         Diagnóstico de ambiente, distribuição e ferramentas D-Bus"
+    echo "  switch [br|us]    Alterna o layout ativo no KWin (0=br, 1=us)"
+    echo "  shortcut-switch   Configura atalho Meta+Space para alternar layouts no KWin"
+    echo "  rollback          Restaura backups de configurações anteriores"
+    echo "  report            Relatório da última execução + tendência histórica"
+    echo "                    (report <n> lista as n últimas; report --history só a tendência)"
+    echo "  upgrade / update  Verifica e aplica atualizações do repositório e marketplace"
+    echo "  install           Cria link simbólico em ~/.local/bin/kde-config"
+    echo "  help              Exibe esta mensagem de ajuda"
+    echo ""
+    echo -e "${BOLD}Variáveis de ambiente (init/fix-keyboard):${NC}"
+    echo "  SKIP_KEYBOARD=1              Pula a etapa de teclado/cedilha/atalhos no init"
+    echo "  SKIP_GESTURES=1              Pula a etapa de gestos de touchpad no init"
+    echo "  SKIP_MOUSE=1                 Pula a etapa do mouse MX Master 3S no init"
+    echo "  KDE_SUITE_LAYOUT_AUTOHEAL=1  Instala autostart que reaplica o layout de teclado a cada login"
+    echo "  SKIP_BATTERY=1               Pula o diagnóstico de bateria no init"
+    echo "  BATTERY_FIX_GPU_PRIMARY=1        (battery-apply) Reordena KWIN_DRM_DEVICES: GPU do painel interno primária"
+    echo "  BATTERY_FIX_PCIE_ASPM=1          (battery-apply) Aplica política PCIe ASPM powersave"
+    echo "  BATTERY_FIX_PCIE_ASPM_PERSIST=1  (battery-apply) Persiste a política ASPM após reboot (serviço systemd)"
+    echo ""
+}
+
+cmd_status() {
+    if [ -f "$SHARED_DIR/check-status.sh" ]; then
+        bash "$SHARED_DIR/check-status.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/check-status.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_fix_keyboard() {
+    if [ -f "$SHARED_DIR/fix-keyboard.sh" ]; then
+        bash "$SHARED_DIR/fix-keyboard.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/fix-keyboard.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_gestures() {
+    if [ -f "$SHARED_DIR/configure-gestures.sh" ]; then
+        bash "$SHARED_DIR/configure-gestures.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-gestures.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_mouse() {
+    if [ -f "$SHARED_DIR/configure-mouse.sh" ]; then
+        bash "$SHARED_DIR/configure-mouse.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-mouse.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_battery_status() {
+    if [ -f "$SHARED_DIR/diagnose-battery.sh" ]; then
+        bash "$SHARED_DIR/diagnose-battery.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/diagnose-battery.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_battery_apply() {
+    if [ -f "$SHARED_DIR/configure-battery.sh" ]; then
+        bash "$SHARED_DIR/configure-battery.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-battery.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_battery_revert() {
+    if [ -f "$SHARED_DIR/revert-battery.sh" ]; then
+        bash "$SHARED_DIR/revert-battery.sh" "${1:-}"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/revert-battery.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_preflight() {
+    if [ -f "$SHARED_DIR/preflight-base.sh" ]; then
+        bash "$SHARED_DIR/preflight-base.sh"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/preflight-base.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+cmd_fix_tongfang() {
+    if [ -f "$SHARED_DIR/fix-tongfang.sh" ]; then
+        bash "$SHARED_DIR/fix-tongfang.sh" --apply
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/fix-tongfang.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_revert_tongfang() {
+    if [ -f "$SHARED_DIR/fix-tongfang.sh" ]; then
+        bash "$SHARED_DIR/fix-tongfang.sh" --revert
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/fix-tongfang.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_test_keyboard() {
+    if [ -f "$SHARED_DIR/test-keyboard.py" ]; then
+        python3 "$SHARED_DIR/test-keyboard.py"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/test-keyboard.py não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_monitor_irq() {
+    if [ -f "$SHARED_DIR/monitor-irq.py" ]; then
+        python3 "$SHARED_DIR/monitor-irq.py"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/monitor-irq.py não encontrado.${NC}"
+        exit 1
+    fi
+}
+cmd_smart_keyboard_power() {
+    if [ -f "$SHARED_DIR/manage-keyboard-power.sh" ]; then
+        bash "$SHARED_DIR/manage-keyboard-power.sh" "${1:---status}"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/manage-keyboard-power.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+cmd_configure_harness() {
+    if [ -f "$SHARED_DIR/configure-harness.sh" ]; then
+        bash "$SHARED_DIR/configure-harness.sh" "$@"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/configure-harness.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+cmd_upgrade() {
+    if [ -f "$SHARED_DIR/upgrade-suite.sh" ]; then
+        bash "$SHARED_DIR/upgrade-suite.sh" "${1:---status}"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/upgrade-suite.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+
+
+
+
+cmd_init() {
+    echo -e "${BOLD}${BLUE}======================================================${NC}"
+    echo -e "${BOLD}${BLUE}   KDE Plasma 6 Wayland — Inicialização Completa      ${NC}"
+    echo -e "${BOLD}${BLUE}======================================================${NC}\n"
+    cmd_preflight
+    echo ""
+    if [ "${SKIP_KEYBOARD:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Teclado/Cedilha/Atalhos: pulado (SKIP_KEYBOARD=1).${NC}"
+    else
+        cmd_fix_keyboard
+    fi
+    echo ""
+    if [ "${SKIP_GESTURES:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Gestos de Touchpad: pulado (SKIP_GESTURES=1).${NC}"
+    else
+        cmd_gestures
+    fi
+    echo ""
+    if [ "${SKIP_MOUSE:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Mouse Logitech MX Master 3S: pulado (SKIP_MOUSE=1).${NC}"
+    else
+        cmd_mouse
+    fi
+    echo ""
+    if [ "${SKIP_BATTERY:-0}" = "1" ]; then
+        echo -e "${YELLOW}==> Diagnóstico de Bateria/Energia: pulado (SKIP_BATTERY=1).${NC}"
+    else
+        cmd_battery_status
+        if [ "${BATTERY_FIX_GPU_PRIMARY:-0}" = "1" ] || [ "${BATTERY_FIX_PCIE_ASPM:-0}" = "1" ]; then
+            echo ""
+            cmd_battery_apply
+        else
+            echo ""
+            echo -e "${BLUE}[INFO]${NC} Nenhuma correção de bateria foi solicitada (BATTERY_FIX_*). Apenas o diagnóstico acima foi executado."
+        fi
+    fi
+    echo ""
+    cmd_shortcut_switch
+    echo ""
+    cmd_install
+    echo ""
+    cmd_status
+}
+
+cmd_switch_layout() {
+    local target="${1:-next}"
+    if [ -z "$QDBUS" ]; then
+        echo -e "${RED}Erro: qdbus6/qdbus não encontrado no PATH.${NC}"
+        exit 1
+    fi
+    
+    case "$target" in
+        br|0)
+            "$QDBUS" org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout 0
+            echo -e "${GREEN}✔ Layout alternado para: Português (Brasil) - ABNT2 (0)${NC}"
+            ;;
+        us|1)
+            "$QDBUS" org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout 1
+            echo -e "${GREEN}✔ Layout alternado para: English (US, alt-intl) (1)${NC}"
+            ;;
+        next)
+            "$QDBUS" org.kde.keyboard /Layouts org.kde.KeyboardLayouts.switchToNextLayout
+            local cur
+            cur="$("$QDBUS" org.kde.keyboard /Layouts org.kde.KeyboardLayouts.getLayout 2>/dev/null || echo '?')"
+            echo -e "${GREEN}✔ Layout alternado para o próximo (índice $cur).${NC}"
+            ;;
+        *)
+            echo -e "${RED}Opção inválida: '$target'. Use 'br', 'us' ou 'next'.${NC}"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_shortcut_switch() {
+    echo "==> Configurando atalho global Meta+Space para alternar layouts..."
+    kwriteconfig6 --file kglobalshortcutsrc --group "KDE Keyboard Layout Switcher" --key "Switch to Next Keyboard Layout" "Meta+Space,Meta+Space,Switch to Next Keyboard Layout" --notify
+    echo -e "${GREEN}✔ Atalho Meta+Space configurado no KWin com sucesso.${NC}"
+}
+
+cmd_rollback() {
+    echo -e "${BOLD}==> Procurando snapshots de backup em ~/.config/kde-config-backups/...${NC}"
+    local backup_root="$HOME/.config/kde-config-backups"
+    if [ ! -d "$backup_root" ]; then
+        echo "Nenhum diretório de backup encontrado em $backup_root."
+        exit 1
+    fi
+    
+    local latest
+    latest="$(ls -td "$backup_root"/*/ 2>/dev/null | head -n 1 || true)"
+    if [ -z "$latest" ]; then
+        echo "Nenhum snapshot de backup encontrado."
+        exit 1
+    fi
+    
+    echo "Restaurando snapshot: $latest"
+    if [ -f "$latest/.config/kxkbrc" ] || [ -f "$latest/kxkbrc" ]; then
+        local src="${latest}/.config/kxkbrc"
+        [ -f "$src" ] || src="${latest}/kxkbrc"
+        cp "$src" "$HOME/.config/kxkbrc"
+        kwriteconfig6 --file kxkbrc --group Layout --key Use true --notify
+        echo "  [OK] kxkbrc restaurado."
+    fi
+    if [ -f "$latest/.XCompose" ] || [ -f "$latest/XCompose" ]; then
+        local src="${latest}/.XCompose"
+        [ -f "$src" ] || src="${latest}/XCompose"
+        cp "$src" "$HOME/.XCompose"
+        echo "  [OK] ~/.XCompose restaurado."
+    fi
+    if [ -f "$latest/.config/environment.d/im.conf" ] || [ -f "$latest/im.conf" ]; then
+        local src="${latest}/.config/environment.d/im.conf"
+        [ -f "$src" ] || src="${latest}/im.conf"
+        cp "$src" "$HOME/.config/environment.d/im.conf"
+        echo "  [OK] im.conf restaurado."
+    fi
+    if [ -f "$latest/.config/environment.d/cedilla.conf" ]; then
+        cp "$latest/.config/environment.d/cedilla.conf" "$HOME/.config/environment.d/cedilla.conf"
+        echo "  [OK] cedilla.conf restaurado."
+    fi
+    if [ -f "$latest/.config/fish/conf.d/cedilla.fish" ]; then
+        cp "$latest/.config/fish/conf.d/cedilla.fish" "$HOME/.config/fish/conf.d/cedilla.fish"
+        echo "  [OK] cedilla.fish restaurado."
+    fi
+    
+    # Restaura flags de aplicativos
+    for f in chrome-flags.conf chromium-flags.conf electron-flags.conf code-flags.conf orca-flags.conf; do
+        if [ -f "$latest/.config/$f" ]; then
+            cp "$latest/.config/$f" "$HOME/.config/$f"
+            echo "  [OK] ~/.config/$f restaurado."
+        fi
+    done
+    
+    echo -e "${GREEN}✔ Snapshot restaurado com sucesso.${NC}"
+}
+
+cmd_install() {
+    mkdir -p "$HOME/.local/bin"
+    local bin_target="$HOME/.local/bin/kde-config"
+    local script_path
+    script_path="$(realpath "${BASH_SOURCE[0]}")"
+    ln -sf "$script_path" "$bin_target"
+    chmod +x "$script_path"
+    echo -e "${GREEN}✔ Link simbólico criado: $bin_target -> $script_path${NC}"
+    echo "Certifique-se de que ~/.local/bin está no seu PATH."
+}
+
+cmd_report() {
+    bash "$SHARED_DIR/report.sh" "${1:-}"
+}
+
+# Despacha o comando pedido. Separado do roteamento para que o wrapper de log
+# consiga executá-lo capturando a saída.
+dispatch() {
+    case "${1:-status}" in
+        init) cmd_init ;;
+        status) cmd_status ;;
+        fix-keyboard) cmd_fix_keyboard ;;
+        fix-tongfang) cmd_fix_tongfang ;;
+        revert-tongfang) cmd_revert_tongfang ;;
+        test-keyboard) cmd_test_keyboard ;;
+        monitor-irq) cmd_monitor_irq ;;
+        smart-keyboard-power) cmd_smart_keyboard_power "${2:-}" ;;
+        configure-harness) shift; cmd_configure_harness "$@" ;;
+        gestures) cmd_gestures ;;
+        mouse) cmd_mouse ;;
+        battery-status) cmd_battery_status ;;
+        battery-apply) cmd_battery_apply ;;
+        battery-revert) cmd_battery_revert "${2:-}" ;;
+        preflight) cmd_preflight ;;
+        switch) cmd_switch_layout "${2:-next}" ;;
+        shortcut-switch) cmd_shortcut_switch ;;
+        rollback) cmd_rollback ;;
+        install) cmd_install ;;
+        report) cmd_report "${2:-}" ;;
+        upgrade|update) cmd_upgrade "${2:---apply}" ;;
+        help|--help|-h) usage ;;
+        *) echo -e "${RED}Comando desconhecido: $1${NC}"; usage; exit 1 ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
+# Roteamento com registro de execução
+#
+# Cada execução vira um run em ~/.local/state/kde-wayland-suite/runs/, com os
+# eventos estruturados que os scripts emitem, a saída bruta sem cores e um
+# meta.env. É isso que o comando 'report' lê depois — o relatório sai dos dados,
+# não do texto colorido, que mudaria a cada ajuste de redação.
+#
+# 'report' e 'help' não são registrados: são leitura pura e só poluiriam o
+# histórico com runs sem valor.
+# -----------------------------------------------------------------------------
+COMMAND_NAME="${1:-status}"
+
+if [ -f "$SHARED_DIR/lib-runlog.sh" ] && [ "$COMMAND_NAME" != "report" ] \
+   && [ "$COMMAND_NAME" != "help" ] && [ "$COMMAND_NAME" != "--help" ] && [ "$COMMAND_NAME" != "-h" ]; then
+    # shellcheck source=../shared/lib-runlog.sh
+    source "$SHARED_DIR/lib-runlog.sh"
+    RUNLOG_COMMAND="$COMMAND_NAME"
+    RUNLOG_SUITE_VERSION="$(grep -oP '(?<="version": ")[^"]+' "$BASE_DIR/../../.claude-plugin/plugin.json" 2>/dev/null | head -1 || echo 'desconhecida')"
+    export RUNLOG_COMMAND RUNLOG_SUITE_VERSION
+    runlog_init "$COMMAND_NAME"
+fi
+
+if [ -n "${RUNLOG_DIR:-}" ]; then
+    # Espelha a saída no terminal e, sem as cores ANSI, no output.log.
+    # 'set -o pipefail' garante que o código de saída seja o do dispatch, não o
+    # do tee — do contrário todo comando pareceria ter sucesso.
+    set -o pipefail
+    # O '|| DISPATCH_RC=$?' é obrigatório: este script roda com 'set -e', então
+    # um pipeline que falha encerraria o processo AQUI, antes do runlog_finish —
+    # e a execução que falhou (justamente a que mais interessa registrar) ficaria
+    # sem meta.env. Com o '||', a falha é capturada em vez de abortar.
+    DISPATCH_RC=0
+    dispatch "$@" 2>&1 | tee >(sed -u 's/\x1b\[[0-9;]*m//g' > "$RUNLOG_DIR/output.log") || DISPATCH_RC=$?
+    runlog_finish "$DISPATCH_RC"
+    exit "$DISPATCH_RC"
+else
+    dispatch "$@"
+fi

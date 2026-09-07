@@ -1,1 +1,0 @@
-../../base/skills/kde-wayland-suite-architecture/SKILL.md

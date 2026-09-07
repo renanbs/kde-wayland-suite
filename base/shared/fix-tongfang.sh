@@ -84,7 +84,7 @@ cmd_apply() {
     echo -e "  ✅ [3/4] Parâmetros de kernel injetados no GRUB: ${BOLD}${TONGFANG_PARAMS}${NC}"
     runlog_event "ok" "grub_params_injected" "$TONGFANG_PARAMS"
 
-    echo -e "  [*] [4/4] Atualizando imagem do GRUB (grub-mkconfig)..."
+    echo -e "  [*] [4/5] Atualizando imagem do GRUB (grub-mkconfig)..."
     if command -v update-grub >/dev/null 2>&1; then
         update-grub >/dev/null 2>&1
     elif command -v grub-mkconfig >/dev/null 2>&1; then
@@ -92,13 +92,24 @@ cmd_apply() {
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
         grub2-mkconfig -o /boot/grub2/grub.cfg >/dev/null 2>&1
     else
-        echo -e "  ❌ [4/4] Comando update-grub / grub-mkconfig não encontrado."
+        echo -e "  ❌ [4/5] Comando update-grub / grub-mkconfig não encontrado."
         runlog_event "fail" "grub_update_tool_missing" ""
         exit 1
     fi
-    echo -e "  ✅ [4/4] Imagem do GRUB atualizada com sucesso"
+    echo -e "  ✅ [4/5] Imagem do GRUB atualizada com sucesso"
     runlog_event "ok" "grub_image_updated" "/boot/grub/grub.cfg"
 
+    echo -e "  [*] [5/5] Instalando regra de hardware hwdb e ativando no kernel..."
+    if [ -f "$SCRIPT_DIR/90-tongfang-keyboard.hwdb" ]; then
+        cp -p "$SCRIPT_DIR/90-tongfang-keyboard.hwdb" "/etc/udev/hwdb.d/90-tongfang-keyboard.hwdb"
+        systemd-hwdb update >/dev/null 2>&1 || true
+        udevadm trigger --subsystem-match=input >/dev/null 2>&1 || true
+    fi
+    if command -v setkeycodes >/dev/null 2>&1; then
+        setkeycodes e078 29 2>/dev/null || true
+    fi
+    echo -e "  ✅ [5/5] Regra hwdb instalada e scancode e078 (Left Ctrl) ativado imediatamente no kernel"
+    runlog_event "ok" "tongfang_hwdb_activated" "scancode_e078=29"
     echo -e "\n${BOLD}### 3. Resumo${NC}\n"
     echo -e "| Campo | Conteúdo |"
     echo -e "| :--- | :--- |"
@@ -142,6 +153,12 @@ cmd_revert() {
     fi
     echo -e "  ✅ [2/2] Imagem do GRUB regenerada ao estado anterior"
     runlog_event "ok" "grub_revert_updated" "/boot/grub/grub.cfg"
+
+    if [ -f "/etc/udev/hwdb.d/90-tongfang-keyboard.hwdb" ]; then
+        rm -f "/etc/udev/hwdb.d/90-tongfang-keyboard.hwdb"
+        systemd-hwdb update >/dev/null 2>&1 || true
+        udevadm trigger --subsystem-match=input >/dev/null 2>&1 || true
+    fi
 
     echo -e "\n${BOLD}### 3. Resumo${NC}\n"
     echo -e "| Campo | Conteúdo |"

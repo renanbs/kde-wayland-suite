@@ -35,5 +35,6 @@ acts on the `BATTERY_FIX_*` variables you pass, and each one is opt-in.
 `battery-revert` undoes the last application.
 
 Report every command using the standardized 4-phase output format defined in
-`base/shared/OUTPUT-CONTRACT.md`: **Plano** → **Execução** → **Resumo** → **Ações Recomendadas**.
-It is identical across Claude Code, Cursor, OMP, OpenCode and Antigravity.
+`base/shared/OUTPUT-CONTRACT.md`: **Plan** → **Execution** → **Summary** → **Recommended Actions**.
+It is identical across Claude Code, Cursor, OMP, OpenCode, and Antigravity.
+All internal operations and configurations are in English; translate user-facing responses to the user's selected language (e.g. pt-BR) as needed.

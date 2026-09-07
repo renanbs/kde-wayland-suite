@@ -1,53 +1,53 @@
 ---
 name: linux-wayland-suite-architecture
-description: Constituição arquitetural e disciplina de engenharia do repositório linux-wayland-suite. Define os 7 pilares obrigatórios para qualquer nova funcionalidade, regras de integração contínua em relatórios (report/runlog), comandos guiados (AskUserQuestion), catálogo de modelos por harness e o contrato de saída padronizado tetra-fásico.
+description: Architectural constitution and engineering discipline for linux-wayland-suite. Defines the 7 mandatory pillars for new features, continuous report integration (report/runlog), interactive AI prompts (AskUserQuestion), harness model catalogs, language persistence, and the standardized 4-phase output contract.
 ---
 
-# Arquitetura e Disciplina de Engenharia — Linux Wayland Suite
-Este documento define a **Constituição de Desenvolvimento** da suite. Nenhuma nova funcionalidade, script ou correção pode ser adicionada de forma isolada. Toda adição ao repositório deve nascer integrada em **7 camadas obrigatórias**.
+# Architecture & Engineering Discipline — Linux Wayland Suite
+This document defines the **Development Constitution** of the suite. No new feature, script, or fix may be added in isolation. Every addition to the repository must be integrated across **7 mandatory layers**.
 
 ---
 
-## 1. Os 7 Pilares Obrigatórios de Qualquer Nova Funcionalidade
+## 1. The 7 Mandatory Pillars of Any New Feature
 
-Ao planejar e implementar qualquer nova capacidade (ex.: novo driver de teclado, controle de hardware, gerenciamento de energia, perfis de display), o checklist abaixo é **mandatório**:
+When designing and implementing any new capability (e.g. new keyboard driver, hardware control, power management, display profile), the following checklist is **mandatory**:
 
 ```mermaid
 flowchart TD
-    A[Nova Funcionalidade] --> B[1. Script Canônico em base/shared/]
-    B --> C[2. Exposição na CLI base/bin/kde-config]
-    C --> D[3. Alvo no Makefile]
-    D --> E[4. Emissão de Eventos lib-runlog.sh]
-    E --> F[5. Auditoria em check-status.sh & preflight]
-    F --> G[6. Comando .md em base/commands/ via Symlinks]
-    G --> H[7. Integração no /init, /help e /report]
+    A[New Feature] --> B[1. Canonical Script in base/shared/]
+    B --> C[2. CLI Exposure in base/bin/kde-config]
+    C --> D[3. Makefile Target]
+    D --> E[4. Structured Events lib-runlog.sh]
+    E --> F[5. Health Audit in check-status.sh & preflight]
+    F --> G[6. Standardized .md Command in base/commands/]
+    G --> H[7. Integration into /init, /help and /report]
 ```
 
-### Pilar 1: Script Canônico (`base/shared/<nome>.sh` ou `.py`)
-- **Localização:** Exclusivamente em `base/shared/`.
-- **Interface Mínima Obrigatória:**
-  - `--apply` (ou ação direta): aplica a configuração com backup atômico prévio.
-  - `--revert` (ou `--remove`): desfaz a alteração e restaura o backup/padrão.
-  - `--status`: exibe o estado atual do recurso.
-- **Tolerância a Falhas:** Uso de `set -euo pipefail`, validação de dependências e proteção de `sudo` com checagem de `$EUID`.
+### Pillar 1: Canonical Script (`base/shared/<name>.sh` or `.py`)
+- **Location:** Exclusively in `base/shared/`.
+- **Minimum Required Interface:**
+  - `--apply` (or direct action): applies configuration with atomic pre-execution backup.
+  - `--revert` (or `--remove`): reverts changes and restores backup/default.
+  - `--status`: displays current feature state.
+- **Fault Tolerance:** Usage of `set -euo pipefail`, dependency validation, and root protection checks.
 
-### Pilar 2: Orquestrador CLI (`base/bin/kde-config`)
-- Mapeamento na função `usage()`.
-- Função auxiliar dedicada `cmd_<nome>()`.
-- Roteamento no `dispatch()`.
-- Suporte a execução com captura de logs em `~/.local/state/kde-wayland-suite/runs/`.
+### Pillar 2: CLI Orchestrator (`base/bin/kde-config`)
+- Mapped in `usage()` function.
+- Dedicated helper function `cmd_<name>()`.
+- Routed in `dispatch()`.
+- Execution logging support via `~/.local/state/kde-wayland-suite/runs/`.
 
-### Pilar 3: Build & Automação (`Makefile`)
-- Adicionar o nome do alvo ao `.PHONY`.
-- Documentar na saída do `make help`.
-- Criar a regra de encaminhamento:
+### Pillar 3: Build & Automation (`Makefile`)
+- Add target name to `.PHONY`.
+- Document in `make help` output.
+- Create forwarding rule:
   ```makefile
-  <nome>:
-  	@./bin/kde-config <nome>
+  <name>:
+  	@./bin/kde-config <name>
   ```
 
-### Pilar 4: Eventos Estruturados (`lib-runlog.sh`)
-- Todo script deve incluir:
+### Pillar 4: Structured Events (`lib-runlog.sh`)
+- Every script must include:
   ```bash
   if [ -f "$SCRIPT_DIR/lib-runlog.sh" ]; then
       source "$SCRIPT_DIR/lib-runlog.sh"
@@ -56,39 +56,41 @@ flowchart TD
       runlog_metric() { :; }
   fi
   ```
-- Emitir registros atômicos via `runlog_event <status> <id> [detalhe]` (`status` ∈ `ok`, `warn`, `fail`, `skip`, `info`, `metric`).
+- Emit atomic event records via `runlog_event <status> <id> [detail]` (`status` ∈ `ok`, `warn`, `fail`, `skip`, `info`, `metric`).
 
-### Pilar 5: Auditoria Contínua de Saúde (`check-status.sh` e `preflight-base.sh`)
-- O `check-status.sh` deve auditar o novo recurso automaticamente:
-  - Se estiver correto: emite `[OK]` + `runlog_event "ok" ...`.
-  - Se estiver ausente ou precisar de ação: emite `[AVISO]` indicando o comando exato de 1 linha para ativar + `runlog_event "warn" ...`.
+### Pillar 5: Continuous Health Audit (`check-status.sh` and `preflight-base.sh`)
+- `check-status.sh` must audit the new feature automatically:
+  - Compliant: emit `[OK]` + `runlog_event "ok" ...`.
+  - Non-compliant or requiring action: emit `[WARN]` indicating the exact 1-line command to fix + `runlog_event "warn" ...`.
 
-### Pilar 6: Comando de IA Padronizado (`base/commands/<nome>.md`)
-- Documento com frontmatter YAML (`description:`), cabeçalho `# /<nome>` e:
-  1. **Fluxo Guiado Interativo:** Instrução explícita para agentes de IA usarem `AskUserQuestion` (ou `ask`) antes de aplicar mudanças arriscadas ou multi-opções.
-  2. **Contrato de Saída Tetra-Fásico:** Replicação integral do `OUTPUT-CONTRACT.md`.
-- **Symlinks Relativos:** Replicado via symlinks relativos para `claude-code/commands/`, `cursor/commands/`, `omp/commands/` e `antigravity/skills/`.
+### Pillar 6: Standardized AI Command (`base/commands/<name>.md`)
+- Document with YAML frontmatter (`description:`), header `# /<name>`, and:
+  1. **Guided Interactive Workflow:** Explicit instruction for AI agents to use `AskUserQuestion` (or `ask`) before applying risky or multi-choice options.
+  2. **4-Phase Output Contract:** Complete replication of `OUTPUT-CONTRACT.md`.
+- **Relative Symlinks:** Mirrored via relative symlinks into `claude-code/commands/`, `cursor/commands/`, `omp/commands/`, and `antigravity/skills/`.
 
-### Pilar 7: Central `/help` e Ações Recomendadas no `/report`
-- **`/help`:** Inserir a linha correspondente na tabela geral de comandos de `base/commands/help.md`.
-- **`report.sh`:** Cadastrar o mapeamento do evento `warn`/`fail` para que o relatório exiba a linha na seção `Como resolver pontos não conformes (Ações Recomendadas):`.
+### Pillar 7: Central `/help` and Recommended Actions in `/report`
+- **`/help`:** Insert corresponding row in the command matrix of `base/commands/help.md`.
+- **`report.sh`:** Register `warn`/`fail` event mapping so reports display the exact 1-line fix in `Recommended Actions`.
 
 ---
 
-## 2. As 5 Regras Arquiteturais Invioláveis
+## 2. The 6 Inviolable Architectural Rules
 
-1. **Fonte Canônica Única (`base/`):**
-   - Nunca crie arquivos físicos duplicados em `claude-code/`, `cursor/`, `omp/`, `antigravity/` ou na raiz.
-   - Todas as pastas de integração utilizam symlinks relativos apontando para `base/commands/` e `base/shared/`.
-2. **Contrato de Saída Tetra-Fásico (`OUTPUT-CONTRACT.md`):**
-   - Todo comando executado por qualquer IA deve responder estritamente nas 4 fases:
-     * `### 1. Plano` (Comando, Faz, Reversível)
-     * `### 2. Execução` (`✅`, `⏭️`, `⚠️`, `❌`)
-     * `### 3. Resumo` (Tabela com O que mudou, Backup, Relatório salvo, Como reverter, Requer)
-     * `### 4. Ações Recomendadas` (Obrigatório se houver `⚠️` ou `❌`, com comando exato de 1 linha)
-3. **Consumo de Dados Estruturados (`events.tsv`):**
-   - IAs e relatórios devem ler `events.tsv`, nunca parsear strings ANSI do terminal.
-4. **Detecção e Alinhamento de Host (`lib-harness.sh`):**
-   - Reconhecimento automático de OMP, Claude Code, Cursor e Antigravity. Qualquer comando audita o alinhamento com `~/.config/kde-wayland-suite/harness-profile.json`.
-5. **Disciplina de Release e Marketplace:**
-   - Toda alteração exige: bump semântico de versão (`package.json`, `.claude-plugin/`, `.omp-plugin/`, `antigravity/`), commit semântico (`feat(...)`, `fix(...)`), push para `origin/main` e upgrade no marketplace (`omp plugin upgrade ...`).
+1. **Single Canonical Source (`base/`):**
+   - Never create duplicate physical files in `claude-code/`, `cursor/`, `omp/`, `antigravity/`, or root.
+   - All platform integration directories use relative symlinks pointing to `base/commands/`, `base/shared/`, and `base/skills/`.
+2. **4-Phase Output Contract (`OUTPUT-CONTRACT.md`):**
+   - Every command executed by any AI agent must strictly answer in 4 phases:
+     * `### 1. Plan` (Command, Action, Reversible)
+     * `### 2. Execution` (`✅`, `⏭️`, `⚠️`, `❌`)
+     * `### 3. Summary` (Table: Changed, Language, Unchanged, Backup, Saved Report, How to Revert, Requires)
+     * `### 4. Recommended Actions` (Mandatory if `⚠️` or `❌` occurs, with exact 1-line command)
+3. **Structured Data Consumption (`events.tsv`):**
+   - AI agents and reporting engines must read `events.tsv`, never parse ANSI color escape codes from terminal logs.
+4. **AI Host & Language Profile Alignment (`lib-harness.sh`):**
+   - Automatic recognition of OMP, Claude Code, Cursor, Antigravity, and OpenCode.
+   - Language preference persistence (`en` default, `pt-BR`) in `~/.config/linux-wayland-suite/harness-profile.json`.
+   - Internal codebase, contracts, and runlogs remain canonical English; the AI translates user dialogues as requested.
+5. **Release & Marketplace Discipline:**
+   - Every release requires: semantic version bump (`package.json`, `.claude-plugin/`, `.omp-plugin/`, `antigravity/`), semantic commit (`feat(...)`, `fix(...)`), git push, and marketplace upgrade (`omp plugin upgrade ...`).

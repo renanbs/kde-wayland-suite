@@ -1,51 +1,63 @@
 ---
-description: Apresenta interativamente a lista de relatórios de execuções gravados na suíte e exibe o relatório selecionado pelo usuário com eventos detalhados e ações recomendadas.
+description: Interactively presents the list of recorded execution runlogs and displays the chosen report with structured events, metrics, and actionable recommendations.
 ---
 
 # /report
 
-Exibe relatórios detalhados das execuções da suíte a partir dos **eventos estruturados** gravados no disco.
+Displays detailed execution reports derived from **structured runlog events** persisted to disk:
+
+```bash
+./bin/kde-config report
+```
 
 ---
 
-## Fluxo Interativo Obrigatório para Agentes de IA
+## Mandatory Interactive Workflow for AI Agents
 
-Ao ser acionado via `/report`, o agente de IA **NÃO deve exibir apenas o último relatório diretamente**. O agente **DEVE obrigatoriamente**:
+When triggered via `/report`, the AI agent **must not simply dump the latest report blindly**. The agent **must**:
 
-1. **Buscar o histórico recente:** Listar os diretórios em `~/.local/state/kde-wayland-suite/runs/` e coletar data/hora, comando e contagem de eventos (`ok`, `warn`, `fail`).
-2. **Apresentar a lista interativa:** Usar a ferramenta `AskUserQuestion` (ou `ask`) com a lista dos 5 a 10 relatórios mais recentes para que o usuário escolha qual deseja visualizar.
-3. **Renderizar o relatório escolhido:** Exibir os detalhes completos da execução selecionada seguindo o formato padronizado abaixo.
+1. **Fetch recent history:** List directories in `~/.local/state/kde-wayland-suite/runs/` and retrieve timestamp, command, and event counts (`ok`, `warn`, `fail`).
+2. **Present interactive selection:** Use `AskUserQuestion` (or `ask`) listing the 5 to 10 most recent runs for the user to choose.
+3. **Render the selected report:** Display the complete run details following the 4-phase contract.
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas quatro fases, nesta ordem, com estes títulos exatos:
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha ou visualização do relatório que será executada
-- **Faz:** uma frase sobre o que o relatório apresenta
-- **Reversível:** `não aplicável`
+Before executing:
 
-**2. Execução** — lista dos eventos do relatório selecionado:
+- **Command:** `./bin/kde-config report <index>`
+- **Action:** Displays structured audit trail and remediation advice for selected execution
+- **Reversible:** `not applicable` (read-only)
 
-- `✅ <evento/etapa>` — validado com sucesso
-- `⏭️ <evento/etapa>` — pulado
-- `⚠️ <evento/etapa>` — aviso ou ressalva
-- `❌ <evento/etapa>` — falha real registrada
+### 2. Execution
 
-**3. Resumo** — sempre ao final:
+List of events from the selected report:
 
-| Campo | Conteúdo |
+- `✅ <event/step>` — successfully validated
+- `⏭️ <event/step>` — skipped
+- `⚠️ <event/step>` — warning / non-compliant state
+- `❌ <event/step>` — failure recorded
+
+### 3. Summary
+
+Always at the end:
+
+| Field | Content |
 | :--- | :--- |
-| Relatório selecionado | identificador da pasta ou índice |
-| Balanço da execução | contagem de ok, falhas e avisos |
-| Backup | caminho do backup ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report <número>` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | comando de reversão ou `não aplicável` |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Selected Report | run directory identifier or index |
+| Execution Balance | counts of ok, warnings, and failures |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report <number>` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | reversal command or `not applicable` |
+| Requires | `nothing` \| `logout/login` \| `reboot` |
 
-**4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- `• <Descrição do problema>`: `comando exato para corrigir`
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`

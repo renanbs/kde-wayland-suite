@@ -1,10 +1,10 @@
 ---
-description: Verifica se há novas versões da suite no GitHub e aplica a atualização do repositório, links simbólicos e marketplaces locais do OMP/Claude.
+description: Checks for new versions of the suite on GitHub and updates repository, symlinks, and local OMP/Claude marketplaces.
 ---
 
 # /upgrade
 
-Verifica e atualiza a **KDE Plasma 6 Wayland Suite** para a versão mais recente publicada no GitHub:
+Checks and upgrades the **KDE Plasma 6 Wayland Suite** to the latest release published on GitHub:
 
 ```bash
 ./bin/kde-config upgrade
@@ -12,55 +12,63 @@ Verifica e atualiza a **KDE Plasma 6 Wayland Suite** para a versão mais recente
 
 ---
 
-## Fluxo Guiado de Atualização (Obrigatório para Agentes de IA)
+## Guided Upgrade Flow (Mandatory for AI Agents)
 
-Antes de aplicar a atualização, o agente deve consultar o status remoto e usar `AskUserQuestion` para confirmar a ação com o usuário:
+Before applying the upgrade, the agent must check remote status and use `AskUserQuestion` (or `ask`) to confirm:
 
-Pergunta 1 — **Ação de Atualização** (singleSelect):
-- **"Verificar e Atualizar Imediatamente (Recomendado)"** — Executa `git pull`, atualiza links simbólicos e sincroniza o plugin no marketplace do OMP/Claude.
-- **"Apenas Verificar Versão (Somente Leitura)"** — Compara a versão local e remota sem modificar o sistema.
+### Question 1 — Upgrade Action (singleSelect):
+- **"Check and Upgrade Immediately (Recommended)"** — Runs `git pull`, updates symlinks, and syncs plugin in OMP/Claude marketplace.
+- **"Check Version Only (Read-Only)"** — Compares local and remote version without modifying system files.
 
-### Mapeamento das Respostas para Execução:
+### Mapping Answers to Command Execution:
 
-* **Atualizar Imediatamente:**
+* **Upgrade Immediately:**
   ```bash
   ./bin/kde-config upgrade --apply
   ```
-* **Apenas Verificar:**
+* **Check Only:**
   ```bash
   ./bin/kde-config upgrade --check
   ```
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas quatro fases, nesta ordem, com estes títulos exatos:
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+Before executing:
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+- **Command:** `./bin/kde-config upgrade --apply`
+- **Action:** Fetches latest git commit, relinks CLI, and updates plugin manifest
+- **Reversible:** Yes (`git checkout <previous_commit>`)
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+### 2. Execution
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+One line per step with the corresponding result marker:
 
-| Campo | Conteúdo |
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
+
+### 3. Summary
+
+Always at the end, even when no system state changed:
+
+| Field | Content |
 | :--- | :--- |
-| Versão anterior | versão antes da atualização |
-| Versão atualizada | versão final pós-atualização |
-| Backup | histórico do Git preservado |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | `git checkout <commit_anterior>` |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Previous Version | version before update |
+| Updated Version | final version after update |
+| Backup | Git commit history preserved |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | `git checkout <previous_commit>` |
+| Requires | `nothing` \| `logout/login` \| `reboot` |
 
-**4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- `• <Descrição do problema>`: `comando exato para corrigir`
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`

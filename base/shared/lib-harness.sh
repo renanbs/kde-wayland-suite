@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# lib-harness.sh — Detecção de Harness (Host de IA) e Perfil de Modelos
+# lib-harness.sh — AI Host Harness & Language Profile Detection
 #
-# Suporta detecção precisa de:
+# Supports detection and configuration for:
 #   - OMP (Oh My Pi / Orca + Antigravity)
 #   - Claude Code
 #   - Cursor (IDE / Agent)
 #   - Antigravity
 #   - OpenCode
-#   - Terminal / Shell Genérico
+#   - Generic Terminal / Shell
 #
-# Armazena o perfil em:
+# Stores profile and preferences in:
 #   - ~/.config/linux-wayland-suite/harness-profile.json
 # ==============================================================================
-
 HARNESS_PROFILE_DIR="${HOME}/.config/linux-wayland-suite"
 HARNESS_PROFILE_FILE="${HARNESS_PROFILE_DIR}/harness-profile.json"
 
@@ -79,7 +78,7 @@ get_harness_friendly_name() {
         cursor) echo "Cursor (IDE / Agent)" ;;
         antigravity) echo "Google Antigravity" ;;
         opencode) echo "OpenCode" ;;
-        *) echo "Terminal / Shell Genérico" ;;
+        *) echo "Generic Terminal / Shell" ;;
     esac
 }
 
@@ -100,18 +99,57 @@ get_saved_model_role() {
     fi
 }
 
+get_saved_language() {
+    if [ -f "$HARNESS_PROFILE_FILE" ]; then
+        grep -oP '(?<="language": ")[^"]+' "$HARNESS_PROFILE_FILE" 2>/dev/null || echo "en"
+    else
+        echo "en"
+    fi
+}
+
+set_saved_language() {
+    local lang="${1:-en}"
+    if [ "$lang" != "pt-BR" ] && [ "$lang" != "pt_BR" ] && [ "$lang" != "pt" ]; then
+        lang="en"
+    else
+        lang="pt-BR"
+    fi
+
+    local harness reasoning code review security
+    harness="$(get_saved_harness)"
+    [ "$harness" = "none" ] || [ "$harness" = "unknown" ] && harness="$(detect_active_harness)"
+    reasoning="$(get_saved_model_role "reasoning")"
+    [ "$reasoning" = "default" ] && reasoning="google-antigravity/gemini-3.7-flash"
+    code="$(get_saved_model_role "code")"
+    [ "$code" = "default" ] && code="google-antigravity/gemini-3.7-flash"
+    review="$(get_saved_model_role "review")"
+    [ "$review" = "default" ] && review="google-antigravity/gemini-3.7-flash"
+    security="$(get_saved_model_role "security")"
+    [ "$security" = "default" ] && security="anthropic/claude-3.7-sonnet"
+
+    save_harness_profile "$harness" "$reasoning" "$code" "$review" "$security" "$lang"
+}
+
 save_harness_profile() {
     local harness="$1"
     local reasoning_model="${2:-google-antigravity/gemini-3.7-flash}"
     local code_model="${3:-google-antigravity/gemini-3.7-flash}"
     local review_model="${4:-google-antigravity/gemini-3.7-flash}"
     local security_model="${5:-anthropic/claude-3.7-sonnet}"
+    local language="${6:-$(get_saved_language)}"
+
+    if [ "$language" != "pt-BR" ] && [ "$language" != "pt_BR" ] && [ "$language" != "pt" ]; then
+        language="en"
+    else
+        language="pt-BR"
+    fi
 
     mkdir -p "$HARNESS_PROFILE_DIR"
     cat << EOF > "$HARNESS_PROFILE_FILE"
 {
   "harness": "$harness",
   "harness_name": "$(get_harness_friendly_name "$harness")",
+  "language": "$language",
   "configured_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
   "models": {
     "reasoning": "$reasoning_model",

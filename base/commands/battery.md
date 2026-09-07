@@ -1,87 +1,97 @@
 ---
-description: Diagnostica consumo de energia/bateria (GPU primária híbrida, PCIe ASPM, runtime PM de dispositivos PCI, saúde da bateria, rádios) e aplica só as correções que o usuário escolher, com reversão simples.
+description: Diagnoses power and battery consumption (hybrid primary GPU, PCIe ASPM, PCI runtime PM, battery health, idle radios) and applies user-selected optimizations with snapshot reversibility.
 ---
 
 # /battery
 
-Diagnostica o consumo de energia da máquina e, com base na decisão do usuário, aplica correções — sempre com um mecanismo de reversão.
+Diagnoses machine power consumption and, based on user decisions, applies targeted optimizations with automatic backup snapshots:
 
 ```bash
 ./bin/kde-config battery-status
 ```
 
-## Fluxo obrigatório para agentes de IA
+---
 
-**Nunca aplique correções de bateria sem perguntar.** Este comando é diagnóstico primeiro, decisão do usuário depois:
+## Mandatory AI Agent Workflow
 
-1. Rode `./bin/kde-config battery-status` e leia a saída.
-2. Para cada achado com `[FALHA]` ou `[INFO]` acionável, explique ao usuário o que significa e o trade-off (latência, estabilidade, o que muda), como já é feito nesta conversa para o mismatch de GPU primária e a política de PCIe ASPM.
-3. Use `AskUserQuestion` para perguntar, achado por achado (ou tudo de uma vez, se preferir), o que ele quer aplicar. Não assuma "sim" por padrão — cada correção é opt-in.
-4. Rode `./bin/kde-config battery-apply` só com as variáveis correspondentes às escolhas:
+**Never apply battery optimizations without asking the user first.** This command is diagnostic first, decision second:
+
+1. Run `./bin/kde-config battery-status` and inspect the output.
+2. For each actionable finding (`[FAIL]` or `[INFO]`), explain the technical tradeoff (stability, latency, power savings) to the user.
+3. Use `AskUserQuestion` (or `ask`) to prompt the user finding-by-finding for what they wish to apply. Never assume "yes" by default.
+4. Execute `./bin/kde-config battery-apply` passing only the chosen flags:
 
 ```bash
-# Exemplo: usuário só quer a correção de GPU, não quer ASPM
+# Example: User only wants primary GPU reordering, no ASPM
 BATTERY_FIX_GPU_PRIMARY=1 ./bin/kde-config battery-apply
 
-# Exemplo: usuário quer as duas, com ASPM persistindo após reboot
+# Example: User wants GPU fix + PCIe ASPM persisting across reboot
 BATTERY_FIX_GPU_PRIMARY=1 BATTERY_FIX_PCIE_ASPM=1 BATTERY_FIX_PCIE_ASPM_PERSIST=1 ./bin/kde-config battery-apply
 
-# Exemplo: usuário também quer runtime PM de dispositivos PCI, persistindo após reboot
+# Example: User also enables PCI device runtime PM persisting across reboot
 BATTERY_FIX_PCI_RUNTIME_PM=1 BATTERY_FIX_PCI_RUNTIME_PM_PERSIST=1 ./bin/kde-config battery-apply
 ```
 
-5. Informe o caminho do snapshot de reversão impresso ao final (também salvo em `~/.config/kde-config-backups/.battery-latest`) e como reverter:
+5. Inform the user of the snapshot path (saved at `~/.config/kde-config-backups/.battery-latest`) and how to revert:
 
 ```bash
 ./bin/kde-config battery-revert
 ```
 
-6. Dê um relatório final resumindo o que foi diagnosticado, o que foi aplicado, o que foi recusado/pulado, e como reverter.
+---
 
-## O que é diagnosticado e corrigido
+## What is Diagnosed and Optimized
 
-- **GPU primária do compositor (sistemas híbridos Intel/NVIDIA/AMD)**: detecta se o KWin está compondo numa GPU diferente da que atende o painel interno (eDP) — isso mantém a GPU discreta sempre ligada e copiando frames à toa. A correção reordena `KWIN_DRM_DEVICES` em `~/.config/plasma-workspace/env/*.sh` para a GPU do painel ser primária, sem remover a GPU discreta da lista (continua disponível sob demanda para PRIME offload e para saídas externas eventualmente ligadas nela). Só tem efeito após logout/login ou reboot.
-- **PCIe ASPM**: detecta se a política (`/sys/module/pcie_aspm/parameters/policy`) não está em `powersave`/`powersupersave`. A correção aplica `powersave` na hora; opcionalmente persiste após reboot via um serviço systemd dedicado (`BATTERY_FIX_PCIE_ASPM_PERSIST=1`). Risco conhecido: raríssimos NVMe/Wi-Fi com firmware ASPM mal implementado podem ficar instáveis — reversível na hora.
-- **Runtime PM de dispositivos PCI**: detecta dispositivos com `power/control` fixo em `on` (NVMe, Wi-Fi, SATA, PCIe root ports etc. nunca suspendem sozinhos, mesmo ociosos). A correção move cada um para `auto` na hora; opcionalmente persiste após reboot via serviço systemd dedicado (`BATTERY_FIX_PCI_RUNTIME_PM_PERSIST=1`). Risco: raro, mas algum driver com runtime PM mal implementado pode ficar instável — reversível na hora, valor original de cada dispositivo é salvo no snapshot.
-- **Saúde da bateria, rádios ociosos (Bluetooth/Docker), governor de CPU**: apenas informativo — não há correção automática (são decisões do usuário ou limitações de hardware).
-
-## Reversão
-
-Cada `battery-apply` cria um snapshot em `~/.config/kde-config-backups/battery_<timestamp>_<pid>/` com o estado anterior e um `manifest.env` descrevendo o que foi tocado. `battery-revert` (sem argumento) usa o snapshot mais recente; `battery-revert <caminho>` reverte um snapshot específico.
+- **Compositor Primary GPU (Intel/NVIDIA/AMD hybrid systems):** Detects if KWin is rendering on a GPU different from the one driving the internal panel (eDP), keeping the discrete GPU awake and copying frames unnecessarily. The fix reorders `KWIN_DRM_DEVICES` in `~/.config/plasma-workspace/env/*.sh` to prioritize the panel's GPU while keeping the discrete GPU available for PRIME offload and external displays. Takes effect upon logout/login or reboot.
+- **PCIe ASPM:** Detects if PCIe Active State Power Management policy is not set to `powersave`/`powersupersave`. The fix sets `powersave` immediately; optionally persists via systemd service (`BATTERY_FIX_PCIE_ASPM_PERSIST=1`).
+- **PCI Device Runtime PM:** Detects devices with `power/control` stuck in `on` (NVMe, Wi-Fi, SATA, PCIe root ports never idling). The fix toggles devices to `auto`; optionally persists via systemd (`BATTERY_FIX_PCI_RUNTIME_PM_PERSIST=1`).
+- **Battery Health, Idle Radios (Bluetooth/Docker), CPU Governor:** Informational only (user decisions / hardware limits).
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+Before executing any action:
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+- **Command:** exact command to be executed
+- **Action:** concise description of power adjustments applied
+- **Reversible:** how to undo — `./bin/kde-config battery-revert`
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+### 2. Execution
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+One line per step with the corresponding result marker:
 
-| Campo | Conteúdo |
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
+
+### 3. Summary
+
+Always at the end, even when no system state changed:
+
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Changed | objective list of changes, or `nothing — already compliant` |
+| Unchanged | what was skipped or declined, and why |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | `./bin/kde-config battery-revert` |
+| Requires | `nothing` \| `logout/login` \| `reboot` |
 
-**Regras:**
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e repita no texto.
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`
+
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.
+- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

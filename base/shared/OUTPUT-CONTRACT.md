@@ -1,62 +1,64 @@
-# Contrato de Saída Padronizado
+# Standardized Output Contract
 
-Fonte canônica do formato de relatório que **todo** comando/skill desta suite
-deve seguir, em **todas** as ferramentas (Claude Code, Cursor, OMP, OpenCode,
-Antigravity). O bloco abaixo é copiado ao final de cada `.md` de comando e de
-skill; ao alterá-lo aqui, replique nos demais arquivos.
+Canonical source for the report format that **every** command/skill in this suite
+must follow across **all** tools (Claude Code, Cursor, OMP, OpenCode,
+Antigravity). The block below is mirrored at the end of each command and skill
+`.md` file. When updating here, replicate across all markdown command templates.
 
-O objetivo é que a mesma operação produza o mesmo relatório independentemente
-da ferramenta usada, e que o usuário consiga comparar execuções e saber sempre
-o que mudou, o que não mudou e como desfazer.
+The goal is for the same operation to produce the same structured report
+regardless of the host tool used, ensuring the user can compare executions and
+always understand what changed, what was skipped, and how to revert.
+
+> **Internationalization Note:** Internal contracts, command specifications,
+> and event logs are strictly defined in English. The AI agent translates
+> user-facing messages into the user's selected language (e.g. `pt-BR`)
+> whenever communicating with the user.
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos:
+Always report in these four phases, in this exact order:
 
-### 1. Plano
+### 1. Plan
 
-Antes de executar qualquer coisa:
+Before executing any action:
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+- **Command:** the exact command line to be executed
+- **Action:** one concise sentence explaining what changes in the system
+- **Reversible:** how to undo — or `not applicable` for read-only actions
 
-### 2. Execução
+### 2. Execution
 
-Uma linha por etapa, com o marcador correspondente ao resultado:
+One line per step with the corresponding result marker:
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
 
-### 3. Resumo
+### 3. Summary
 
-Sempre ao final, mesmo quando nada mudou:
+Always at the end, even when no system state changed:
 
-| Campo | Conteúdo |
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
-### 4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)
+| Changed | objective list of changes, or `nothing — already compliant` |
+| Unchanged | what was skipped or declined, and why |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | the exact reversal command line |
+| Requires | `nothing` \| `logout/login` \| `reboot` |
 
-Sempre que a fase **2. Execução** contiver qualquer item marcado com `⚠️` (aviso) ou `❌` (falha), adicione esta seção logo após o **3. Resumo**, fornecendo o comando exato de 1 linha para resolver cada ponto:
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- `• <Descrição do problema>`: `comando exato para corrigir`
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), add this section immediately following **3. Summary**, providing the exact 1-line command to resolve each issue:
 
-### Regras
+- `• <Issue description>`: `exact command to fix`
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia
-  o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar —
-  peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem
-  suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e
-  repita no texto — não deixe o usuário achar que já está valendo.
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, do not attempt workarounds — prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.
+- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

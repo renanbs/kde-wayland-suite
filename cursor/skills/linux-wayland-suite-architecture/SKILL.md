@@ -1,1 +1,1 @@
-../../base/skills/linux-wayland-suite-architecture/SKILL.md
+../../../base/skills/linux-wayland-suite-architecture/SKILL.md

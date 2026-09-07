@@ -1,12 +1,12 @@
 ---
-description: Gerencia dinamicamente a energia do barramento do teclado integrado (i8042/serio0) para eliminar a trava/latência do Left Ctrl sem desperdiçar bateria quando um teclado USB/Bluetooth estiver conectado.
+description: Dynamically manages integrated keyboard bus power (i8042/serio0) to eliminate Left Ctrl latency and latching without draining battery when an external USB/Bluetooth keyboard is plugged in.
 ---
 
 # /smart-keyboard-power
 
-Gerencia o estado de energia (*Runtime Power Management*) da porta `serio0` do teclado integrado:
-- **Sem teclado externo:** Mantém `power/control = "on"` (barramento sempre acordado, zero latência, eliminando a trava/latência do `Left Ctrl`).
-- **Com teclado externo (USB/Bluetooth):** Alterna automaticamente para `power/control = "auto"` para economizar bateria enquanto o usuário digita no teclado externo.
+Manages the Runtime Power Management state of the integrated keyboard's `serio0` port:
+- **Standalone laptop:** Maintains `power/control = "on"` (bus always awake, zero latency, eliminating Left Ctrl latency/latch).
+- **With external keyboard (USB/Bluetooth):** Automatically switches to `power/control = "auto"` to maximize battery savings while typing on the external keyboard.
 
 ```bash
 ./bin/kde-config smart-keyboard-power --apply
@@ -14,62 +14,74 @@ Gerencia o estado de energia (*Runtime Power Management*) da porta `serio0` do t
 
 ---
 
-## Fluxo Guiado de Configuração (Obrigatório para Agentes de IA)
+## Guided Configuration Flow (Mandatory for AI Agents)
 
-Antes de aplicar qualquer alteração, o agente **deve usar a ferramenta `AskUserQuestion`** para coletar a preferência do usuário:
+Before applying changes, the agent **must use `AskUserQuestion` (or `ask`)** to collect user preference:
 
-Pergunta 1 — **Política de Energia do Teclado** (singleSelect):
-- **"Dinâmico Inteligente (Recomendado)"** — Instala a regra udev que mantém `on` quando usado sozinho e `auto` quando um teclado externo for plugado.
-- **"Sempre Ativo ('on' contínuo)"** — Força `power/control = on` estaticamente sem regra de alternância.
-- **"Desativar / Padrão do Sistema ('auto')"** — Remove a regra udev e restaura o padrão do Linux.
+### Question 1 — Keyboard Power Policy (singleSelect):
+- **"Smart Dynamic (Recommended)"** — Installs udev rule keeping `on` when used standalone and `auto` when external keyboard is attached.
+- **"Always Active ('on' continuous)"** — Forces static `power/control = on` without dynamic switching rule.
+- **"Disable / Linux Default ('auto')"** — Removes udev rule and restores default Linux power management.
 
-### Mapeamento das Respostas para Execução:
+### Mapping Answers to Command Execution:
 
-* **Dinâmico Inteligente:**
+* **Smart Dynamic:**
   ```bash
   ./bin/kde-config smart-keyboard-power --apply
   ```
-* **Desativar / Reverter:**
+* **Disable / Revert:**
   ```bash
   ./bin/kde-config smart-keyboard-power --remove
   ```
-* **Consultar Estado:**
+* **Query Current State:**
   ```bash
   ./bin/kde-config smart-keyboard-power --status
   ```
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+Before executing any action:
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+- **Command:** exact command to be executed
+- **Action:** concise description of udev rules and power control adjustments
+- **Reversible:** how to undo — `./bin/kde-config smart-keyboard-power --remove`
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+### 2. Execution
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+One line per step with the corresponding result marker:
 
-| Campo | Conteúdo |
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
+
+### 3. Summary
+
+Always at the end, even when no system state changed:
+
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Changed | objective list of changes, or `nothing — already compliant` |
+| Unchanged | what was skipped or declined, and why |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | `./bin/kde-config smart-keyboard-power --remove` |
+| Requires | `nothing` |
 
-**Regras:**
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`
+
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.

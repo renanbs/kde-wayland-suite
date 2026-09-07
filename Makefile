@@ -1,4 +1,4 @@
-.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight help
+.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight help
 
 all: status
 
@@ -6,30 +6,31 @@ init:
 	@./bin/kde-config init
 
 help:
-	@echo "Alvos disponíveis no Makefile:"
-	@echo "  make init            - Inicializa e salva todo o ambiente com backups"
-	@echo "  make status          - Executa a auditoria completa de teclado e gestos"
-	@echo "  make check           - Alias para make status"
-	@echo "  make fix-keyboard    - Corrige Ctrl+C no ABNT2 e configura XCompose para US-intl"
-	@echo "  make gestures        - Configura gestos de touchpad (libinput-gestures)"
-	@echo "  make fix-tongfang    - Desbloqueia teclado/matriz em laptops Tongfang/Avell via GRUB"
-	@echo "  make revert-tongfang - Reverte configuração do GRUB para backup anterior"
-	@echo "  make test-keyboard   - Monitor de eventos de teclas em tempo real"
-	@echo "  make monitor-irq     - Monitor de pulsos elétricos de hardware (IRQ 1)"
-	@echo "  make smart-keyboard-power - Gerenciamento dinâmico de energia do teclado integrado"
-	@echo "  make mouse           - Configura o Logitech MX Master 3S (logiops/logid)"
-	@echo "  make battery-status  - Diagnostico de bateria/energia (so leitura)"
-	@echo "  make battery-apply   - Aplica correcoes de bateria (use BATTERY_FIX_*=1; nunca sem antes perguntar ao usuario)"
-	@echo "  make battery-revert  - Reverte a ultima aplicacao de battery-apply"
-	@echo "  make preflight       - Executa diagnóstico base de ambiente e ferramentas"
-	@echo "  make switch-br       - Alterna layout ativo para ABNT2 (br)"
-	@echo "  make switch-us       - Alterna layout ativo para US-intl (us)"
-	@echo "  make shortcut-switch - Configura atalho Meta+Space para alternar layouts"
-	@echo "  make rollback        - Restaura snapshot anterior de configurações"
-	@echo "  make report          - Relatorio da ultima execucao + tendencia historica"
-	@echo "  make upgrade         - Verifica e aplica atualizações da suite e do marketplace"
-	@echo "  make install-cli     - Instala o comando kde-config em ~/.local/bin"
-
+	@echo "Available targets in Makefile:"
+	@echo "  make init            - Full environment initialization with backups and setup"
+	@echo "  make status          - Runs unified health audit of keyboard, gestures and power"
+	@echo "  make check           - Alias for make status"
+	@echo "  make fix-keyboard    - Fixes Ctrl+C on ABNT2 and sets up native cedilla on US-intl"
+	@echo "  make gestures        - Configures 3/4-finger touchpad gestures (libinput-gestures)"
+	@echo "  make fix-tongfang    - Unlocks keyboard matrix in GRUB for Tongfang/Avell laptops"
+	@echo "  make revert-tongfang - Reverts GRUB configuration to previous backup"
+	@echo "  make test-keyboard   - Interactive real-time key event monitor"
+	@echo "  make monitor-irq     - Hardware electric pulse monitor on IRQ 1 (i8042 keyboard)"
+	@echo "  make smart-keyboard-power - Dynamic keyboard power management (anti-latch + battery saver)"
+	@echo "  make configure-harness    - Configures AI host harness profile and model roles"
+	@echo "  make set-lang        - Saves language preference (use LANG=<en|pt-BR>)"
+	@echo "  make mouse           - Configures Logitech MX Master 3S (logiops/logid)"
+	@echo "  make battery-status  - Battery and power diagnostics (read-only)"
+	@echo "  make battery-apply   - Applies battery optimizations (use BATTERY_FIX_*=1; ask user first)"
+	@echo "  make battery-revert  - Reverts the last battery-apply execution"
+	@echo "  make preflight       - Runs environment, distribution and D-Bus tool diagnostics"
+	@echo "  make switch-br       - Switches active layout to ABNT2 (br)"
+	@echo "  make switch-us       - Switches active layout to US-intl (us)"
+	@echo "  make shortcut-switch - Configures Meta+Space shortcut to switch layouts"
+	@echo "  make rollback        - Restores previous configuration snapshots"
+	@echo "  make report          - Run report from structured events + historical trends"
+	@echo "  make upgrade         - Checks and applies suite and marketplace updates"
+	@echo "  make install-cli     - Installs kde-config CLI command in ~/.local/bin"
 status:
 	@./bin/kde-config status
 
@@ -51,6 +52,12 @@ monitor-irq:
 	@./bin/kde-config monitor-irq
 smart-keyboard-power:
 	@./bin/kde-config smart-keyboard-power
+configure-harness:
+	@./bin/kde-config configure-harness
+
+set-lang:
+	@./bin/kde-config set-lang $(LANG)
+
 
 
 gestures:

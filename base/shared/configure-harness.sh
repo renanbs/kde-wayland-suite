@@ -1,19 +1,10 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# configure-harness.sh — Configuração e Alinhamento do Perfil de Harness e Modelos
+# configure-harness.sh — AI Host Harness, Language & Model Profile Alignment
 #
-# Gerencia o mapeamento de papéis de modelos (reasoning, code, review, security)
-# para o harness ativo e audita a sincronização com o perfil gravado.
+# Manages the mapping of model roles (reasoning, code, review, security) and
+# language preferences (en, pt-BR) for the active harness.
 # ==============================================================================
-set -euo pipefail
-
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib-harness.sh
 source "$SCRIPT_DIR/lib-harness.sh"
@@ -40,86 +31,104 @@ cmd_detect() {
 }
 
 cmd_status() {
-    local active saved alignment
+    local active saved alignment lang
     active="$(detect_active_harness)"
     saved="$(get_saved_harness)"
     alignment="$(check_harness_alignment)"
+    lang="$(get_saved_language)"
 
-    echo -e "${BOLD}=== PERFIL DO HARNESS E MAPA DE MODELOS DE IA ===${NC}"
-    echo -e "  • Harness Ativo Detectado: ${BOLD}$(get_harness_friendly_name "$active")${NC} (${active})"
-    echo -e "  • Perfil Salvo no Sistema: ${BOLD}$(get_harness_friendly_name "$saved")${NC} (${saved})"
+    echo -e "${BOLD}=== AI HOST HARNESS & MODEL ROLE PROFILE ===${NC}"
+    echo -e "  • Active Detected Harness: ${BOLD}$(get_harness_friendly_name "$active")${NC} (${active})"
+    echo -e "  • Saved System Profile:    ${BOLD}$(get_harness_friendly_name "$saved")${NC} (${saved})"
+    echo -e "  • Configured Language:     ${BOLD}${lang}${NC}"
 
     if [ "$alignment" = "aligned" ]; then
-        echo -e "  • Alinhamento: ${GREEN}[SINCRONIZADO]${NC} (O ambiente atual corresponde ao perfil gravado)."
-        runlog_event "ok" "harness_aligned" "active=$active, saved=$saved"
+        echo -e "  • Alignment: ${GREEN}[ALIGNED]${NC} (Current environment matches saved profile)."
+        runlog_event "ok" "harness_aligned" "active=$active, saved=$saved, lang=$lang"
     elif [ "$alignment" = "unconfigured" ]; then
-        echo -e "  • Alinhamento: ${YELLOW}[NÃO CONFIGURADO]${NC} (Execute './bin/kde-config configure-harness' ou 'init')."
+        echo -e "  • Alignment: ${YELLOW}[UNCONFIGURED]${NC} (Run './bin/kde-config configure-harness' or 'init')."
         runlog_event "warn" "harness_unconfigured" ""
     else
-        echo -e "  • Alinhamento: ${YELLOW}[DESALINHADO]${NC} (Você está rodando em ${BOLD}$active${NC}, mas o perfil foi salvo para ${BOLD}$saved${NC})."
-        echo -e "    Sugestão: Execute '${BOLD}./bin/kde-config configure-harness --sync${NC}' para atualizar."
+        echo -e "  • Alignment: ${YELLOW}[MISMATCH]${NC} (Running in ${BOLD}$active${NC}, but profile was saved for ${BOLD}$saved${NC})."
+        echo -e "    Suggestion: Run '${BOLD}./bin/kde-config configure-harness --sync${NC}' to update."
         runlog_event "warn" "harness_mismatch" "active=$active, saved=$saved"
     fi
 
     if [ -f "$HARNESS_PROFILE_FILE" ]; then
-        echo -e "\n  ${BOLD}Modelos configurados por papel:${NC}"
-        echo -e "    • Raciocínio/Arquitetura (reasoning): ${BOLD}$(get_saved_model_role "reasoning")${NC}"
-        echo -e "    • Código/Engenharia (code):           ${BOLD}$(get_saved_model_role "code")${NC}"
-        echo -e "    • Revisão/Qualidade (review):         ${BOLD}$(get_saved_model_role "review")${NC}"
-        echo -e "    • Segurança/Defesa (security):        ${BOLD}$(get_saved_model_role "security")${NC}"
+        echo -e "\n  ${BOLD}Configured model roles:${NC}"
+        echo -e "    • Reasoning / Architecture (reasoning): ${BOLD}$(get_saved_model_role "reasoning")${NC}"
+        echo -e "    • Implementation / Code (code):         ${BOLD}$(get_saved_model_role "code")${NC}"
+        echo -e "    • Review / Sanity (review):             ${BOLD}$(get_saved_model_role "review")${NC}"
+        echo -e "    • Security / Defense (security):        ${BOLD}$(get_saved_model_role "security")${NC}"
     fi
+}
+
+cmd_set_lang() {
+    local lang="${1:-en}"
+    set_saved_language "$lang"
+    local saved_lang
+    saved_lang="$(get_saved_language)"
+    echo -e "${GREEN}✔ Language preference saved: ${BOLD}${saved_lang}${NC} in ${HARNESS_PROFILE_FILE}"
+    runlog_event "ok" "language_saved" "language=$saved_lang"
+}
+
+cmd_get_lang() {
+    get_saved_language
 }
 
 cmd_set() {
     local harness="${1:-$(detect_active_harness)}"
-    local reasoning="${2:-claude-3-7-sonnet}"
-    local code="${3:-claude-3-7-sonnet}"
-    local review="${4:-gemini-2-5-flash}"
-    local security="${5:-claude-3-7-sonnet}"
+    local reasoning="${2:-google-antigravity/gemini-3.7-flash}"
+    local code="${3:-google-antigravity/gemini-3.7-flash}"
+    local review="${4:-google-antigravity/gemini-3.7-flash}"
+    local security="${5:-anthropic/claude-3.7-sonnet}"
+    local language="${6:-$(get_saved_language)}"
 
-    echo -e "${BOLD}### 1. Plano${NC}\n"
-    echo -e "- **Comando:** ./bin/kde-config configure-harness --set $harness ..."
-    echo -e "- **Faz:** Salva o perfil do harness ($harness) e mapeamento de modelos em ${HARNESS_PROFILE_FILE}"
-    echo -e "- **Reversível:** Sim, reconfigurando a qualquer momento\n"
+    echo -e "${BOLD}### 1. Plan${NC}\n"
+    echo -e "- **Command:** ./bin/kde-config configure-harness --set $harness $reasoning $code $review $security $language"
+    echo -e "- **Action:** Saves harness profile ($harness), model mapping, and language preference in ${HARNESS_PROFILE_FILE}"
+    echo -e "- **Reversible:** Yes, reconfigure anytime\n"
 
-    echo -e "${BOLD}### 2. Execução${NC}\n"
+    echo -e "${BOLD}### 2. Execution${NC}\n"
 
-    save_harness_profile "$harness" "$reasoning" "$code" "$review" "$security"
-    echo -e "  ✅ [1/2] Perfil gravado em ${BOLD}${HARNESS_PROFILE_FILE}${NC}"
-    runlog_event "ok" "harness_profile_saved" "harness=$harness"
+    save_harness_profile "$harness" "$reasoning" "$code" "$review" "$security" "$language"
+    echo -e "  ✅ [1/2] Profile and language saved to ${BOLD}${HARNESS_PROFILE_FILE}${NC}"
+    runlog_event "ok" "harness_profile_saved" "harness=$harness, lang=$language"
 
-    echo -e "  ✅ [2/2] Papéis de modelos associados com sucesso"
-    runlog_event "ok" "harness_models_configured" "r=$reasoning, c=$code, rev=$review, sec=$security"
+    echo -e "  ✅ [2/2] Model roles configured successfully"
+    runlog_event "ok" "harness_models_configured" "r=$reasoning, c=$code, rev=$review, sec=$security, lang=$language"
 
-    echo -e "\n${BOLD}### 3. Resumo${NC}\n"
-    echo -e "| Campo | Conteúdo |"
+    echo -e "\n${BOLD}### 3. Summary${NC}\n"
+    echo -e "| Field | Content |"
     echo -e "| :--- | :--- |"
-    echo -e "| O que mudou | Perfil de harness salvo para $(get_harness_friendly_name "$harness") |"
-    echo -e "| Raciocínio (reasoning) | $reasoning |"
-    echo -e "| Implementação (code) | $code |"
-    echo -e "| Revisão (review) | $review |"
-    echo -e "| Segurança (security) | $security |"
-    echo -e "| Arquivo de Perfil | ${HARNESS_PROFILE_FILE} |"
-    echo -e "| Relatório salvo | ./bin/kde-config report (ou ~/.local/state/kde-wayland-suite/runs/) |"
-    echo -e "| Como reverter | ./bin/kde-config configure-harness |"
-    echo -e "| Requer | nada |"
+    echo -e "| Changed | Saved harness profile for $(get_harness_friendly_name "$harness") |"
+    echo -e "| Language (language) | $language |"
+    echo -e "| Reasoning (reasoning) | $reasoning |"
+    echo -e "| Implementation (code) | $code |"
+    echo -e "| Review (review) | $review |"
+    echo -e "| Security (security) | $security |"
+    echo -e "| Profile File | ${HARNESS_PROFILE_FILE} |"
+    echo -e "| Saved Report | ./bin/kde-config report (or ~/.local/state/kde-wayland-suite/runs/) |"
+    echo -e "| How to Revert | ./bin/kde-config configure-harness |"
+    echo -e "| Requires | nothing |"
 }
 
 cmd_sync() {
     local active
     active="$(detect_active_harness)"
-    local r c rev sec
+    local r c rev sec lang
     r="$(get_saved_model_role "reasoning")"
     c="$(get_saved_model_role "code")"
     rev="$(get_saved_model_role "review")"
     sec="$(get_saved_model_role "security")"
+    lang="$(get_saved_language)"
 
-    [ "$r" = "default" ] && r="claude-3-7-sonnet"
-    [ "$c" = "default" ] && c="claude-3-7-sonnet"
-    [ "$rev" = "default" ] && rev="gemini-2-5-flash"
-    [ "$sec" = "default" ] && sec="claude-3-7-sonnet"
+    [ "$r" = "default" ] && r="google-antigravity/gemini-3.7-flash"
+    [ "$c" = "default" ] && c="google-antigravity/gemini-3.7-flash"
+    [ "$rev" = "default" ] && rev="google-antigravity/gemini-3.7-flash"
+    [ "$sec" = "default" ] && sec="anthropic/claude-3.7-sonnet"
 
-    cmd_set "$active" "$r" "$c" "$rev" "$sec"
+    cmd_set "$active" "$r" "$c" "$rev" "$sec" "$lang"
 }
 
 ACTION="${1:---status}"
@@ -134,11 +143,18 @@ case "$ACTION" in
         shift
         cmd_set "$@"
         ;;
+    --set-lang)
+        shift
+        cmd_set_lang "${1:-en}"
+        ;;
+    --get-lang)
+        cmd_get_lang
+        ;;
     --sync)
         cmd_sync
         ;;
     *)
-        echo "Uso: $0 [--detect | --status | --set <harness> <reasoning> <code> <review> <security> | --sync]"
+        echo "Usage: $0 [--detect | --status | --set <harness> <reasoning> <code> <review> <security> [language] | --set-lang <en|pt-BR> | --get-lang | --sync]"
         exit 1
         ;;
 esac

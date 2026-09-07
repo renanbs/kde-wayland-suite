@@ -5,52 +5,56 @@ globs: ["**/*"]
 
 # KDE Plasma 6 Wayland Suite — Cursor CLI & Agent Rule
 
-Esta regra habilita o Cursor (GUI e Cursor CLI / `cursor-agent`) a diagnosticar e executar automações do KDE Plasma 6 Wayland.
+This rule enables Cursor (GUI and Cursor CLI / `cursor-agent`) to diagnose and execute KDE Plasma 6 Wayland automations.
 
-## Comandos Disponíveis via CLI
+## Available Commands via CLI
 
 ```bash
-# Diagnóstico de saúde do ambiente
+# Health diagnostic of the environment
 ./bin/kde-config status
 
-# Atalhos (Ctrl+<tecla>), cedilha e clipboard
+# Set user language preference (en / pt-BR)
+./bin/kde-config set-lang [en|pt-BR]
+
+# Shortcuts (Ctrl+<key>), native cedilla, and clipboard
 ./bin/kde-config fix-keyboard
 
-# Desbloquear teclado/matriz em laptops Tongfang/Avell/Clevo via GRUB
+# Unlock keyboard matrix on Tongfang/Avell laptops via GRUB
 ./bin/kde-config fix-tongfang
 
-# Gerenciamento dinâmico de energia do teclado (anti-latch + economia)
+# Dynamic keyboard power management (anti-latch + battery saver)
 ./bin/kde-config smart-keyboard-power --apply
 
-# Configurar e auditar perfil do host de IA e mapa de modelos
+# Configure and audit AI host profile and model role map
 ./bin/kde-config configure-harness
 
-# Gestos de touchpad (libinput-gestures)
+# Touchpad gestures (libinput-gestures)
 ./bin/kde-config gestures
 
 # Logitech MX Master 3S (logiops)
 ./bin/kde-config mouse
 
-# Bateria/energia — diagnóstico (só leitura)
+# Battery / power — diagnostic (read-only)
 ./bin/kde-config battery-status
 
-# Bateria/energia — aplicar/reverter correções
+# Battery / power — apply/revert fixes
 BATTERY_FIX_GPU_PRIMARY=1 ./bin/kde-config battery-apply
 ./bin/kde-config battery-revert
 
-# Relatório analítico com seleção interativa e ações recomendadas
+# Analytical run report with interactive selection and recommendations
 ./bin/kde-config report
 ./bin/kde-config report --list
 
-# Central de Ajuda
+# Help Center
 ./bin/kde-config help
 
-# Alternar layout ativo via D-Bus
+# Switch active layout via D-Bus
 ./bin/kde-config switch [br|us]
 ```
 
-## Arquitetura de Execução e Disciplina (Ver `skills/kde-wayland-suite-architecture`)
+## Execution Architecture & Discipline (See `skills/kde-wayland-suite-architecture`)
 
-- A fonte canônica de scripts é `base/shared/`; a de comandos é `base/commands/`.
-- As pastas `bin/`, `shared/` e `commands/` na raiz e nos subdiretórios de plataforma são symlinks de compatibilidade.
-- Todo comando deve seguir o formato padronizado de `base/shared/OUTPUT-CONTRACT.md`: **Plano** → **Execução** → **Resumo** → **Ações Recomendadas**.
+- Canonical script source is `base/shared/`; command source is `base/commands/`.
+- Platform directories (`claude-code/`, `omp/`, `cursor/`, `opencode/`, `antigravity/`, `commands/`, `shared/`, `bin/`) are compatibility symlinks.
+- Every command must follow `base/shared/OUTPUT-CONTRACT.md`: **Plan** → **Execution** → **Summary** → **Recommended Actions**.
+- Internal commands and contracts are strictly in English; user-facing responses are translated to the user's selected language (e.g. `pt-BR`) as needed.

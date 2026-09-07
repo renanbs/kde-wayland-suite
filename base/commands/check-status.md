@@ -1,10 +1,10 @@
 ---
-description: Executa a verificação completa de status do KDE Plasma 6 Wayland (sessão, teclado ABNT2/US-intl, XCompose e libinput-gestures).
+description: Runs full health status audit of KDE Plasma 6 Wayland (session, ABNT2/US-intl keyboard, native cedilla, fcitx5 status, touchpad gestures, battery, and AI host alignment).
 ---
 
 # /check-status
 
-Executa o diagnóstico unificado de saúde do ambiente KDE Wayland.
+Executes the unified health diagnostic audit of the KDE Wayland environment:
 
 ```bash
 ./bin/kde-config status
@@ -12,37 +12,49 @@ Executa o diagnóstico unificado de saúde do ambiente KDE Wayland.
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+Before executing any action:
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+- **Command:** `./bin/kde-config status`
+- **Action:** Audits session, D-Bus, keyboard matrix, IME variables, gestures, power, and AI host alignment
+- **Reversible:** `not applicable` (read-only audit)
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+### 2. Execution
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+One line per step with the corresponding result marker:
 
-| Campo | Conteúdo |
+- `✅ <step>` — verified and compliant
+- `⏭️ <step>` — skipped
+- `⚠️ <step>` — warning / non-compliant setting detected
+- `❌ <step>` — failure detected
+
+### 3. Summary
+
+Always at the end:
+
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Changed | `nothing — read-only status check` |
+| Unchanged | full audit completed |
+| Backup | `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | `not applicable` |
+| Requires | `nothing` |
 
-**Regras:**
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e repita no texto.
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`
+
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.
+- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

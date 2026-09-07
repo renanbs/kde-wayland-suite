@@ -1,1 +1,1 @@
-../base/shared/SKILL.md
+../../base/shared/SKILL.md

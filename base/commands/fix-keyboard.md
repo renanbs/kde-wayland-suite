@@ -1,56 +1,68 @@
 ---
-description: Corrige o problema de atalhos (Ctrl+C) no layout ABNT2, remove variáveis legadas de IM e configura o suporte completo a cedilha no US-intl para Chrome, Orca IDE, Electron, GTK e Qt no KDE Wayland.
+description: Fixes shortcut issues (Ctrl+C) on ABNT2 layout, removes legacy IM variables, and configures native dead-key cedilla on US-intl for Chrome, Orca IDE, Electron, GTK, and Qt in KDE Wayland.
 ---
 
 # /fix-keyboard
 
-Aplica a correção atômica para teclado, atalhos e cedilha (' + c -> ç) no KDE Plasma 6 Wayland.
+Applies the atomic fix for keyboard shortcuts, layout definitions, native cedilla (`' + c` $\to$ `ç`), and Wayland clipboard:
 
 ```bash
 ./bin/kde-config fix-keyboard
 ```
 
-Antes de rodar, pergunte ao usuário se ele quer habilitar a **auto-cura do layout no login**: o Plasma tem um bug conhecido que, ao encerrar a sessão, pode regravar `~/.config/kxkbrc` mantendo só o layout ativo no momento do logout (o `br` some, o widget de troca de layout desaparece da barra). Se ele quiser proteção automática contra isso em todo reboot, rode com a variável habilitada:
+Before executing, ask the user if they want to enable **layout auto-heal on login**: KDE Plasma has a known bug where ending a session can overwrite `~/.config/kxkbrc` retaining only the active layout at logout time (the `br` layout disappears and the layout switch widget vanishes from the panel). If the user wants automatic protection across every reboot, run with the environment variable enabled:
 
 ```bash
 KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config fix-keyboard
 ```
 
-Isso instala uma entrada de autostart que reaplica o layout completo (`br,us`) a cada login. Se o usuário não quiser essa entrada extra de autostart, rode sem a variável — o comando corrige o `kxkbrc` na hora normalmente.
+This installs an autostart entry that reapplies the full dual layout (`br,us`) on each login. If declined, run without the variable — the command still repairs `kxkbrc` immediately.
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+Before executing any action:
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+- **Command:** exact command to be executed
+- **Action:** concise explanation of changes to keyboard config, IM modules, and compose rules
+- **Reversible:** how to undo — snapshot restoration command
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+### 2. Execution
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+One line per step with the corresponding result marker:
 
-| Campo | Conteúdo |
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
+
+### 3. Summary
+
+Always at the end, even when no system state changed:
+
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Changed | objective list of changes, or `nothing — already compliant` |
+| Unchanged | what was skipped or declined, and why |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | `./bin/kde-config rollback` |
+| Requires | `nothing` \| `logout/login` |
 
-**Regras:**
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e repita no texto.
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`
+
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.
+- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

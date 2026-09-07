@@ -1,55 +1,67 @@
 ---
-description: Instala o logiops e configura o Logitech MX Master 3S no KDE Plasma 6 Wayland — botão de gesto para troca de workspace/overview e SmartShift fixo em rolagem livre.
+description: Installs logiops and configures Logitech MX Master 3S in KDE Plasma 6 Wayland — thumb gesture button for workspace switching / Overview and SmartShift locked to free-spin mode.
 ---
 
 # /configure-mouse
 
-Instala o `logiops` (se necessário), gera `~/.config/logid.cfg`, linka em `/etc/logid.cfg` e ativa o serviço `logid.service` para o Logitech MX Master 3S.
+Installs `logiops` (if needed), generates `~/.config/logid.cfg`, symlinks to `/etc/logid.cfg`, and activates `logid.service` for the Logitech MX Master 3S:
 
 ```bash
 ./bin/kde-config mouse
 ```
 
-## O que é configurado
+## What is Configured
 
-- **Botão de gesto** (grande, sob o polegar): segurar+arrastar troca de workspace (`Meta+Ctrl+Left/Right`, sem mover a janela ativa junto), cima/toque = Overview (`Meta+W`), baixo = Mostrar Área de Trabalho (`Meta+D`).
-- **Multi-monitor**: habilita `Switch desktops independently for each screen` no KWin, garantindo que a troca de workspace pelo botão de gesto reflita corretamente em setups com múltiplos monitores.
-- **Roda de rolagem**: SmartShift desligado, fixa no modo livre (sem "travinhas"). Pressione o botão físico embaixo da roda uma vez após aplicar a config para fixar o modo livre.
-- Config editável sem sudo em `~/.config/logid.cfg` — depois de editar, rode `sudo systemctl restart logid.service` para recarregar.
+- **Thumb Gesture Button:** Hold + swipe left/right switches workspace (`Meta+Ctrl+Left/Right` without moving the active window), up/tap = Overview (`Meta+W`), down = Show Desktop (`Meta+D`).
+- **Multi-Monitor:** Enables `Switch desktops independently for each screen` in KWin, ensuring thumb workspace switching works properly on multi-monitor setups.
+- **Scroll Wheel:** SmartShift disabled, locked to smooth free-spin mode. Press the physical mode-switch button below the scroll wheel once after setup to lock free-spin mode.
+- Editable without sudo at `~/.config/logid.cfg` — after editing, run `sudo systemctl restart logid.service` to reload.
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Always report in these four phases, in this exact order:
 
-**1. Plano** — antes de executar qualquer coisa:
+### 1. Plan
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+Before executing any action:
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+- **Command:** `./bin/kde-config mouse`
+- **Action:** Configures `logid.cfg`, links to `/etc/logid.cfg`, and enables systemd service
+- **Reversible:** Yes (`sudo systemctl stop logid.service && sudo rm -f /etc/logid.cfg`)
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+### 2. Execution
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+One line per step with the corresponding result marker:
 
-| Campo | Conteúdo |
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
+
+### 3. Summary
+
+Always at the end, even when no system state changed:
+
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Changed | objective list of changes, or `nothing — already compliant` |
+| Unchanged | what was skipped or declined, and why |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | `sudo systemctl stop logid.service && sudo rm -f /etc/logid.cfg` |
+| Requires | `nothing` |
 
-**Regras:**
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e repita no texto.
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
+
+- `• <Issue description>`: `exact command to fix`
+
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.
+- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

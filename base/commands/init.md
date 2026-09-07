@@ -1,68 +1,103 @@
 ---
-description: Inicializa todo o ambiente KDE Plasma 6 Wayland (salva backups, corrige teclado/atalhos, configura gestos de touchpad, configura o mouse Logitech MX Master 3S e instala o CLI).
+description: Full initialization of the KDE Plasma 6 Wayland environment (language preference, backups, keyboard repair, touchpad gestures, Logitech mouse, battery diagnostic, and CLI setup).
 ---
 
 # /init
 
-Executa a inicialização e configuração completa da suíte KDE Wayland com backup automático:
+Executes the full initialization and configuration of the KDE Wayland Suite with automatic backups:
 
 ```bash
 ./bin/kde-config init
 ```
 
-1. **Componentes** (multiSelect): Teclado/cedilha/atalhos (Ctrl+C ABNT2) — recomendado; Gestos de touchpad (3/4 dedos) — recomendado se houver touchpad; Mouse Logitech MX Master 3S (logiops) — só se o usuário tiver o mouse; Diagnóstico de bateria/energia — recomendado (é só diagnóstico nesta pergunta, sem aplicar nada ainda).
-2. **Auto-cura do layout no login**: proteger contra o bug do KWin/Plasma que pode colapsar `~/.config/kxkbrc` para um único layout ao reiniciar (o widget de troca de layout some da barra) — recomendado, mas adiciona uma entrada de autostart.
-3. **Perfil do Host de IA (Harness & Modelos)**: detecta automaticamente se você está no OMP, Claude Code, Cursor ou Antigravity, orienta quais classes de modelos usar por papel (reasoning, code, review, security) e salva o perfil para auditar desalinhamentos futuros.
-Depois, rode `init` com as variáveis correspondentes às respostas:
+---
 
-```bash
-# Componente não escolhido -> pule com SKIP_*; auto-cura aceita -> KDE_SUITE_LAYOUT_AUTOHEAL=1
-SKIP_GESTURES=1 SKIP_MOUSE=1 KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config init
-```
+## Guided Initialization Flow (Mandatory for AI Agents)
 
-`SKIP_KEYBOARD`, `SKIP_GESTURES`, `SKIP_MOUSE` e `SKIP_BATTERY` pulam cada etapa quando o usuário não quiser aquele componente. Se o usuário pedir para configurar só uma coisa específica, pule este fluxo de perguntas e rode o comando específico direto (`./bin/kde-config mouse`, etc.).
+`init` configures multiple components at once. **Never execute `init` blindly.** Before running any command, use the `AskUserQuestion` (or `ask`) tool to collect the user's choices in a single prompt before proceeding:
 
-### Bateria: diagnóstico dentro do `init`, correção fora dele
+### Question 1 — Language Preference (`language`) (singleSelect):
+- **"English (en) (Recommended)"** — Standard English. All internal configs, runlogs, and contracts remain canonical English.
+- **"Português do Brasil (pt-BR)"** — Brazilian Portuguese. Internal operations remain in English; the AI will translate user-facing messages and reports to Portuguese.
 
-Se o componente "Diagnóstico de bateria/energia" for escolhido, o `init` só roda `battery-status` (leitura, seguro, sempre pode rodar). **Não** passe `BATTERY_FIX_*` durante o fluxo de `init` — a decisão de aplicar cada correção de bateria é um segundo momento, depois de ver o diagnóstico real da máquina. Depois que o `init` terminar e você ver os achados na saída, siga o fluxo do `/battery` (`commands/battery.md`): explique cada achado, pergunte via `AskUserQuestion` o que aplicar, e só então rode `./bin/kde-config battery-apply` com as variáveis correspondentes.
+### Question 2 — Components (`components`) (multiSelect):
+- **"Keyboard, cedilla, and shortcuts (Ctrl+C ABNT2, US-intl native ç)"** — Recommended.
+- **"Touchpad gestures (3/4 fingers via libinput-gestures)"** — Recommended if laptop has a touchpad.
+- **"Logitech MX Master 3S mouse (logiops / logid)"** — Only if the user uses this mouse.
+- **"Battery / power consumption diagnostic"** — Recommended (read-only diagnostic within init; no fixes applied yet).
+
+### Question 3 — Layout Auto-Heal on Login (`autoheal`) (singleSelect):
+- **"Yes, protect against KWin/Plasma layout collapse bug (Recommended)"** — Installs an autostart hook that re-applies full keyboard layout (`br,us`) on every login.
+- **"No, manual layout management"** — Skips installing the autostart hook.
+
+### Question 4 — AI Host Profile & Model Roles (`harness`):
+- Automatically aligns with active host (OMP, Claude Code, Cursor, Antigravity) and configures model role mapping.
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+### Mapping Answers to Command Execution:
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+```bash
+# Example: Language English, user does not have mouse, wants other components and auto-heal
+KDE_SUITE_LANG=en SKIP_MOUSE=1 KDE_SUITE_LAYOUT_AUTOHEAL=1 ./bin/kde-config init
 
-**1. Plano** — antes de executar qualquer coisa:
+# Example: Language pt-BR, user only wants keyboard and battery diagnostic
+KDE_SUITE_LANG=pt-BR SKIP_GESTURES=1 SKIP_MOUSE=1 ./bin/kde-config init
+```
 
-- **Comando:** a linha exata que será executada
-- **Faz:** uma frase sobre o que muda no sistema
-- **Reversível:** como desfazer — ou `não aplicável` quando for só leitura
+The environment variables `KDE_SUITE_LANG`, `SKIP_KEYBOARD`, `SKIP_GESTURES`, `SKIP_MOUSE`, and `SKIP_BATTERY` control each stage.
+The selected language is permanently saved to `~/.config/linux-wayland-suite/harness-profile.json`.
 
-**2. Execução** — uma linha por etapa, com o marcador do resultado:
+### Battery: Diagnostic Inside `init`, Fixes Applied Separately
 
-- `✅ <etapa>` — concluída e verificada
-- `⏭️ <etapa>` — pulada (diga por quê)
-- `⚠️ <etapa>` — concluída com ressalva (diga qual)
-- `❌ <etapa>` — falhou (cole a mensagem de erro real, não parafraseie)
+When "Battery / power consumption diagnostic" is selected, `init` only runs `battery-status` (safe read-only inspection). **Never** pass `BATTERY_FIX_*` during `init`. Once `init` completes and the diagnostics are visible, follow the `/battery` flow (`commands/battery.md`): explain findings to the user, prompt for confirmation via `AskUserQuestion`, and only then execute `./bin/kde-config battery-apply` with corresponding variables.
 
-**3. Resumo** — sempre ao final, mesmo quando nada mudou:
+---
 
-| Campo | Conteúdo |
+## Output Format (Mandatory across all tools)
+
+Always report in these four phases, in this exact order:
+
+### 1. Plan
+
+Before executing any action:
+
+- **Command:** the exact command line to be executed
+- **Action:** one concise sentence explaining what changes in the system
+- **Reversible:** how to undo — or `not applicable` for read-only actions
+
+### 2. Execution
+
+One line per step with the corresponding result marker:
+
+- `✅ <step>` — completed and verified
+- `⏭️ <step>` — skipped (state reason)
+- `⚠️ <step>` — completed with caveats / warning (state reason)
+- `❌ <step>` — failed (include actual error output, never paraphrase)
+
+### 3. Summary
+
+Always at the end, even when no system state changed:
+
+| Field | Content |
 | :--- | :--- |
-| O que mudou | lista objetiva, ou `nada — já estava correto` |
-| O que não mudou | o que foi pulado ou recusado, e por quê |
-| Backup | caminho do snapshot, ou `nenhum` |
-| Relatório salvo | `./bin/kde-config report` (ou `~/.local/state/kde-wayland-suite/runs/`) |
-| Como reverter | o comando exato |
-| Requer | `nada` \| `logout/login` \| `reboot` |
+| Changed | objective list of changes, or `nothing — already compliant` |
+| Language | saved language (`en` or `pt-BR`) |
+| Unchanged | what was skipped or declined, and why |
+| Backup | snapshot path, or `none` |
+| Saved Report | `./bin/kde-config report` (or `~/.local/state/kde-wayland-suite/runs/`) |
+| How to Revert | the exact reversal command line |
+| Requires | `nothing` \| `logout/login` \| `reboot` |
 
-**4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:
+### 4. Recommended Actions (Mandatory if ⚠️ or ❌ occurs)
 
-- `• <Descrição do problema>`: `comando exato para corrigir`
+Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `❌` (failure), provide the exact 1-line command to fix each issue:
 
-**Regras:**
+- `• <Issue description>`: `exact command to fix`
 
-- Nunca declare sucesso sem verificar: rode o `status` correspondente ou releia o arquivo alterado antes de marcar `✅`.
-- Se algo precisar de `sudo` e a sessão não tiver TTY, não tente contornar — peça ao usuário para rodar com o prefixo `!` e mostre a linha exata.
-- Falhas entram no relatório com a saída real do comando; nunca omita nem suavize um erro.
-- Se uma correção exigir logout ou reboot para valer, diga isso no `Requer` e repita no texto.
+### Rules
+
+- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
+- If a command requires `sudo` and the session lacks an interactive TTY, prompt the user to execute it with the `!` prefix and show the exact command line.
+- Failures must be reported with actual command error output; never omit or soften errors.
+- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

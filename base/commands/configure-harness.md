@@ -1,10 +1,10 @@
 ---
-description: Configura e audita o perfil do host de IA (Harness como OMP + Antigravity, Claude Code, Cursor) e associa os papéis de modelos recomendados (reasoning, code, review, security).
+description: Configures and audits the AI host profile (OMP + Antigravity, Claude Code, Cursor, OpenCode), model role mapping (reasoning, code, review, security), and language preference.
 ---
 
 # /configure-harness
 
-Gerencia e audita o alinhamento entre o host de IA ativo e os modelos configurados para a suite:
+Manages and audits alignment between the active AI host, model role assignments, and language settings:
 
 ```bash
 ./bin/kde-config configure-harness
@@ -12,49 +12,65 @@ Gerencia e audita o alinhamento entre o host de IA ativo e os modelos configurad
 
 ---
 
-## Fluxo Guiado de Configuração (Obrigatório para Agentes de IA)
+## Guided Configuration Flow (Mandatory for AI Agents)
 
-O agente deve detectar o harness ativo e usar a ferramenta `AskUserQuestion` para coletar as preferências do usuário com o catálogo de modelos atualizado:
+The agent must detect the active harness and use `AskUserQuestion` (or `ask`) to configure preferences:
 
-Pergunta 1 — **Papel de Raciocínio & Arquitetura (`reasoning`)** (singleSelect):
-- **"google-antigravity/gemini-3.7-flash (Recomendado)"** — Ultrarrápido, raciocínio fluido e janela de contexto massiva.
-- **"google-antigravity/gemini-3.7-pro"** — Raciocínio profundo e decomposição arquitetural complexa.
-- **"anthropic/claude-3.7-sonnet"** — Raciocínio híbrido e extended thinking.
-- **"deepseek/deepseek-r1"** — Foco em raciocínio lógico e algorítmico puro.
+### Question 1 — Language Preference (`language`) (singleSelect):
+- **"English (en) (Recommended)"** — Standard English for all internal configs, runlogs, and contracts.
+- **"Português do Brasil (pt-BR)"** — Brazilian Portuguese user-facing responses translated by the AI agent.
 
-Pergunta 2 — **Papel de Implementação & Código (`code`)** (singleSelect):
-- **"google-antigravity/gemini-3.7-flash (Recomendado)"** — Execução cirúrgica, scripts, C/Rust e patches de kernel.
-- **"anthropic/claude-3.7-sonnet"** — Engenharia de precisão para refatoração e código complexo.
-- **"openai/gpt-4o"** — Padrão multi-tarefa rápido.
+### Question 2 — Reasoning & Architecture Role (`reasoning`) (singleSelect):
+- **"google-antigravity/gemini-3.7-flash (Recommended)"** — Ultra-fast, fluid reasoning, massive context window.
+- **"google-antigravity/gemini-3.7-pro"** — Deep reasoning and complex architectural decomposition.
+- **"anthropic/claude-3.7-sonnet"** — Hybrid reasoning with extended thinking.
+- **"deepseek/deepseek-r1"** — Pure algorithmic and logical reasoning.
 
-Pergunta 3 — **Papel de Revisão & Sanidade (`review`)** (singleSelect):
-- **"google-antigravity/gemini-3.7-flash (Recomendado)"** — Validação ágil de contratos de saída, testes e verificações de regressão.
-- **"anthropic/claude-3.5-haiku"** — Verificação leve e de baixo custo.
+### Question 3 — Implementation & Code Role (`code`) (singleSelect):
+- **"google-antigravity/gemini-3.7-flash (Recommended)"** — Precise execution for shell, C/Rust, and kernel patches.
+- **"anthropic/claude-3.7-sonnet"** — Precision engineering for complex refactoring.
+- **"openai/gpt-4o"** — Standard multi-tasking.
 
-Pergunta 4 — **Papel de Segurança & Pentest Defensivo (`security`)** (singleSelect):
-- **"anthropic/claude-3.7-sonnet (Recomendado)"** — Auditoria defensiva rigorosa, análise de permissões e segurança de hardware.
-- **"google-antigravity/gemini-3.7-flash"** — Varredura rápida de vetores de risco e sanitização.
+### Question 4 — Review & Sanity Role (`review`) (singleSelect):
+- **"google-antigravity/gemini-3.7-flash (Recommended)"** — Fast output contract validation and regression checks.
+- **"anthropic/claude-3.5-haiku"** — Lightweight verification.
 
-### Mapeamento das Respostas para Execução:
+### Question 5 — Security & Defense Role (`security`) (singleSelect):
+- **"anthropic/claude-3.7-sonnet (Recommended)"** — Rigorous defensive audits, permissions, and hardware security analysis.
+- **"google-antigravity/gemini-3.7-flash"** — Fast risk surface scanning.
+
+---
+
+### Mapping Answers to Command Execution:
 
 ```bash
-./bin/kde-config configure-harness --set <harness> <reasoning> <code> <review> <security>
+./bin/kde-config configure-harness --set <harness> <reasoning> <code> <review> <security> [language]
 ```
 
-Para sincronizar automaticamente com o harness ativo:
+To set language preference directly:
+```bash
+./bin/kde-config configure-harness --set-lang <en|pt-BR>
+```
+
+To auto-sync with the active harness:
 ```bash
 ./bin/kde-config configure-harness --sync
 ```
 
 ---
 
-## Formato de saída (obrigatório e idêntico em todas as ferramentas)
+## Output Format (Mandatory across all tools)
 
-Reporte sempre nestas três fases, nesta ordem, com estes títulos exatos.
+Always report in these four phases, in this exact order:
 
-**1. Plano** — comando que será executado e o que faz.  
-**2. Execução** — uma linha por etapa (`✅`, `⏭️`, `⚠️`, `❌`).  
-**3. Resumo** — tabela com o que mudou, o que não mudou, backup e como reverter.  
-**4. Ações Recomendadas (Obrigatório se houver ⚠️ ou ❌)**:
+### 1. Plan
+Command to be executed and what it changes.
 
-- `• <Descrição do problema>`: `comando exato para corrigir`
+### 2. Execution
+One line per step (`✅`, `⏭️`, `⚠️`, `❌`).
+
+### 3. Summary
+Table with Changed, Language, Unchanged, Backup, and How to Revert.
+
+### 4. Recommended Actions
+Mandatory if any `⚠️` or `❌` occurs, providing the exact 1-line command to fix each issue.

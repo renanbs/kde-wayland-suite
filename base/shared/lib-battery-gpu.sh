@@ -154,5 +154,10 @@ set_edp_mode() {
         echo -e "${RED}Erro: kscreen-doctor não disponível para alternar modo de tela.${NC}"
         return 1
     fi
-    kscreen-doctor "output.${edp_name}.mode.${mode_id}" >/dev/null 2>&1
+    local res
+    res="$(kscreen-doctor "output.${edp_name}.mode.${mode_id}" 2>&1 || true)"
+    if echo "$res" | grep -qiE "failed|rejected|error"; then
+        return 1
+    fi
+    return 0
 }

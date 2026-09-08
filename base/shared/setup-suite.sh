@@ -113,9 +113,13 @@ apply_screen_60() {
     echo -e "${BOLD}==> [Configuração] Taxa de Atualização da Tela Interna (60 Hz)${NC}"
     read -r EDP_OUT EDP_CUR EDP_CUR_ID EDP_60_ID EDP_HIGH_ID <<< "$(find_edp_refresh_modes || true)"
     if [ -n "$EDP_OUT" ] && [ -n "$EDP_60_ID" ] && [ "$EDP_60_ID" != "none" ]; then
-        set_edp_mode "$EDP_OUT" "$EDP_60_ID"
-        echo -e "${GREEN}✔ Tela $EDP_OUT alterada para 60 Hz (modo $EDP_60_ID).${NC}"
-        runlog_event "ok" "setup_screen_60_applied" "output=$EDP_OUT mode=$EDP_60_ID"
+        if set_edp_mode "$EDP_OUT" "$EDP_60_ID"; then
+            echo -e "${GREEN}✔ Tela $EDP_OUT alterada para 60 Hz (modo $EDP_60_ID).${NC}"
+            runlog_event "ok" "setup_screen_60_applied" "output=$EDP_OUT mode=$EDP_60_ID"
+        else
+            echo -e "${YELLOW}⚠️ O driver gráfico rejeitou o modo 60 Hz para $EDP_OUT (painel com taxa nativa fixa). Mantida taxa de ${EDP_CUR} Hz.${NC}"
+            runlog_event "warn" "setup_screen_60_rejected" "driver rejected mode $EDP_60_ID"
+        fi
     else
         echo -e "${YELLOW}[INFO] Modo 60 Hz não disponível para a tela interna.${NC}"
         runlog_event "skip" "setup_screen_60_unavailable" ""
@@ -126,9 +130,13 @@ apply_screen_high() {
     echo -e "${BOLD}==> [Configuração] Taxa de Atualização da Tela Interna (Alta Taxa)${NC}"
     read -r EDP_OUT EDP_CUR EDP_CUR_ID EDP_60_ID EDP_HIGH_ID <<< "$(find_edp_refresh_modes || true)"
     if [ -n "$EDP_OUT" ] && [ -n "$EDP_HIGH_ID" ] && [ "$EDP_HIGH_ID" != "none" ]; then
-        set_edp_mode "$EDP_OUT" "$EDP_HIGH_ID"
-        echo -e "${GREEN}✔ Tela $EDP_OUT alterada para alta taxa (modo $EDP_HIGH_ID).${NC}"
-        runlog_event "ok" "setup_screen_high_applied" "output=$EDP_OUT mode=$EDP_HIGH_ID"
+        if set_edp_mode "$EDP_OUT" "$EDP_HIGH_ID"; then
+            echo -e "${GREEN}✔ Tela $EDP_OUT alterada para alta taxa (modo $EDP_HIGH_ID).${NC}"
+            runlog_event "ok" "setup_screen_high_applied" "output=$EDP_OUT mode=$EDP_HIGH_ID"
+        else
+            echo -e "${YELLOW}⚠️ O driver gráfico rejeitou a alteração para alta taxa.${NC}"
+            runlog_event "warn" "setup_screen_high_rejected" "driver rejected mode $EDP_HIGH_ID"
+        fi
     else
         echo -e "${YELLOW}[INFO] Modo de alta taxa não disponível para a tela interna.${NC}"
         runlog_event "skip" "setup_screen_high_unavailable" ""
@@ -137,7 +145,7 @@ apply_screen_high() {
 
 apply_tongfang() {
     echo -e "${BOLD}==> [Configuração] Desbloqueio de Matriz Tongfang/Avell no GRUB${NC}"
-    bash "$SCRIPT_DIR/fix-tongfang.sh"
+    bash "$SCRIPT_DIR/fix-tongfang.sh" --apply
     runlog_event "ok" "setup_tongfang_applied" ""
 }
 

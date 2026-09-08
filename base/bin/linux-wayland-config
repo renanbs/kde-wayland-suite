@@ -295,16 +295,22 @@ cmd_screen_hz() {
                 echo -e "${RED}Erro: Nenhum modo de 60 Hz disponível para a tela $EDP_OUT_NAME.${NC}"
                 exit 1
             fi
-            set_edp_mode "$EDP_OUT_NAME" "$EDP_60_ID"
-            echo -e "${GREEN}✔ Taxa de atualização da tela $EDP_OUT_NAME alternada para 60 Hz (modo $EDP_60_ID).${NC}"
+            if set_edp_mode "$EDP_OUT_NAME" "$EDP_60_ID"; then
+                echo -e "${GREEN}✔ Taxa de atualização da tela $EDP_OUT_NAME alternada para 60 Hz (modo $EDP_60_ID).${NC}"
+            else
+                echo -e "${YELLOW}⚠️ O driver gráfico rejeitou o modo 60 Hz para $EDP_OUT_NAME (painel com taxa nativa fixa). Mantida taxa de ${EDP_CUR_HZ} Hz.${NC}"
+            fi
             ;;
         120|max|high)
             if [ -z "$EDP_HIGH_ID" ] || [ "$EDP_HIGH_ID" = "none" ]; then
                 echo -e "${RED}Erro: Nenhum modo de alta taxa disponível para a tela $EDP_OUT_NAME.${NC}"
                 exit 1
             fi
-            set_edp_mode "$EDP_OUT_NAME" "$EDP_HIGH_ID"
-            echo -e "${GREEN}✔ Taxa de atualização da tela $EDP_OUT_NAME alternada para alta taxa (modo $EDP_HIGH_ID).${NC}"
+            if set_edp_mode "$EDP_OUT_NAME" "$EDP_HIGH_ID"; then
+                echo -e "${GREEN}✔ Taxa de atualização da tela $EDP_OUT_NAME alternada para alta taxa (modo $EDP_HIGH_ID).${NC}"
+            else
+                echo -e "${YELLOW}⚠️ O driver gráfico rejeitou a alteração para alta taxa.${NC}"
+            fi
             ;;
         "")
             echo -e "${BOLD}Tela Interna:${NC} $EDP_OUT_NAME"

@@ -18,9 +18,10 @@ This skill provides automations and diagnostics to resolve common problems in th
 10. **fcitx5 Key Grabbing Deactivation**: Masks system-level autostarts (`/etc/xdg/autostart/org.fcitx.Fcitx5.desktop`) with `Hidden=true` in `~/.config/autostart/` to prevent fcitx5 from swallowing Ctrl combinations under Wayland.
 11. **Tongfang / Avell / Clevo Hardware Matrix Fix**: Unlocks the physical Control/Fn matrix on Tongfang chassis via GRUB kernel parameters (`i8042.nopnp=1 i8042.nomux=1 i8042.reset=1 acpi_osi='Windows 2020'`).
 12. **Smart Dynamic Keyboard Power Management (`smart-keyboard-power`)**: Dynamic udev rule (`/etc/udev/rules.d/90-kde-smart-keyboard-power.rules`) keeping `power/control = on` (zero latency) when standalone, and switching to `auto` (power saver) when external keyboards connect.
-13. **Tongfang S3 Deep Sleep Resume Fix**: Hook in `/etc/systemd/system-sleep/90-kde-keyboard-resume.sh` issuing `rescan` to `/sys/devices/platform/i8042/serio0/drvctl` upon lid open.
-14. **Structured Event Logs and Historical Reporting**: Every execution records a run in `~/.local/state/kde-wayland-suite/runs/<timestamp>-<cmd>/` with `events.tsv`, `output.log`, and `meta.env`. `report` parses structured events to produce reproducible reports and actionable remediation advice.
-
+13. **Smart Dynamic Wi-Fi Power Management (`smart-wifi-power`)**: Dynamic udev rule (`/etc/udev/rules.d/90-linux-wayland-smart-wifi-power.rules`), NetworkManager dispatcher, and sleep hook keeping 802.11 power saving off and PCIe awake on AC power (eliminating radio sleep and packet timeouts for Orca/SSH), while enabling full power saving on battery.
+14. **Machine Profiling & Modular Setup (`/init` & `/setup`)**: `/init` (or `/scan`) performs non-destructive hardware inspection saving `~/.config/linux-wayland-suite/machine-profile.json`. `/setup` uses this profile to offer a contextual configuration wizard tailored to detected hardware.
+15. **Tongfang S3 Deep Sleep Resume Fix**: Hook in `/etc/systemd/system-sleep/90-kde-keyboard-resume.sh` issuing `rescan` to `/sys/devices/platform/i8042/serio0/drvctl` upon lid open.
+16. **Structured Event Logs and Historical Reporting**: Every execution records a run in `~/.local/state/linux-wayland-suite/runs/<timestamp>-<cmd>/` with `events.tsv`, `output.log`, and `meta.env`. `report` parses structured events to produce reproducible reports and actionable remediation advice.
 > **Standardized Output Format**: Every command in this suite reports in the 4-phase format defined in `OUTPUT-CONTRACT.md` (**Plan** $\to$ **Execution** $\to$ **Summary** $\to$ **Recommended Actions**), identical across Claude Code, Cursor, OMP, OpenCode, and Antigravity.
 
 > **Internationalization & Translation**: Internally, all commands, skills, contracts, and runlogs are maintained in English. The AI agent translates explanations and interaction dialogues into the user's selected language (`en` or `pt-BR`) as configured.
@@ -70,7 +71,10 @@ The environment variables `KDE_SUITE_LANG`, `SKIP_KEYBOARD`, `SKIP_GESTURES`, `S
 
 | Script / Command | Description |
 | :--- | :--- |
-| `shared/check-status.sh` | Full audit of environment, keyboard, native cedilla, Wayland clipboard, IM variables, gestures |
+| `shared/profile-machine.sh` | Non-destructive machine profiling and hardware inspection |
+| `shared/setup-suite.sh` | Contextual modular configuration wizard based on machine profile |
+| `shared/manage-wifi-power.sh` | Dynamic Wi-Fi power management (AC vs Battery) |
+| `shared/check-status.sh` | Full audit of environment, keyboard, native cedilla, Wayland clipboard, IM variables, gestures, Wi-Fi |
 | `shared/fix-keyboard.sh` | Repairs `Ctrl+C`, native US-intl cedilla, clipboard deadlocks, hot-reloads KWin |
 | `shared/configure-gestures.sh` | Setup of `libinput-gestures.conf` and service restart |
 | `shared/configure-mouse.sh` | Installs `logiops` and configures MX Master 3S (gesture button, SmartShift) |
@@ -82,51 +86,54 @@ The environment variables `KDE_SUITE_LANG`, `SKIP_KEYBOARD`, `SKIP_GESTURES`, `S
 | `shared/monitor-irq.py` | Hardware electric pulse monitor on IRQ 1 (i8042 keyboard) |
 | `shared/manage-keyboard-power.sh` | Dynamic keyboard power management (on standalone, auto with USB/BT keyboard) |
 | `shared/preflight-base.sh` | Preflight checks for environment, DMI hardware, Plasma version, and D-Bus tools |
-| `bin/kde-config switch [br\|us]` | Immediate keyboard layout switching via D-Bus |
-| `bin/kde-config set-lang [en\|pt-BR]` | Saves user language preference |
-
+| `bin/linux-wayland-config switch [br\|us]` | Immediate keyboard layout switching via D-Bus |
+| `bin/linux-wayland-config set-lang [en\|pt-BR]` | Saves user language preference |
+| `bin/linux-wayland-config screen-hz [60\|120]` | Switches internal display refresh rate |
 ---
 
 ## Quick CLI Usage
 
 ```bash
-# Full diagnostic
-./bin/kde-config status
+# Machine profiling & scan (safe, read-only)
+./bin/linux-wayland-config init
 
-# Set language preference
-./bin/kde-config set-lang en
+# Contextual modular configuration wizard
+./bin/linux-wayland-config setup
+
+# Full health audit
+./bin/linux-wayland-config status
+
+# Enable dynamic smart Wi-Fi power management (AC vs Battery)
+./bin/linux-wayland-config smart-wifi-power --apply
+
+# Switch internal screen refresh rate (60 Hz vs 120 Hz)
+./bin/linux-wayland-config screen-hz 60
 
 # Apply keyboard, cedilla, and clipboard fix
-./bin/kde-config fix-keyboard
+./bin/linux-wayland-config fix-keyboard
 
 # Unlock keyboard matrix on Tongfang/Avell laptops (GRUB)
-./bin/kde-config fix-tongfang
-
-# Monitor key events in real time
-./bin/kde-config test-keyboard
-
-# Monitor electric pulses on IRQ 1 (i8042)
-./bin/kde-config monitor-irq
+./bin/linux-wayland-config fix-tongfang
 
 # Enable dynamic smart keyboard power management
-./bin/kde-config smart-keyboard-power --apply
+./bin/linux-wayland-config smart-keyboard-power --apply
 
 # Apply touchpad gestures
-./bin/kde-config gestures
+./bin/linux-wayland-config gestures
 
 # Configure Logitech MX Master 3S mouse
-./bin/kde-config mouse
+./bin/linux-wayland-config mouse
 
 # Battery / power diagnostic (read-only)
-./bin/kde-config battery-status
+./bin/linux-wayland-config battery-status
 
 # Apply user-selected battery fix
-BATTERY_FIX_GPU_PRIMARY=1 ./bin/kde-config battery-apply
+BATTERY_FIX_GPU_PRIMARY=1 ./bin/linux-wayland-config battery-apply
 
 # Revert last battery optimization
-./bin/kde-config battery-revert
+./bin/linux-wayland-config battery-revert
 
 # Switch active layout
-./bin/kde-config switch br
-./bin/kde-config switch us
+./bin/linux-wayland-config switch br
+./bin/linux-wayland-config switch us
 ```

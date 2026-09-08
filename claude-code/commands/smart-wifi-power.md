@@ -1,0 +1,1 @@
+../../commands/smart-wifi-power.md

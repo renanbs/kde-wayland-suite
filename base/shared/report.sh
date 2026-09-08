@@ -107,20 +107,26 @@ show_run() {
 
         if [ "$status" = "warn" ] || [ "$status" = "fail" ]; then
             case "$id" in
+                wifi_powersave_on_ac|smart_wifi_power_missing|smart_wifi_power_inactive)
+                    recommendations+=("${YELLOW}Energia do Wi-Fi (estabilidade e baixa latência na tomada):${NC} execute '${BOLD}./bin/linux-wayland-config smart-wifi-power --apply${NC}'")
+                    ;;
+                machine_profile_missing)
+                    recommendations+=("${YELLOW}Perfil da Máquina:${NC} execute '${BOLD}./bin/linux-wayland-config scan${NC}'")
+                    ;;
                 keyboard_power_auto_no_rule|serio_power_missing|keyboard_resume_hook_missing)
-                    recommendations+=("${YELLOW}Energia e Suspensão do Teclado (anti-latch / lid resume):${NC} execute '${BOLD}./bin/kde-config smart-keyboard-power --apply${NC}'")
+                    recommendations+=("${YELLOW}Energia e Suspensão do Teclado (anti-latch / lid resume):${NC} execute '${BOLD}./bin/linux-wayland-config smart-keyboard-power --apply${NC}'")
                     ;;
                 tongfang_kernel_params_missing|tongfang_ctrl_lock_risk)
-                    recommendations+=("${YELLOW}Teclado Tongfang/Avell:${NC} execute '${BOLD}./bin/kde-config fix-tongfang${NC}'")
+                    recommendations+=("${YELLOW}Teclado Tongfang/Avell:${NC} execute '${BOLD}./bin/linux-wayland-config fix-tongfang${NC}'")
                     ;;
                 im_conf_present|im_env_forced|im_systemd_env_forced|fcitx5_running|fcitx5_system_autostart_unmasked|cedilla_conf_invalid|cedilla_conf_missing|lc_ctype_process_missing|kxkbrc_layout_empty|kxkbrc_layout_collapsed)
-                    recommendations+=("${YELLOW}Teclado e Atalhos (Ctrl+C / Cedilha):${NC} execute '${BOLD}./bin/kde-config fix-keyboard${NC}'")
+                    recommendations+=("${YELLOW}Teclado e Atalhos (Ctrl+C / Cedilha):${NC} execute '${BOLD}./bin/linux-wayland-config fix-keyboard${NC}'")
                     ;;
                 xsel_hung)
-                    recommendations+=("${YELLOW}Clipboard travado:${NC} execute '${BOLD}./bin/kde-config fix-keyboard${NC}'")
+                    recommendations+=("${YELLOW}Clipboard travado:${NC} execute '${BOLD}./bin/linux-wayland-config fix-keyboard${NC}'")
                     ;;
                 harness_mismatch)
-                    recommendations+=("${YELLOW}Alinhamento de Harness/IA:${NC} execute '${BOLD}./bin/kde-config configure-harness --sync${NC}'")
+                    recommendations+=("${YELLOW}Alinhamento de Harness/IA:${NC} execute '${BOLD}./bin/linux-wayland-config configure-harness --sync${NC}'")
                     ;;
                 *)
                     [ -n "$detail" ] && recommendations+=("${id}: ${detail}")

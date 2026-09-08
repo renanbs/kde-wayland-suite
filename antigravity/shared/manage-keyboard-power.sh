@@ -1,0 +1,1 @@
+../../base/shared/manage-keyboard-power.sh

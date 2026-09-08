@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-installation--ai-tools-integration)
-[![Version](https://img.shields.io/badge/Version-2.1.0-brightgreen.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-2.2.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -24,34 +24,44 @@ Compatible as a native plugin for **Oh My Pi (OMP)**, **Claude Code**, **Cursor 
 ### 2. Smart Dynamic Keyboard Power Management (`anti-latch`)
 * **Problem:** Under Linux Runtime Power Management, the PS/2 `serio0` port enters idle sleep (`power/control = auto`), causing the first single-byte modifier press (`Left Ctrl`) to lag while waking the bus.
 * **Fix:** `./bin/kde-config smart-keyboard-power --apply` installs a dynamic udev rule that keeps the bus in `power/control = on` (zero latency) when using the laptop standalone, and automatically switches to `auto` (power saver) whenever an external USB/Bluetooth keyboard is connected.
+### 3. Smart Dynamic Wi-Fi Power Management (`smart-wifi-power`)
+* **Problem:** Under default power saving policies, Wi-Fi radios (`iwlwifi`, etc.) sleep between beacon intervals and the PCIe bus enters `D3hot`. When accessing the machine remotely (e.g. Orca IDE on port `6768`, SSH, streaming), incoming connections experience high initial latency, dropped packets, or connection timeouts.
+* **Fix:** `./bin/linux-wayland-config smart-wifi-power --apply` installs a dynamic udev rule, NetworkManager dispatcher, and sleep hook:
+  - **On AC (Charger):** Automatically disables 802.11 power saving (`power_save off`) and keeps PCIe bus awake (`power/control = on`) for zero latency and rock-solid incoming connections.
+  - **On Battery:** Automatically re-enables 802.11 power saving (`power_save on`) and PCIe runtime PM (`power/control = auto`) for maximum battery life.
 
-### 3. Broken `Ctrl+C` / `Ctrl+<key>` Shortcuts in ABNT2 (`br`)
+### 4. Broken `Ctrl+C` / `Ctrl+<key>` Shortcuts in ABNT2 (`br`)
 * **Problem:** Legacy input method modules (`GTK_IM_MODULE=cedilla` / `QT_IM_MODULE=cedilla`) or running `fcitx5` under Wayland grab the keyboard and swallow Ctrl key combinations across Qt, GTK, and Electron apps.
 * **Fix:** Eliminates legacy IM environment variables and masks the `fcitx5` system autostart.
 
-### 4. Native Cedilla on US-intl (`' + c` $\to$ `ç` in Chrome, Orca IDE, Electron, GTK, Qt)
+### 5. Native Cedilla on US-intl (`' + c` $\to$ `ç` in Chrome, Orca IDE, Electron, GTK, Qt)
 * **Problem:** The default `en_US` compose table maps `<dead_acute> <c>` to `ć` (c-acute).
 * **Fix:** Native composition **without any input method**. The system's pt_BR compose table (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) already maps `<dead_acute> <c>` to `ç`. The suite configures `LC_CTYPE=pt_BR.UTF-8` in `~/.config/environment.d/cedilla.conf` and injects `--ozone-platform-hint=auto` into browser flags.
 
-### 5. Wayland Clipboard Deadlock Repair
+### 6. Wayland Clipboard Deadlock Repair
 * **Problem:** Zombie `xsel` processes freeze terminal clipboard pipelines.
 * **Fix:** Cleans hung processes and ensures native `wl-clipboard` (`wl-copy`/`wl-paste`) backend operation.
 
-### 6. Conflict-Free 3 & 4-Finger Touchpad Gestures
+### 7. Conflict-Free 3 & 4-Finger Touchpad Gestures
 * **Fix:** Maps 3-finger (swipe workspaces, overview) and 4-finger gestures complementary to native KWin 1:1 animations via `libinput-gestures` and KWin D-Bus (`qdbus6`).
 
-### 7. Logitech MX Master 3S Button & Scroll Configuration
+### 8. Logitech MX Master 3S Button & Scroll Configuration
 * **Fix:** Installs `logiops`, configures the thumb gesture button for Desktop Grid and Overview, fixes SmartShift free-spin mode, and enables `PerOutputVirtualDesktops=true` for multi-monitor setups.
 
-### 8. Battery & Hybrid GPU Power Diagnostics
+### 9. Battery & Hybrid GPU Power Diagnostics
 * **Fix:** Audits primary GPU compositor selection on Intel/NVIDIA/AMD hybrid laptops, PCIe ASPM policies, PCI runtime power management, and battery health (`battery-status`).
 
-### 9. AI Host Harness Detection & Model Role Profiling
+### 10. AI Host Harness Detection & Model Role Profiling
 * **Fix:** Dynamically detects host agents (OMP, Claude Code, Cursor, Antigravity), maps model roles (Reasoning, Code, Review, Security), and audits environment alignment in real-time.
 
-### 10. Numbered Interactive Report Engine
-* **Fix:** Structured event runlogs saved in `~/.local/state/kde-wayland-suite/runs/`. Features interactive selection (`report --select`), indexed viewing (`report 3`), and actionable remediation commands for any warnings.
+### 11. Machine Profiling & Modular Setup (`init` & `setup`)
+* **Architecture:** In `v2.2.0+`, `./bin/linux-wayland-config init` (or `scan`) performs safe, 100% non-destructive hardware inspection, saving `~/.config/linux-wayland-suite/machine-profile.json`. `./bin/linux-wayland-config setup` reads this profile and provides a contextual configuration wizard tailored exclusively to your detected hardware.
 
+### 12. Internal Display Refresh Rate Switcher (`screen-hz`)
+* **Fix:** `./bin/linux-wayland-config screen-hz 60` or `120` switches internal display refresh rate between high refresh rate (120Hz/144Hz) and battery power-saver mode (60Hz, saving ~2W-3W).
+
+### 13. Numbered Interactive Report Engine
+* **Fix:** Structured event runlogs saved in `~/.local/state/linux-wayland-suite/runs/`. Features interactive selection (`report --select`), indexed viewing (`report 3`), and actionable remediation commands for any warnings.
 
 ---
 
@@ -73,47 +83,50 @@ This suite is continuously tested and verified in real-world production setups:
 
 ```bash
 # Clone the repository
-git clone https://github.com/renanbs/kde-wayland-suite.git ~/src/kde-wayland-suite
-cd ~/src/kde-wayland-suite
+git clone https://github.com/renanbs/linux-wayland-suite.git ~/src/linux-wayland-suite
+cd ~/src/linux-wayland-suite
 
-# Install the 'kde-config' command globally in ~/.local/bin
-make install-cli
+# 1. Step 1: Scan hardware and generate machine profile (safe, non-destructive)
+./bin/linux-wayland-config init
+# or: make init (or: make scan)
 
-# Run unified health status audit
-./bin/kde-config status
+# 2. Step 2: Contextual modular setup wizard (select what you want to configure)
+./bin/linux-wayland-config setup
+# or: make setup
+
+# 3. Step 3: Run unified health audit
+./bin/linux-wayland-config status
 # or: make status
-
-# Guided full initialization with backup
-./bin/kde-config init
 ```
-
 ---
 
 ## 🛠️ CLI Command Reference
 
 | Command | Makefile Target | Description |
 | :--- | :--- | :--- |
-| `kde-config status` | `make status` | 6-stage unified health audit of hardware, DMI, power, IM, cedilla, and gestures |
-| `kde-config init` | `make init` | Guided full initialization with interactive question flow and automatic backups |
-| `kde-config fix-keyboard` | `make fix-keyboard` | Fixes `Ctrl+C` on ABNT2, sets up native cedilla, and masks fcitx5 |
-| `kde-config fix-tongfang` | `make fix-tongfang` | Unlocks keyboard matrix in GRUB for Tongfang/Avell/Clevo laptops |
-| `kde-config smart-keyboard-power` | `make smart-keyboard-power` | Dynamic keyboard power management (`on` standalone, `auto` with USB/BT keyboard) |
-| `kde-config configure-harness` | — | Configures and syncs AI host harness profile and model roles |
-| `kde-config battery-status` | `make battery-status` | Read-only battery, hybrid GPU, and PCIe ASPM diagnostic |
-| `kde-config battery-apply` | `make battery-apply` | Applies user-chosen battery optimizations (`BATTERY_FIX_*`) |
-| `kde-config gestures` | `make gestures` | Configures 3 & 4-finger touchpad gestures (`libinput-gestures`) |
-| `kde-config mouse` | `make mouse` | Configures Logitech MX Master 3S thumb button and SmartShift via `logiops` |
-| `kde-config test-keyboard` | `make test-keyboard` | Real-time interactive key event monitor (`/dev/input/eventX`) |
-| `kde-config monitor-irq` | `make monitor-irq` | Real-time hardware electric interrupt monitor on IRQ 1 (`i8042`) |
-| `kde-config switch [br\|us]` | `make switch-br` | Switches active KWin layout via D-Bus (0=br abnt2, 1=us alt-intl) |
-| `kde-config report` | `make report` | Displays latest run report, historical metrics, and actionable recommendations |
-| `kde-config report --list` | — | Lists recent numbered reports (`[1..N]`) |
-| `kde-config report <N>` | — | Displays the N-th most recent report in detail |
-| `kde-config report --select` | — | Interactive terminal menu to choose and view any report |
-| `kde-config upgrade` | `make upgrade` | Checks and applies updates from GitHub and marketplace |
-| `kde-config rollback` | `make rollback` | Restores previous configuration snapshot from backup |
-| `kde-config help` | `make help` | Displays full command help manual |
-
+| `linux-wayland-config init` / `scan` | `make init` / `make scan` | Non-destructive hardware inspection & machine profiling (`machine-profile.json`) |
+| `linux-wayland-config setup` | `make setup` | Contextual modular configuration wizard based on detected hardware |
+| `linux-wayland-config status` | `make status` | 7-stage unified health audit of hardware, DMI, power, Wi-Fi, IM, cedilla, and gestures |
+| `linux-wayland-config smart-wifi-power` | `make smart-wifi-power` | Dynamic Wi-Fi power management (`off` on AC for zero latency, `on` on battery) |
+| `linux-wayland-config screen-hz [60\|120]` | `make screen-60` / `screen-120` | Switches internal display refresh rate (60 Hz vs 120 Hz) |
+| `linux-wayland-config fix-keyboard` | `make fix-keyboard` | Fixes `Ctrl+C` on ABNT2, sets up native cedilla, and masks fcitx5 |
+| `linux-wayland-config fix-tongfang` | `make fix-tongfang` | Unlocks keyboard matrix in GRUB for Tongfang/Avell/Clevo laptops |
+| `linux-wayland-config smart-keyboard-power` | `make smart-keyboard-power` | Dynamic keyboard power management (`on` standalone, `auto` with USB/BT keyboard) |
+| `linux-wayland-config configure-harness` | — | Configures and syncs AI host harness profile and model roles |
+| `linux-wayland-config battery-status` | `make battery-status` | Read-only battery, hybrid GPU, and PCIe ASPM diagnostic |
+| `linux-wayland-config battery-apply` | `make battery-apply` | Applies user-chosen battery optimizations (`BATTERY_FIX_*`) |
+| `linux-wayland-config gestures` | `make gestures` | Configures 3 & 4-finger touchpad gestures (`libinput-gestures`) |
+| `linux-wayland-config mouse` | `make mouse` | Configures Logitech MX Master 3S thumb button and SmartShift via `logiops` |
+| `linux-wayland-config test-keyboard` | `make test-keyboard` | Real-time interactive key event monitor (`/dev/input/eventX`) |
+| `linux-wayland-config monitor-irq` | `make monitor-irq` | Real-time hardware electric interrupt monitor on IRQ 1 (`i8042`) |
+| `linux-wayland-config switch [br\|us]` | `make switch-br` | Switches active KWin layout via D-Bus (0=br abnt2, 1=us alt-intl) |
+| `linux-wayland-config report` | `make report` | Displays latest run report, historical metrics, and actionable recommendations |
+| `linux-wayland-config report --list` | — | Lists recent numbered reports (`[1..N]`) |
+| `linux-wayland-config report <N>` | — | Displays the N-th most recent report in detail |
+| `linux-wayland-config report --select` | — | Interactive terminal menu to choose and view any report |
+| `linux-wayland-config upgrade` | `make upgrade` | Checks and applies updates from GitHub and marketplace |
+| `linux-wayland-config rollback` | `make rollback` | Restores previous configuration snapshot from backup |
+| `linux-wayland-config help` | `make help` | Displays full command help manual |
 ---
 
 ## 🤖 Installation & AI Tools Integration

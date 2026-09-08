@@ -1,14 +1,24 @@
-.PHONY: all init report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight help
+.PHONY: all init scan profile setup report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight help
 
 all: status
 
 init:
 	@./bin/kde-config init
 
+scan:
+	@./bin/kde-config scan
+
+profile:
+	@./bin/kde-config profile
+
+setup:
+	@./bin/kde-config setup
 help:
 	@echo "Available targets in Makefile:"
-	@echo "  make init            - Full environment initialization with backups and setup"
-	@echo "  make status          - Runs unified health audit of keyboard, gestures and power"
+	@echo "  make init            - Hardware inspection and machine profiling (safe, non-destructive)"
+	@echo "  make scan            - Alias for make init"
+	@echo "  make setup           - Contextual modular configuration wizard based on detected hardware"
+	@echo "  make status          - Runs unified health audit of keyboard, gestures, power and wifi"
 	@echo "  make check           - Alias for make status"
 	@echo "  make fix-keyboard    - Fixes Ctrl+C on ABNT2 and sets up native cedilla on US-intl"
 	@echo "  make gestures        - Configures 3/4-finger touchpad gestures (libinput-gestures)"
@@ -18,6 +28,10 @@ help:
 	@echo "  make monitor-irq     - Hardware electric pulse monitor on IRQ 1 (i8042 keyboard)"
 	@echo "  make smart-keyboard-power - Dynamic keyboard power management (anti-latch + battery saver)"
 	@echo "  make configure-harness    - Configures AI host harness profile and model roles"
+	@echo "  make smart-wifi-power     - Dynamic Wi-Fi power management (AC vs Battery)"
+	@echo "  make screen-hz            - Shows current internal display refresh rate and modes"
+	@echo "  make screen-60            - Switches internal display refresh rate to 60 Hz"
+	@echo "  make screen-120           - Switches internal display refresh rate to 120 Hz / max"
 	@echo "  make set-lang        - Saves language preference (use LANG=<en|pt-BR>)"
 	@echo "  make mouse           - Configures Logitech MX Master 3S (logiops/logid)"
 	@echo "  make battery-status  - Battery and power diagnostics (read-only)"
@@ -52,6 +66,15 @@ monitor-irq:
 	@./bin/kde-config monitor-irq
 smart-keyboard-power:
 	@./bin/kde-config smart-keyboard-power
+smart-wifi-power:
+	@./bin/kde-config smart-wifi-power
+wifi-power: smart-wifi-power
+screen-hz:
+	@./bin/kde-config screen-hz
+screen-60:
+	@./bin/kde-config screen-60
+screen-120:
+	@./bin/kde-config screen-120
 configure-harness:
 	@./bin/kde-config configure-harness
 

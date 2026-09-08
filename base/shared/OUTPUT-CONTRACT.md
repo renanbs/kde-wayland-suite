@@ -56,9 +56,10 @@ Whenever **2. Execution** contains any item marked with `⚠️` (warning) or `�
 
 - `• <Issue description>`: `exact command to fix`
 
-### Rules
+### Rules & Failure Discipline
 
-- Never declare success without verification: run the corresponding `status` check or re-read the modified file before marking `✅`.
-- If a command requires `sudo` and the session lacks an interactive TTY, do not attempt workarounds — prompt the user to execute it with the `!` prefix and show the exact command line.
-- Failures must be reported with actual command error output; never omit or soften errors.
-- If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.
+- **Never declare success without verification:** run the corresponding `status` check or re-read the modified file before marking `✅`.
+- **Explicit Failure Reporting:** Any action that failed, was rejected by a kernel driver, or could not be completed MUST be marked with `❌`. NEVER soften or mask a failure as a warning (`⚠️`) or skip (`⏭️`).
+- **Prominent User Notification:** Whenever an operation fails, the AI agent MUST prominently and unambiguously state in the response text that the action **FAILED** and that **NO CHANGE was applied** to that component, explaining the exact technical reason.
+- **Sudo Command Guidelines:** When an operation requires root privileges and cannot be executed in a non-interactive subshell, instruct the user to run `linux-wayland-config <subcommand>` directly in their terminal. **Do not prepend `sudo`**, because `sudo`'s `secure_path` often omits `~/.local/bin`. The script internally handles elevation via `exec sudo "$0" "$@"` using its fully-resolved path.
+- **Requires field:** If a fix requires a logout or reboot to take effect, declare it in `Requires` and reiterate in the summary text.

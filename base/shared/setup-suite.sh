@@ -114,14 +114,33 @@ apply_screen_60() {
     read -r EDP_OUT EDP_CUR EDP_CUR_ID EDP_60_ID EDP_HIGH_ID <<< "$(find_edp_refresh_modes || true)"
     if [ -n "$EDP_OUT" ] && [ -n "$EDP_60_ID" ] && [ "$EDP_60_ID" != "none" ]; then
         if set_edp_mode "$EDP_OUT" "$EDP_60_ID"; then
-            echo -e "${GREEN}✔ Tela $EDP_OUT alterada para 60 Hz (modo $EDP_60_ID).${NC}"
+            echo -e "  ✅ [OK] Tela $EDP_OUT alterada com sucesso para 60 Hz (modo $EDP_60_ID)."
             runlog_event "ok" "setup_screen_60_applied" "output=$EDP_OUT mode=$EDP_60_ID"
         else
-            echo -e "${YELLOW}⚠️ O driver gráfico rejeitou o modo 60 Hz para $EDP_OUT (painel com taxa nativa fixa). Mantida taxa de ${EDP_CUR} Hz.${NC}"
-            runlog_event "warn" "setup_screen_60_rejected" "driver rejected mode $EDP_60_ID"
+            echo -e "  ❌ ${RED}[FALHA] O driver gráfico (i915/KMS) rejeitou o modo 60 Hz para a tela $EDP_OUT.${NC}"
+            echo -e "     ${BOLD}Motivo:${NC} O painel interno possui taxa nativa fixa em ${EDP_CUR} Hz e o driver não suporta alternância para 60 Hz."
+            echo -e "     ${BOLD}Resultado:${NC} A taxa de 60 Hz ${RED}NÃO FOI APLICADA${NC}. A tela permanece em ${BOLD}${EDP_CUR} Hz${NC}."
+            runlog_event "fail" "setup_screen_60_rejected" "driver rejected mode $EDP_60_ID on $EDP_OUT"
+
+            # Registra no machine-profile.json para que esta opção inválida não seja mais exibida
+            python3 -c "
+import json, os
+p_file = os.path.expanduser('$PROFILE_FILE')
+if os.path.exists(p_file):
+    try:
+        with open(p_file, 'r') as f:
+            d = json.load(f)
+        d.setdefault('display', {})['mode_60_available'] = False
+        d['display']['mode_60_rejected'] = True
+        d['display']['hardware_fixed_hz'] = int('${EDP_CUR:-120}') if '${EDP_CUR:-120}'.isdigit() else 120
+        with open(p_file, 'w') as f:
+            json.dump(d, f, indent=2)
+    except Exception:
+        pass
+" 2>/dev/null || true
         fi
     else
-        echo -e "${YELLOW}[INFO] Modo 60 Hz não disponível para a tela interna.${NC}"
+        echo -e "  ⏭️ [INFO] Modo 60 Hz não disponível para a tela interna."
         runlog_event "skip" "setup_screen_60_unavailable" ""
     fi
 }
@@ -258,9 +277,10 @@ print('true' if len(d.get('wifi', {}).get('interfaces', [])) > 0 else 'false')
     has_mouse="$(read_profile_value "input.mx_master_present")"
     [ "$has_mouse" = "true" ] && echo -e "  6) ${GREEN}Logitech MX Master 3S${NC}  (Botões e SmartShift via logiops)"
 
-    local mode_60
+    local mode_60 mode_60_rej
     mode_60="$(read_profile_value "display.mode_60_available")"
-    [ "$mode_60" = "true" ] && echo -e "  7) ${GREEN}Tela 60 Hz Power-Saver${NC} (Economia de 2W-3W na tela interna)"
+    mode_60_rej="$(read_profile_value "display.mode_60_rejected")"
+    [ "$mode_60" = "true" ] && [ "$mode_60_rej" != "true" ] && echo -e "  7) ${GREEN}Tela 60 Hz Power-Saver${NC} (Economia de 2W-3W na tela interna)"
 
     local is_tongfang
     is_tongfang="$(read_profile_value "input.is_tongfang_candidate")"

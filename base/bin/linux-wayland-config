@@ -417,12 +417,19 @@ cmd_rollback() {
 
 cmd_install() {
     mkdir -p "$HOME/.local/bin"
-    local bin_target="$HOME/.local/bin/kde-config"
     local script_path
     script_path="$(realpath "${BASH_SOURCE[0]}")"
-    ln -sf "$script_path" "$bin_target"
     chmod +x "$script_path"
-    echo -e "${GREEN}✔ Symlink created: $bin_target -> $script_path${NC}"
+
+    for name in linux-wayland-config kde-config wayland-config; do
+        ln -sf "$script_path" "$HOME/.local/bin/$name"
+        echo -e "${GREEN}✔ Symlink created: $HOME/.local/bin/$name -> $script_path${NC}"
+    done
+    if [ -w "/usr/local/bin" ]; then
+        for name in linux-wayland-config kde-config wayland-config; do
+            ln -sf "$script_path" "/usr/local/bin/$name" 2>/dev/null || true
+        done
+    fi
     echo "Ensure ~/.local/bin is in your PATH."
 }
 cmd_report() {

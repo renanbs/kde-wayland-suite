@@ -214,8 +214,19 @@ for card_path in /sys/class/drm/card[0-9]; do
     echo -e "  • GPU: ${BOLD}${v_name}${NC} (${card_name}, PCI ${pci_addr}, driver ${driver_name}) $([ "$is_panel_gpu" -eq 1 ] && echo -e "${CYAN}[Painel Interno]${NC}")"
 done
 
+MODE_60_REJECTED=0
+if [ -f "$PROFILE_FILE" ]; then
+    if python3 -c "import json, os; d=json.load(open(os.path.expanduser('$PROFILE_FILE'))); exit(0 if d.get('display', {}).get('mode_60_rejected') else 1)" 2>/dev/null; then
+        MODE_60_REJECTED=1
+    fi
+fi
+
 if [ -n "$EDP_NAME" ] && [ "$EDP_NAME" != "unknown" ]; then
-    echo -e "  • Tela Interna: ${BOLD}${EDP_NAME}${NC} | Taxa atual: ${BOLD}${EDP_CUR_HZ} Hz${NC} (Modo 60Hz: ${EDP_60_ID}, Modo Alta Taxa: ${EDP_HIGH_ID})"
+    if [ "$MODE_60_REJECTED" -eq 1 ]; then
+        echo -e "  • Tela Interna: ${BOLD}${EDP_NAME}${NC} | Taxa atual: ${BOLD}${EDP_CUR_HZ} Hz${NC} (Taxa nativa fixa, driver rejeita 60 Hz)"
+    else
+        echo -e "  • Tela Interna: ${BOLD}${EDP_NAME}${NC} | Taxa atual: ${BOLD}${EDP_CUR_HZ} Hz${NC} (Modo 60Hz: ${EDP_60_ID}, Modo Alta Taxa: ${EDP_HIGH_ID})"
+    fi
 fi
 
 # -----------------------------------------------------------------------------
@@ -359,7 +370,8 @@ profile = {
     'display': {
         'edp_name': '$EDP_NAME' if '$EDP_NAME' and '$EDP_NAME' != 'unknown' else None,
         'current_hz': int('$EDP_CUR_HZ') if '$EDP_CUR_HZ' and '$EDP_CUR_HZ'.isdigit() else None,
-        'mode_60_available': bool('$EDP_60_ID' and '$EDP_60_ID' != 'none'),
+        'mode_60_available': False if bool($MODE_60_REJECTED) else bool('$EDP_60_ID' and '$EDP_60_ID' != 'none'),
+        'mode_60_rejected': bool($MODE_60_REJECTED),
         'mode_high_available': bool('$EDP_HIGH_ID' and '$EDP_HIGH_ID' != 'none'),
         'kwin_gpu_mismatch': bool($KWIN_MISMATCH),
         'kwin_drm_configured': r'''$KWIN_DRM_VALUE''' if r'''$KWIN_DRM_VALUE''' else None

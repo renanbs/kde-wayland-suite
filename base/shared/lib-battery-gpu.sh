@@ -73,3 +73,86 @@ pci_for_device_path() {
     card="$(basename "$real")"
     readlink -f "/sys/class/drm/$card/device" 2>/dev/null | xargs -r basename
 }
+
+# -----------------------------------------------------------------------------
+# Helpers para Taxa de Atualização da Tela Interna (eDP) via kscreen-doctor
+# -----------------------------------------------------------------------------
+
+# echo "<NAME> <CURRENT_HZ> <CURRENT_MODE_ID> <60HZ_MODE_ID> <HIGH_HZ_MODE_ID>"
+find_edp_refresh_modes() {
+    if ! command -v kscreen-doctor >/dev/null 2>&1; then
+        return 0
+    fi
+    python3 -c '
+import subprocess, re
+try:
+    out = subprocess.check_output(["kscreen-doctor", "-o"], text=True)
+except Exception:
+    out = ""
+clean = re.sub(r"\x1b\[[0-9;]*m", "", out)
+edp_match = re.search(r"Output:\s+\d+\s+(eDP[^\s]*)", clean)
+if edp_match:
+    name = edp_match.group(1)
+    modes_match = re.search(r"Modes:\s+(.*)", clean)
+    if modes_match:
+        modes_str = modes_match.group(1).strip()
+        modes = modes_str.split()
+        cur_hz = None
+        cur_id = None
+        cur_res = None
+        parsed = []
+        for m in modes:
+            parts = m.split(":")
+            if len(parts) < 2:
+                continue
+            m_id = parts[0]
+            rest = parts[1]
+            is_active = "*" in rest
+            clean_m = rest.replace("*", "").replace("!", "")
+            if "@" not in clean_m:
+                continue
+            res, hz_str = clean_m.split("@")
+            try:
+                hz = float(hz_str)
+                int_hz = int(round(hz))
+            except ValueError:
+                continue
+            parsed.append((m_id, res, int_hz, is_active))
+            if is_active:
+                cur_hz = int_hz
+                cur_id = m_id
+                cur_res = res
+        mode_60 = None
+        mode_high = None
+        max_hz = 60
+        # Prefer modes with same resolution as current
+        for m_id, res, int_hz, _ in parsed:
+            if res == cur_res:
+                if int_hz in (59, 60) and not mode_60:
+                    mode_60 = m_id
+                if int_hz > 60 and int_hz >= max_hz:
+                    max_hz = int_hz
+                    mode_high = m_id
+        # Fallback if no matching resolution for 60Hz
+        if not mode_60:
+            for m_id, res, int_hz, _ in parsed:
+                if int_hz in (59, 60):
+                    mode_60 = m_id
+                    break
+        ch = cur_hz if cur_hz is not None else "unknown"
+        ci = cur_id if cur_id is not None else "none"
+        m6 = mode_60 if mode_60 is not None else "none"
+        mh = mode_high if mode_high is not None else "none"
+        print(f"{name} {ch} {ci} {m6} {mh}")
+' 2>/dev/null || true
+}
+
+set_edp_mode() {
+    local edp_name="$1"
+    local mode_id="$2"
+    if ! command -v kscreen-doctor >/dev/null 2>&1; then
+        echo -e "${RED}Erro: kscreen-doctor não disponível para alternar modo de tela.${NC}"
+        return 1
+    fi
+    kscreen-doctor "output.${edp_name}.mode.${mode_id}" >/dev/null 2>&1
+}

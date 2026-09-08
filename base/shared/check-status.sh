@@ -38,7 +38,7 @@ echo ""
 # -----------------------------------------------------------------------------
 # 1. Sessão, D-Bus e Identificação de Hardware DMI
 # -----------------------------------------------------------------------------
-echo -e "${BOLD}[1/6] Sessão, Ambiente e Identificação de Hardware${NC}"
+echo -e "${BOLD}[1/7] Sessão, Ambiente e Identificação de Hardware${NC}"
 SESSION_TYPE="${XDG_SESSION_TYPE:-unknown}"
 DESKTOP="${XDG_CURRENT_DESKTOP:-unknown}"
 printf "  • Tipo de Sessão: %s\n" "$SESSION_TYPE"
@@ -138,7 +138,7 @@ fi
 # 2. Higiene de Input Method (IM) & Compatibilidade com Ctrl+C
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[2/6] Higiene de Input Method (Compatibilidade de Atalhos / Ctrl+C)${NC}"
+echo -e "${BOLD}[2/7] Higiene de Input Method (Compatibilidade de Atalhos / Ctrl+C)${NC}"
 
 if [ -f "$HOME/.config/environment.d/im.conf" ]; then
     echo -e "  • ${RED}[FALHA]${NC} ~/.config/environment.d/im.conf ainda existe (risco de quebra do Ctrl+C)."
@@ -187,7 +187,7 @@ fi
 # 3. Suporte a Cedilha no Layout US-intl (Chrome, Orca, Electron, GTK, Qt)
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[3/6] Suporte a Cedilha no Layout US-intl (Chrome, Orca, Electron, GTK, Qt)${NC}"
+echo -e "${BOLD}[3/7] Suporte a Cedilha no Layout US-intl (Chrome, Orca, Electron, GTK, Qt)${NC}"
 
 if [ -f "$HOME/.config/environment.d/cedilla.conf" ]; then
     if grep -q "LC_CTYPE=pt_BR.UTF-8" "$HOME/.config/environment.d/cedilla.conf" 2>/dev/null; then
@@ -248,7 +248,7 @@ fi
 # 4. Simulação de Composição via libxkbcommon
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[4/6] Simulação do Motor de Composição (libxkbcommon)${NC}"
+echo -e "${BOLD}[4/7] Simulação do Motor de Composição (libxkbcommon)${NC}"
 
 if command -v python3 >/dev/null 2>&1; then
     COMPOSE_TEST=$(python3 -c "
@@ -291,7 +291,7 @@ fi
 # 5. Configuração de Layouts KWin & Clipboard do Wayland
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[5/6] Layouts no KWin & Clipboard do Wayland${NC}"
+echo -e "${BOLD}[5/7] Layouts no KWin & Clipboard do Wayland${NC}"
 
 if [ -n "$QDBUS" ]; then
     LAYOUTS_LIST="$("$QDBUS" --literal org.kde.keyboard /Layouts org.kde.KeyboardLayouts.getLayoutsList 2>/dev/null || echo 'indisponivel')"
@@ -319,7 +319,7 @@ fi
 # 6. Configuração de Touchpad Gestures
 # -----------------------------------------------------------------------------
 echo ""
-echo -e "${BOLD}[6/6] Touchpad Gestures (libinput-gestures & KWin)${NC}"
+echo -e "${BOLD}[6/7] Touchpad Gestures (libinput-gestures & KWin)${NC}"
 
 if groups "$USER" | grep -qw "input"; then
     echo -e "  • ${GREEN}[OK]${NC} Usuário '$USER' pertence ao grupo 'input'."
@@ -346,6 +346,75 @@ if [ -n "$QDBUS" ]; then
         runlog_event "ok" "kglobalaccel_kwin" "ping_ok"
     fi
 fi
+
+# -----------------------------------------------------------------------------
+# 7. Perfil da Máquina & Energia Wi-Fi (Smart Wi-Fi Power)
+# -----------------------------------------------------------------------------
+echo ""
+echo -e "${BOLD}[7/7] Perfil da Máquina & Energia Wi-Fi (Smart Wi-Fi Power)${NC}"
+
+PROFILE_FILE="${HOME}/.config/linux-wayland-suite/machine-profile.json"
+if [ -f "$PROFILE_FILE" ]; then
+    echo -e "  • ${GREEN}[OK]${NC} Perfil da máquina presente em: $PROFILE_FILE"
+    runlog_event "ok" "machine_profile_present" "$PROFILE_FILE"
+else
+    echo -e "  • ${YELLOW}[AVISO]${NC} Perfil da máquina ainda não gerado. Execute '${BOLD}./bin/linux-wayland-config scan${NC}'"
+    runlog_event "warn" "machine_profile_missing" "Execute ./bin/linux-wayland-config scan"
+fi
+
+WIFI_UDEV="/etc/udev/rules.d/90-linux-wayland-smart-wifi-power.rules"
+if [ -f "$WIFI_UDEV" ]; then
+    echo -e "  • ${GREEN}[OK]${NC} Smart Wi-Fi Power: ${BOLD}ATIVO${NC} (regra udev instalada em $WIFI_UDEV)."
+    runlog_event "ok" "smart_wifi_power_active" "$WIFI_UDEV"
+else
+    echo -e "  • ${BLUE}[INFO]${NC} Smart Wi-Fi Power: não instalado (opcional: './bin/linux-wayland-config smart-wifi-power --apply')."
+    runlog_event "info" "smart_wifi_power_not_installed" ""
+fi
+
+HAS_AC=0
+for s in /sys/class/power_supply/*; do
+    [ -d "$s" ] || continue
+    s_type="$(cat "$s/type" 2>/dev/null || echo '')"
+    if [[ "$s_type" =~ ^(Mains|AC|ADP[0-9]*)$ ]]; then
+        [ "$(cat "$s/online" 2>/dev/null || echo '0')" = "1" ] && HAS_AC=1
+    fi
+done
+
+for iface_path in /sys/class/net/*; do
+    [ -d "$iface_path" ] || continue
+    if [ -d "$iface_path/wireless" ] || [ -d "$iface_path/phy80211" ]; then
+        wif="$(basename "$iface_path")"
+        driver="$(basename "$(readlink -f "$iface_path/device/driver" 2>/dev/null || echo 'unknown')")"
+        ps_state="unknown"
+        if command -v iw >/dev/null 2>&1; then
+            if iw dev "$wif" get power_save 2>/dev/null | grep -qi "on"; then
+                ps_state="on"
+            elif iw dev "$wif" get power_save 2>/dev/null | grep -qi "off"; then
+                ps_state="off"
+            fi
+        fi
+
+        if [ "$HAS_AC" -eq 1 ]; then
+            if [ "$ps_state" = "on" ]; then
+                echo -e "  • ${YELLOW}[AVISO]${NC} [$wif / $driver]: Laptop na tomada (AC), mas Power Save 802.11 está ${BOLD}LIGADO${NC}."
+                echo -e "    Risco: Conexões de entrada (Orca / SSH) podem sofrer dormência ou timeout."
+                echo -e "    Para resolver: ${BOLD}./bin/linux-wayland-config smart-wifi-power --apply${NC}"
+                runlog_event "warn" "wifi_powersave_on_ac" "iface=$wif driver=$driver"
+            else
+                echo -e "  • ${GREEN}[OK]${NC} [$wif / $driver]: Laptop na tomada (AC) com Power Save ${BOLD}DESLIGADO${NC} (máxima estabilidade)."
+                runlog_event "ok" "wifi_performance_on_ac" "iface=$wif driver=$driver"
+            fi
+        else
+            if [ "$ps_state" = "on" ]; then
+                echo -e "  • ${GREEN}[OK]${NC} [$wif / $driver]: Laptop na bateria com Power Save ${BOLD}LIGADO${NC} (economia ativa)."
+                runlog_event "ok" "wifi_powersave_on_battery" "iface=$wif driver=$driver"
+            else
+                echo -e "  • ${BLUE}[INFO]${NC} [$wif / $driver]: Laptop na bateria com Power Save ${BOLD}DESLIGADO${NC}."
+                runlog_event "info" "wifi_performance_on_battery" "iface=$wif driver=$driver"
+            fi
+        fi
+    fi
+done
 
 echo ""
 echo -e "${BOLD}${BLUE}======================================================${NC}"

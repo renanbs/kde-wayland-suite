@@ -38,23 +38,26 @@ else
 fi
 
 usage() {
-    echo -e "${BOLD}Usage:${NC} kde-config <command> [arguments]"
+    echo -e "${BOLD}Usage:${NC} linux-wayland-config <command> [arguments]"
     echo ""
     echo -e "${BOLD}Available commands:${NC}"
-    echo "  init              Full environment initialization with backups and setup"
-    echo "  status            Unified health audit (keyboard, cedilla, shortcuts, gestures, battery)"
+    echo "  init / scan       Hardware inspection and machine profiling (safe, non-destructive)"
+    echo "  setup             Contextual modular configuration wizard based on detected hardware"
+    echo "  status            Unified health audit (keyboard, cedilla, shortcuts, gestures, battery, wifi)"
     echo "  fix-keyboard      Fixes Ctrl+C on ABNT2, native cedilla on US-intl and masks fcitx5"
     echo "  gestures          Installs and configures 3/4-finger touchpad gestures (libinput-gestures)"
     echo "  mouse             Installs and configures Logitech MX Master 3S (logiops/logid)"
     echo "  battery-status    Battery and power consumption diagnostics (GPU, PCIe ASPM, health)"
     echo "  battery-apply     Applies user-chosen battery optimizations (BATTERY_FIX_*)"
     echo "  battery-revert    Reverts the last battery-apply execution (or specific snapshot)"
+    echo "  smart-wifi-power  Dynamic Wi-Fi power management (AC vs Battery) (--apply/--remove/--sync/--status)"
+    echo "  screen-hz [60|120|max]  Switches internal display refresh rate (60 Hz vs 120 Hz)"
     echo "  fix-tongfang      Unlocks i8042 keyboard matrix in GRUB for Tongfang/Avell laptops"
     echo "  revert-tongfang   Reverts GRUB configuration to previous backup"
     echo "  test-keyboard     Interactive real-time key event monitor (/dev/input/eventX)"
     echo "  monitor-irq       Hardware electric pulse monitor on IRQ 1 (i8042 keyboard)"
     echo "  smart-keyboard-power  Dynamic keyboard power management (--apply/--remove/--status)"
-    echo "  configure-harness  Configures AI host harness profile and model roles"
+    echo "  configure-harness Configures AI host harness profile and model roles"
     echo "  set-lang [en|pt-BR]  Saves language preference (en / pt-BR)"
     echo "  preflight         Environment diagnostic (distro, D-Bus, tools)"
     echo "  switch [br|us]    Switches active KWin keyboard layout (0=br, 1=us)"
@@ -63,16 +66,13 @@ usage() {
     echo "  report            Run report from structured events + historical trends"
     echo "                    (report <n> shows N-th latest; report --list lists runs)"
     echo "  upgrade / update  Checks and applies repository and marketplace updates"
-    echo "  install           Creates symlink in ~/.local/bin/kde-config"
+    echo "  install           Creates symlink in ~/.local/bin/linux-wayland-config"
     echo "  help              Displays this help manual"
     echo ""
-    echo -e "${BOLD}Environment variables (init / fix-keyboard / battery):${NC}"
+    echo -e "${BOLD}Environment variables (init / setup / fix-keyboard / battery):${NC}"
     echo "  KDE_SUITE_LANG=en|pt-BR      Sets language preference during init (default: en)"
-    echo "  SKIP_KEYBOARD=1              Skips keyboard/cedilla/shortcuts stage in init"
-    echo "  SKIP_GESTURES=1              Skips touchpad gestures stage in init"
-    echo "  SKIP_MOUSE=1                 Skips Logitech MX Master 3S stage in init"
+    echo "  SETUP=1                      Runs setup wizard immediately after init/scan"
     echo "  KDE_SUITE_LAYOUT_AUTOHEAL=1  Installs autostart to heal collapsed layout on login"
-    echo "  SKIP_BATTERY=1               Skips battery diagnostic in init"
     echo "  BATTERY_FIX_GPU_PRIMARY=1        (battery-apply) Reorders KWIN_DRM_DEVICES: internal panel GPU primary"
     echo "  BATTERY_FIX_PCIE_ASPM=1          (battery-apply) Sets PCIe ASPM powersave policy"
     echo "  BATTERY_FIX_PCIE_ASPM_PERSIST=1  (battery-apply) Persists ASPM policy across reboot (systemd service)"
@@ -222,9 +222,13 @@ cmd_upgrade() {
 
 
 
+cmd_scan() {
+    cmd_init "$@"
+}
+
 cmd_init() {
     echo -e "${BOLD}${BLUE}======================================================${NC}"
-    echo -e "${BOLD}${BLUE}   KDE Plasma 6 Wayland — Full Initialization         ${NC}"
+    echo -e "${BOLD}${BLUE}   Linux Wayland Suite — Initialization & Profiling   ${NC}"
     echo -e "${BOLD}${BLUE}======================================================${NC}\n"
 
     local lang="${KDE_SUITE_LANG:-${LINUX_WAYLAND_SUITE_LANG:-}}"
@@ -235,42 +239,86 @@ cmd_init() {
 
     cmd_preflight
     echo ""
-    if [ "${SKIP_KEYBOARD:-0}" = "1" ]; then
-        echo -e "${YELLOW}==> Keyboard / Cedilla / Shortcuts: skipped (SKIP_KEYBOARD=1).${NC}"
+
+    if [ -f "$SHARED_DIR/profile-machine.sh" ]; then
+        bash "$SHARED_DIR/profile-machine.sh"
     else
-        cmd_fix_keyboard
+        echo -e "${RED}Erro: $SHARED_DIR/profile-machine.sh não encontrado.${NC}"
+        exit 1
     fi
-    echo ""
-    if [ "${SKIP_GESTURES:-0}" = "1" ]; then
-        echo -e "${YELLOW}==> Touchpad Gestures: skipped (SKIP_GESTURES=1).${NC}"
-    else
-        cmd_gestures
-    fi
-    echo ""
-    if [ "${SKIP_MOUSE:-0}" = "1" ]; then
-        echo -e "${YELLOW}==> Logitech MX Master 3S Mouse: skipped (SKIP_MOUSE=1).${NC}"
-    else
-        cmd_mouse
-    fi
-    echo ""
-    if [ "${SKIP_BATTERY:-0}" = "1" ]; then
-        echo -e "${YELLOW}==> Battery / Power Diagnostic: skipped (SKIP_BATTERY=1).${NC}"
-    else
-        cmd_battery_status
-        if [ "${BATTERY_FIX_GPU_PRIMARY:-0}" = "1" ] || [ "${BATTERY_FIX_PCIE_ASPM:-0}" = "1" ]; then
-            echo ""
-            cmd_battery_apply
-        else
-            echo ""
-            echo -e "${BLUE}[INFO]${NC} No battery fix requested (BATTERY_FIX_*). Diagnostic completed."
-        fi
-    fi
-    echo ""
-    cmd_shortcut_switch
-    echo ""
+
     cmd_install
     echo ""
-    cmd_status
+
+    if [ "${1:-}" = "--setup" ] || [ "${SETUP:-0}" = "1" ] || [ "${INIT_RUN_SETUP:-0}" = "1" ]; then
+        [ "${1:-}" = "--setup" ] && shift
+        echo ""
+        cmd_setup "$@"
+    fi
+}
+
+cmd_setup() {
+    if [ -f "$SHARED_DIR/setup-suite.sh" ]; then
+        bash "$SHARED_DIR/setup-suite.sh" "$@"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/setup-suite.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_smart_wifi_power() {
+    if [ -f "$SHARED_DIR/manage-wifi-power.sh" ]; then
+        bash "$SHARED_DIR/manage-wifi-power.sh" "${1:---status}"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/manage-wifi-power.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
+cmd_screen_hz() {
+    local target="${1:-}"
+    if [ -f "$SHARED_DIR/lib-battery-gpu.sh" ]; then
+        # shellcheck source=lib-battery-gpu.sh
+        source "$SHARED_DIR/lib-battery-gpu.sh"
+    fi
+
+    read -r EDP_OUT_NAME EDP_CUR_HZ EDP_CUR_MODE_ID EDP_60_ID EDP_HIGH_ID <<< "$(find_edp_refresh_modes || true)"
+
+    if [ -z "$EDP_OUT_NAME" ] || [ "$EDP_OUT_NAME" = "unknown" ]; then
+        echo -e "${RED}Erro: Nenhuma tela interna (eDP) detectada via kscreen-doctor.${NC}"
+        exit 1
+    fi
+
+    case "$target" in
+        60)
+            if [ -z "$EDP_60_ID" ] || [ "$EDP_60_ID" = "none" ]; then
+                echo -e "${RED}Erro: Nenhum modo de 60 Hz disponível para a tela $EDP_OUT_NAME.${NC}"
+                exit 1
+            fi
+            set_edp_mode "$EDP_OUT_NAME" "$EDP_60_ID"
+            echo -e "${GREEN}✔ Taxa de atualização da tela $EDP_OUT_NAME alternada para 60 Hz (modo $EDP_60_ID).${NC}"
+            ;;
+        120|max|high)
+            if [ -z "$EDP_HIGH_ID" ] || [ "$EDP_HIGH_ID" = "none" ]; then
+                echo -e "${RED}Erro: Nenhum modo de alta taxa disponível para a tela $EDP_OUT_NAME.${NC}"
+                exit 1
+            fi
+            set_edp_mode "$EDP_OUT_NAME" "$EDP_HIGH_ID"
+            echo -e "${GREEN}✔ Taxa de atualização da tela $EDP_OUT_NAME alternada para alta taxa (modo $EDP_HIGH_ID).${NC}"
+            ;;
+        "")
+            echo -e "${BOLD}Tela Interna:${NC} $EDP_OUT_NAME"
+            echo -e "  • Taxa atual: ${BOLD}${EDP_CUR_HZ} Hz${NC} (Modo ID: $EDP_CUR_MODE_ID)"
+            [ -n "$EDP_60_ID" ] && [ "$EDP_60_ID" != "none" ] && echo -e "  • Modo 60 Hz disponível: Modo ID $EDP_60_ID"
+            [ -n "$EDP_HIGH_ID" ] && [ "$EDP_HIGH_ID" != "none" ] && echo -e "  • Modo Alta Taxa disponível: Modo ID $EDP_HIGH_ID"
+            echo ""
+            echo "Use 'linux-wayland-config screen-hz 60' ou 'linux-wayland-config screen-hz 120' para alternar."
+            ;;
+        *)
+            echo -e "${RED}Opção inválida: '$target'. Use '60', '120' ou 'max'.${NC}"
+            exit 1
+            ;;
+    esac
 }
 cmd_switch_layout() {
     local target="${1:-next}"
@@ -379,7 +427,8 @@ cmd_report() {
 # consiga executá-lo capturando a saída.
 dispatch() {
     case "${1:-status}" in
-        init) cmd_init ;;
+        init|scan|profile) shift; cmd_init "$@" ;;
+        setup|configure) shift; cmd_setup "$@" ;;
         status) cmd_status ;;
         fix-keyboard) cmd_fix_keyboard ;;
         fix-tongfang) cmd_fix_tongfang ;;
@@ -387,6 +436,10 @@ dispatch() {
         test-keyboard) cmd_test_keyboard ;;
         monitor-irq) cmd_monitor_irq ;;
         smart-keyboard-power) cmd_smart_keyboard_power "${2:-}" ;;
+        smart-wifi-power|wifi-power) cmd_smart_wifi_power "${2:-}" ;;
+        screen-hz|refresh-rate) shift; cmd_screen_hz "$@" ;;
+        screen-60) cmd_screen_hz "60" ;;
+        screen-120) cmd_screen_hz "120" ;;
         configure-harness) shift; cmd_configure_harness "$@" ;;
         set-lang|language) shift; cmd_set_lang "$@" ;;
         gestures) cmd_gestures ;;

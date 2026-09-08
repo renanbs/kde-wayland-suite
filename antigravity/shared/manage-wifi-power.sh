@@ -1,0 +1,1 @@
+../../base/shared/manage-wifi-power.sh

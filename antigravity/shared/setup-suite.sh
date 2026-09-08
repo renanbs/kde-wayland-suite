@@ -1,0 +1,1 @@
+../../base/shared/setup-suite.sh

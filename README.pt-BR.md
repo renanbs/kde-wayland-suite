@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-instalação-e-integração-com-ferramentas-de-ia)
-[![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.4.0-brightgreen.svg)](package.json)
+[![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.5.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -64,10 +64,9 @@ Compatível como plugin nativo para **Oh My Pi (OMP)**, **Claude Code**, **Curso
 ### 13. Motor de Relatórios Numerados e Interativos
 * **Solução:** Registros estruturados salvos em `~/.local/state/linux-wayland-suite/runs/`. Permite seleção interativa (`report --select`), consulta indexada (`report 3`) e gera ações recomendadas de 1 linha para qualquer aviso ou falha.
 
-### 14. Identidade Visual do Terminal & Alternador de Logo do Fastfetch (`terminal-fetch` / `cosmetic`)
-* **Problema:** A apresentação inicial do terminal é engessada ou sobreposta em atualizações da distribuição (ex: Garuda Mokka forçando o mascote do gato pastel sobre a águia neon do Dr460nized ou o dragão clássico em ASCII).
-* **Solução:** `./bin/linux-wayland-config cosmetic` (ou `make cosmetic`) oferece um menu interativo para alternar entre a Águia low-poly neon Dr460nized (`garuda-purple.png`), o Gato Mascote Mokka (`mokka-fastfetch.png`), o Emblema Hexagonal 'G', o Dragão ASCII nativo ou imagens personalizadas, com detecção prévia de ambiente e reversão atômica no espaço de usuário.
-
+### 14. Identidade Visual Multi-Shell do Terminal & Alternador de Logo do Fastfetch (`terminal-fetch` / `cosmetic`)
+* **Problema:** A apresentação inicial do terminal é engessada ou sobreposta em atualizações da distribuição (ex: Garuda Mokka forçando o mascote do gato pastel sobre a águia neon do Dr460nized, o `.zshrc` com chamada fixa `--config mokka` ignorando arquivos de usuário e o `.bashrc` sem hook automático).
+* **Solução:** `./bin/linux-wayland-config cosmetic` (ou `make cosmetic`) oferece um menu interativo para alternar entre a Águia low-poly neon Dr460nized (`garuda-purple.png`), o Gato Mascote Mokka (`mokka-fastfetch.png`), o Emblema Hexagonal 'G', o Dragão ASCII nativo ou imagens personalizadas. Detecta todos os shells instalados (**Fish**, **Zsh**, **Bash**), limpa chamadas forçadas de sistema, pergunta se o usuário deseja sincronizar os demais shells e oferece reversão atômica (`--revert`).
 ---
 
 ## 🧪 Testado e Comprovado em Produção

@@ -167,6 +167,14 @@ apply_tongfang() {
     bash "$SCRIPT_DIR/fix-tongfang.sh" --apply
     runlog_event "ok" "setup_tongfang_applied" ""
 }
+apply_terminal_fetch() {
+    echo -e "${BOLD}==> [Configuração] Identidade Visual do Terminal (Fastfetch)${NC}"
+    if [ -f "$SCRIPT_DIR/terminal-fetch.sh" ]; then
+        bash "$SCRIPT_DIR/terminal-fetch.sh" --apply --logo eagle --all-shells
+        runlog_event "ok" "setup_terminal_fetch_applied" "logo=eagle;shells=all"
+    fi
+}
+
 
 apply_all_detected() {
     echo -e "${BOLD}### 1. Plano${NC}\n"
@@ -226,6 +234,11 @@ print('true' if len(d.get('wifi', {}).get('interfaces', [])) > 0 else 'false')
         apply_mouse
         echo ""
     fi
+    if command -v fastfetch >/dev/null 2>&1; then
+        apply_terminal_fetch
+        echo ""
+    fi
+
 
     echo -e "${BOLD}### 3. Resumo${NC}\n"
     echo -e "| Campo | Conteúdo |"
@@ -286,6 +299,10 @@ print('true' if len(d.get('wifi', {}).get('interfaces', [])) > 0 else 'false')
     is_tongfang="$(read_profile_value "input.is_tongfang_candidate")"
     [ "$is_tongfang" = "true" ] && echo -e "  8) ${GREEN}Desbloqueio Tongfang${NC}   (Parâmetro i8042 no GRUB para teclado)"
 
+    if command -v fastfetch >/dev/null 2>&1; then
+        echo -e "  9) ${GREEN}Identidade do Terminal${NC} (Fastfetch: Águia Dr460nized em todos os shells)"
+    fi
+
     echo -e "  A) ${CYAN}Aplicar Todas Recomendadas${NC} (--all)"
     echo -e "  Q) Sair sem alterar nada\n"
 
@@ -342,6 +359,10 @@ while [ $# -gt 0 ]; do
             ;;
         --tongfang)
             apply_tongfang
+            shift
+            ;;
+        --terminal-fetch|--cosmetic)
+            apply_terminal_fetch
             shift
             ;;
         *)

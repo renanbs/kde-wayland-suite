@@ -4,7 +4,7 @@
 #
 # Comportamento:
 # - Detecta o ambiente do sistema (Garuda Linux / Arch Linux) e Fastfetch.
-# - Identifica os presets ativos (Garuda Mokka vs Garuda Dr460nized).
+# - Identifica e audita os shells instalados no sistema (Fish, Zsh, Bash).
 # - Permite alternar entre logos e imagens gráficas via Kitty graphics protocol:
 #   * Águia low-poly neon Dr460nized (garuda-purple.png)
 #   * Gato Mascote Mokka (mokka-fastfetch.png)
@@ -12,15 +12,18 @@
 #   * Dragão ASCII Dr460nized (GarudaDragon nativo)
 #   * Garuda ASCII Clássico (Garuda nativo)
 #   * Imagem customizada fornecida pelo usuário
-# - Suporta reversão atômica para o padrão da distribuição ou backup anterior.
+# - Sincroniza opcionalmente múltiplos shells (Fish, Zsh, Bash) com a mesma identidade.
+# - Suporta reversão atômica para os padrões da distribuição ou backups anteriores.
 #
 # Modos de Uso:
-#   --status              Audita o estado atual da configuração do terminal
+#   --status              Audita o estado atual da configuração do terminal e shells
 #   --list-logos          Lista os logos e imagens disponíveis no sistema
-#   --menu                Exibe menu interativo para seleção visual
+#   --menu                Exibe menu interativo para seleção visual e de shells
 #   --apply               Aplica configuração (padrão: eagle ou --logo <id|caminho>)
 #   --logo <id|path>      Especifica o logo ao usar --apply
-#   --revert              Restaura a configuração padrão ou backup anterior
+#   --shells <csv|all>    Especifica os shells para aplicar (ex: all ou fish,zsh,bash)
+#   --all-shells          Aplica a todos os shells instalados detectados
+#   --revert              Restaura a configuração padrão ou backups anteriores
 # ==============================================================================
 set -euo pipefail
 
@@ -41,6 +44,12 @@ FASTFETCH_BACKUP_CONFIG="${FASTFETCH_USER_DIR}/config.jsonc.bak"
 FISH_USER_DIR="${HOME}/.config/fish"
 FISH_USER_CONFIG="${FISH_USER_DIR}/config.fish"
 FISH_BACKUP_CONFIG="${FISH_USER_DIR}/config.fish.bak"
+
+ZSH_USER_CONFIG="${HOME}/.zshrc"
+ZSH_BACKUP_CONFIG="${HOME}/.zshrc.bak"
+
+BASH_USER_CONFIG="${HOME}/.bashrc"
+BASH_BACKUP_CONFIG="${HOME}/.bashrc.bak"
 
 MOKKA_PRESET="/usr/share/fastfetch/presets/mokka.jsonc"
 NEOFETCH_PRESET="/usr/share/fastfetch/presets/neofetch.jsonc"
@@ -75,6 +84,20 @@ detect_os() {
     else
         echo "other"
     fi
+}
+
+detect_installed_shells() {
+    local shells=()
+    if command -v fish &>/dev/null && [ -f "$FISH_USER_CONFIG" ]; then
+        shells+=("fish")
+    fi
+    if command -v zsh &>/dev/null && [ -f "$ZSH_USER_CONFIG" ]; then
+        shells+=("zsh")
+    fi
+    if command -v bash &>/dev/null && [ -f "$BASH_USER_CONFIG" ]; then
+        shells+=("bash")
+    fi
+    echo "${shells[*]}"
 }
 
 detect_active_logo() {
@@ -266,11 +289,33 @@ cmd_status() {
         echo -e "  [OK] Backup Fastfetch:  ${GREEN}${FASTFETCH_BACKUP_CONFIG}${NC}"
     fi
 
-    if [ -f "$FISH_USER_CONFIG" ]; then
+    echo -e "\n${BOLD}Status dos Shells Instalados:${NC}"
+    # Fish
+    if command -v fish &>/dev/null && [ -f "$FISH_USER_CONFIG" ]; then
         if grep -q "function __garuda_fastfetch" "$FISH_USER_CONFIG"; then
-            echo -e "  [OK] Shell Fish:        ${CYAN}${FISH_USER_CONFIG}${NC} (com override para fastfetch de usuário)"
+            echo -e "  • ${GREEN}[OK] Fish:${NC} ${FISH_USER_CONFIG} (override ativo para fastfetch de usuário)"
         else
-            echo -e "  [OK] Shell Fish:        ${CYAN}${FISH_USER_CONFIG}${NC} (usando hook padrão do sistema)"
+            echo -e "  • ${YELLOW}[--] Fish:${NC} ${FISH_USER_CONFIG} (usando hook padrão do sistema / mokka)"
+        fi
+    fi
+
+    # Zsh
+    if command -v zsh &>/dev/null && [ -f "$ZSH_USER_CONFIG" ]; then
+        if grep -q "fastfetch --config mokka" "$ZSH_USER_CONFIG"; then
+            echo -e "  • ${YELLOW}[AVISO] Zsh:${NC} ${ZSH_USER_CONFIG} (forçando preset Mokka; ignore config de usuário)"
+        elif grep -q "fastfetch" "$ZSH_USER_CONFIG"; then
+            echo -e "  • ${GREEN}[OK] Zsh:${NC} ${ZSH_USER_CONFIG} (chamada de fastfetch de usuário ativa)"
+        else
+            echo -e "  • ${BLUE}[INFO] Zsh:${NC} ${ZSH_USER_CONFIG} (sem chamada automática de fastfetch)"
+        fi
+    fi
+
+    # Bash
+    if command -v bash &>/dev/null && [ -f "$BASH_USER_CONFIG" ]; then
+        if grep -q "fastfetch" "$BASH_USER_CONFIG"; then
+            echo -e "  • ${GREEN}[OK] Bash:${NC} ${BASH_USER_CONFIG} (chamada de fastfetch de usuário ativa)"
+        else
+            echo -e "  • ${BLUE}[INFO] Bash:${NC} ${BASH_USER_CONFIG} (sem chamada automática de fastfetch)"
         fi
     fi
 
@@ -295,8 +340,145 @@ cmd_list_logos() {
     printf "  %-15s %-30s %s\n" "<caminho.png>" "Custom Image (PNG/SVG)" "Qualquer imagem local fornecida pelo usuário"
 }
 
+apply_shell_fish() {
+    [ -f "$FISH_USER_CONFIG" ] || return 0
+    echo -e "${BLUE}[*] Sincronizando Shell Fish (${FISH_USER_CONFIG})...${NC}"
+
+    if ! grep -q "function __garuda_fastfetch" "$FISH_USER_CONFIG"; then
+        [ -f "$FISH_BACKUP_CONFIG" ] || cp -a "$FISH_USER_CONFIG" "$FISH_BACKUP_CONFIG"
+        cat >> "$FISH_USER_CONFIG" << 'EOF'
+
+# Override do fastfetch do usuário (linux-wayland-suite terminal-fetch)
+function __garuda_fastfetch
+    if status --is-interactive && type -q fastfetch
+        fastfetch
+    end
+end
+EOF
+        echo -e "  [+] Hook inserido em: ${GREEN}${FISH_USER_CONFIG}${NC}"
+    else
+        echo -e "  [✔] Hook já configurado em: ${CYAN}${FISH_USER_CONFIG}${NC}"
+    fi
+}
+
+apply_shell_zsh() {
+    [ -f "$ZSH_USER_CONFIG" ] || return 0
+    echo -e "${BLUE}[*] Sincronizando Shell Zsh (${ZSH_USER_CONFIG})...${NC}"
+
+    [ -f "$ZSH_BACKUP_CONFIG" ] || cp -a "$ZSH_USER_CONFIG" "$ZSH_BACKUP_CONFIG"
+
+    if grep -q "fastfetch --config mokka" "$ZSH_USER_CONFIG"; then
+        # Substitui a chamada forçada de mokka pela chamada limpa de usuário
+        sed -i 's/fastfetch --config mokka --logo-type kitty/fastfetch/g' "$ZSH_USER_CONFIG"
+        sed -i 's/fastfetch --config mokka/fastfetch/g' "$ZSH_USER_CONFIG"
+        echo -e "  [+] Substituído override forçado de Mokka por 'fastfetch' limpo em: ${GREEN}${ZSH_USER_CONFIG}${NC}"
+    elif ! grep -q "fastfetch" "$ZSH_USER_CONFIG"; then
+        cat >> "$ZSH_USER_CONFIG" << 'EOF'
+
+# Fastfetch visual identity (linux-wayland-suite terminal-fetch)
+if [[ -o interactive ]] && command -v fastfetch &>/dev/null; then
+    fastfetch
+fi
+EOF
+        echo -e "  [+] Hook interativo de fastfetch inserido em: ${GREEN}${ZSH_USER_CONFIG}${NC}"
+    else
+        echo -e "  [✔] Chamada de fastfetch já presente em: ${CYAN}${ZSH_USER_CONFIG}${NC}"
+    fi
+}
+
+apply_shell_bash() {
+    [ -f "$BASH_USER_CONFIG" ] || return 0
+    echo -e "${BLUE}[*] Sincronizando Shell Bash (${BASH_USER_CONFIG})...${NC}"
+
+    if ! grep -q "fastfetch" "$BASH_USER_CONFIG"; then
+        [ -f "$BASH_BACKUP_CONFIG" ] || cp -a "$BASH_USER_CONFIG" "$BASH_BACKUP_CONFIG"
+        cat >> "$BASH_USER_CONFIG" << 'EOF'
+
+# Fastfetch visual identity (linux-wayland-suite terminal-fetch)
+if [[ $- == *i* ]] && command -v fastfetch &>/dev/null; then
+    fastfetch
+fi
+EOF
+        echo -e "  [+] Hook interativo de fastfetch inserido em: ${GREEN}${BASH_USER_CONFIG}${NC}"
+    else
+        echo -e "  [✔] Chamada de fastfetch já presente em: ${CYAN}${BASH_USER_CONFIG}${NC}"
+    fi
+}
+
+revert_shell_fish() {
+    [ -f "$FISH_USER_CONFIG" ] || return 0
+    if grep -q "function __garuda_fastfetch" "$FISH_USER_CONFIG"; then
+        local tmp_fish
+        tmp_fish="$(mktemp)"
+        python3 -c "
+import sys
+content = open('$FISH_USER_CONFIG').read()
+marker = '# Override do fastfetch do usuário'
+if marker in content:
+    idx = content.find(marker)
+    open('$tmp_fish', 'w').write(content[:idx].rstrip() + '\n')
+else:
+    open('$tmp_fish', 'w').write(content)
+"
+        mv "$tmp_fish" "$FISH_USER_CONFIG"
+        echo -e "  [+] Hook de override removido de: ${GREEN}${FISH_USER_CONFIG}${NC}"
+    fi
+    if [ -f "$FISH_BACKUP_CONFIG" ]; then
+        rm -f "$FISH_BACKUP_CONFIG"
+    fi
+}
+
+revert_shell_zsh() {
+    [ -f "$ZSH_USER_CONFIG" ] || return 0
+    if [ -f "$ZSH_BACKUP_CONFIG" ]; then
+        cp -a "$ZSH_BACKUP_CONFIG" "$ZSH_USER_CONFIG"
+        rm -f "$ZSH_BACKUP_CONFIG"
+        echo -e "  [+] Backup restaurado para Zsh: ${GREEN}${ZSH_USER_CONFIG}${NC}"
+    elif grep -q "linux-wayland-suite terminal-fetch" "$ZSH_USER_CONFIG"; then
+        local tmp_zsh
+        tmp_zsh="$(mktemp)"
+        python3 -c "
+import sys
+content = open('$ZSH_USER_CONFIG').read()
+marker = '# Fastfetch visual identity'
+if marker in content:
+    idx = content.find(marker)
+    open('$tmp_zsh', 'w').write(content[:idx].rstrip() + '\n')
+else:
+    open('$tmp_zsh', 'w').write(content)
+"
+        mv "$tmp_zsh" "$ZSH_USER_CONFIG"
+        echo -e "  [+] Hook removido de: ${GREEN}${ZSH_USER_CONFIG}${NC}"
+    fi
+}
+
+revert_shell_bash() {
+    [ -f "$BASH_USER_CONFIG" ] || return 0
+    if [ -f "$BASH_BACKUP_CONFIG" ]; then
+        cp -a "$BASH_BACKUP_CONFIG" "$BASH_USER_CONFIG"
+        rm -f "$BASH_BACKUP_CONFIG"
+        echo -e "  [+] Backup restaurado para Bash: ${GREEN}${BASH_USER_CONFIG}${NC}"
+    elif grep -q "linux-wayland-suite terminal-fetch" "$BASH_USER_CONFIG"; then
+        local tmp_bash
+        tmp_bash="$(mktemp)"
+        python3 -c "
+import sys
+content = open('$BASH_USER_CONFIG').read()
+marker = '# Fastfetch visual identity'
+if marker in content:
+    idx = content.find(marker)
+    open('$tmp_bash', 'w').write(content[:idx].rstrip() + '\n')
+else:
+    open('$tmp_bash', 'w').write(content)
+"
+        mv "$tmp_bash" "$BASH_USER_CONFIG"
+        echo -e "  [+] Hook removido de: ${GREEN}${BASH_USER_CONFIG}${NC}"
+    fi
+}
+
 cmd_apply() {
     local logo="${1:-eagle}"
+    local target_shells="${2:-all}"
     local os_detected
     os_detected="$(detect_os)"
 
@@ -375,24 +557,26 @@ cmd_apply() {
     generate_fastfetch_config "$logo_type" "$logo_source" "$logo_width" > "$FASTFETCH_USER_CONFIG"
     echo -e "  [+] Configuração aplicada: ${GREEN}${FASTFETCH_USER_CONFIG}${NC}"
 
-    # Ajustar hook no fish shell do usuário se aplicável
-    if [ -f "$FISH_USER_CONFIG" ]; then
-        if ! grep -q "function __garuda_fastfetch" "$FISH_USER_CONFIG"; then
-            cp -a "$FISH_USER_CONFIG" "$FISH_BACKUP_CONFIG"
-            cat >> "$FISH_USER_CONFIG" << 'EOF'
+    # Aplicar aos shells solicitados
+    local installed
+    installed="$(detect_installed_shells)"
 
-# Override do fastfetch do usuário (linux-wayland-suite terminal-fetch)
-function __garuda_fastfetch
-    if status --is-interactive && type -q fastfetch
-        fastfetch
-    end
-end
-EOF
-            echo -e "  [+] Hook inserido em: ${GREEN}${FISH_USER_CONFIG}${NC}"
-        fi
+    if [[ "$target_shells" == "all" ]]; then
+        [[ " $installed " =~ " fish " ]] && apply_shell_fish
+        [[ " $installed " =~ " zsh " ]] && apply_shell_zsh
+        [[ " $installed " =~ " bash " ]] && apply_shell_bash
+    else
+        IFS=',' read -ra shell_arr <<< "$target_shells"
+        for sh_name in "${shell_arr[@]}"; do
+            case "$sh_name" in
+                fish) apply_shell_fish ;;
+                zsh) apply_shell_zsh ;;
+                bash) apply_shell_bash ;;
+            esac
+        done
     fi
 
-    runlog_event "ok" "terminal_fetch_applied" "logo=$logo;source=$logo_source"
+    runlog_event "ok" "terminal_fetch_applied" "logo=$logo;source=$logo_source;shells=$target_shells"
     echo -e "${GREEN}[OK] Identidade visual do terminal atualizada com sucesso para '${logo}'!${NC}"
     echo -e "Abra uma nova aba do terminal ou execute ${BOLD}fastfetch${NC} para conferir."
 }
@@ -408,28 +592,12 @@ cmd_revert() {
         echo -e "  [+] Removido override de usuário: ${YELLOW}${FASTFETCH_USER_CONFIG}${NC}"
     fi
 
-    if [ -f "$FISH_USER_CONFIG" ]; then
-        if grep -q "function __garuda_fastfetch" "$FISH_USER_CONFIG"; then
-            # Remover bloco injetado
-            local tmp_fish
-            tmp_fish="$(mktemp)"
-            python3 -c "
-import sys
-content = open('$FISH_USER_CONFIG').read()
-marker = '# Override do fastfetch do usuário'
-if marker in content:
-    idx = content.find(marker)
-    open('$tmp_fish', 'w').write(content[:idx].rstrip() + '\n')
-else:
-    open('$tmp_fish', 'w').write(content)
-"
-            mv "$tmp_fish" "$FISH_USER_CONFIG"
-            echo -e "  [+] Hook de override removido de: ${GREEN}${FISH_USER_CONFIG}${NC}"
-        fi
-    fi
+    revert_shell_fish
+    revert_shell_zsh
+    revert_shell_bash
 
     runlog_event "ok" "terminal_fetch_reverted" "restored"
-    echo -e "${GREEN}[OK] Reversão concluída com sucesso!${NC}"
+    echo -e "${GREEN}[OK] Reversão concluída com sucesso em todos os shells!${NC}"
 }
 
 cmd_menu() {
@@ -449,29 +617,67 @@ cmd_menu() {
 
     read -rp "Digite o número da opção desejada [0-7]: " opt
 
+    local chosen_logo=""
     case "$opt" in
-        1) cmd_apply "eagle" ;;
-        2) cmd_apply "cat" ;;
-        3) cmd_apply "emblem" ;;
-        4) cmd_apply "dragon-ascii" ;;
-        5) cmd_apply "garuda-ascii" ;;
+        1) chosen_logo="eagle" ;;
+        2) chosen_logo="cat" ;;
+        3) chosen_logo="emblem" ;;
+        4) chosen_logo="dragon-ascii" ;;
+        5) chosen_logo="garuda-ascii" ;;
         6)
             read -rp "Digite o caminho completo da imagem: " custom_img
-            cmd_apply "$custom_img"
+            chosen_logo="$custom_img"
             ;;
-        7) cmd_revert ;;
-        0|*) echo "Operação cancelada." ;;
+        7) cmd_revert; return 0 ;;
+        0|*) echo "Operação cancelada."; return 0 ;;
+    esac
+
+    # Pergunta sobre sincronização de shells
+    local installed
+    installed="$(detect_installed_shells)"
+
+    echo -e "\n${BOLD}Shells detectados no sistema:${NC} ${CYAN}${installed}${NC}"
+    echo -e "Deseja sincronizar a inicialização do Fastfetch nos outros shells?"
+    echo -e "  ${BOLD}1)${NC} Sim, sincronizar todos os shells instalados (${installed}) [Recomendado]"
+    echo -e "  ${BOLD}2)${NC} Apenas no shell ativo atual"
+    echo -e "  ${BOLD}3)${NC} Apenas gerar o Fastfetch sem alterar os arquivos RC dos shells\n"
+
+    read -rp "Escolha a opção de sincronização [1-3] (padrão: 1): " sh_opt
+    sh_opt="${sh_opt:-1}"
+
+    case "$sh_opt" in
+        1) cmd_apply "$chosen_logo" "all" ;;
+        2)
+            local current_sh
+            current_sh="$(basename "${SHELL:-fish}")"
+            cmd_apply "$chosen_logo" "$current_sh"
+            ;;
+        3)
+            cmd_apply "$chosen_logo" "none"
+            ;;
+        *)
+            cmd_apply "$chosen_logo" "all"
+            ;;
     esac
 }
 
 usage() {
-    echo "Uso: $(basename "$0") [--status | --menu | --list-logos | --apply [--logo <id|caminho>] | --revert]"
+    echo "Uso: $(basename "$0") [--status | --menu | --list-logos | --apply [--logo <id|caminho>] [--shells <all|fish,zsh,bash>] | --revert]"
     exit 1
 }
 
 main() {
     local action="status"
     local logo="eagle"
+    local target_shells="all"
+
+    if [[ $# -eq 0 ]]; then
+        if [ -t 0 ]; then
+            action="menu"
+        else
+            action="status"
+        fi
+    fi
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -495,6 +701,14 @@ main() {
                 logo="$2"
                 shift 2
                 ;;
+            --shells)
+                target_shells="$2"
+                shift 2
+                ;;
+            --all-shells)
+                target_shells="all"
+                shift
+                ;;
             --revert)
                 action="revert"
                 shift
@@ -513,7 +727,7 @@ main() {
         status) cmd_status ;;
         list) cmd_list_logos ;;
         menu) cmd_menu ;;
-        apply) cmd_apply "$logo" ;;
+        apply) cmd_apply "$logo" "$target_shells" ;;
         revert) cmd_revert ;;
     esac
 }

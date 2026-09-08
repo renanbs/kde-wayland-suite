@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-installation--ai-tools-integration)
-[![Version](https://img.shields.io/badge/Version-2.4.0-brightgreen.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-2.5.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -63,10 +63,9 @@ Compatible as a native plugin for **Oh My Pi (OMP)**, **Claude Code**, **Cursor 
 ### 13. Numbered Interactive Report Engine
 * **Fix:** Structured event runlogs saved in `~/.local/state/linux-wayland-suite/runs/`. Features interactive selection (`report --select`), indexed viewing (`report 3`), and actionable remediation commands for any warnings.
 
-### 14. Terminal Visual Identity & Fastfetch Logo Switcher (`terminal-fetch` / `cosmetic`)
-* **Problem:** Terminal greetings and logos are hardcoded or overwritten during distribution package updates (e.g. Garuda Mokka forcing a pastel cat mascot over the iconic Dr460nized neon eagle or classic ASCII dragon).
-* **Fix:** `./bin/linux-wayland-config cosmetic` (or `make cosmetic`) provides an interactive menu to choose between the Dr460nized low-poly neon eagle (`garuda-purple.png`), Mokka mascot cat (`mokka-fastfetch.png`), modern hexagonal "G" emblem, classic ASCII dragon, or custom PNG/SVG images, with preflight environment detection and atomic user-space rollback.
-
+### 14. Multi-Shell Terminal Visual Identity & Fastfetch Logo Switcher (`terminal-fetch` / `cosmetic`)
+* **Problem:** Terminal greetings and logos are hardcoded in distribution files (e.g. Garuda Mokka forcing a pastel cat mascot over the iconic Dr460nized neon eagle, or `.zshrc` hardcoding `--config mokka` while `.bashrc` lacks greeting hooks entirely).
+* **Fix:** `./bin/linux-wayland-config cosmetic` (or `make cosmetic`) provides an interactive menu to choose between the Dr460nized low-poly neon eagle (`garuda-purple.png`), Mokka mascot cat (`mokka-fastfetch.png`), modern hexagonal "G" emblem, classic ASCII dragon, or custom PNG/SVG images. It audits all installed shells (**Fish**, **Zsh**, **Bash**), cleans hardcoded presets, prompts for multi-shell synchronization, and provides atomic user-space rollback (`--revert`).
 ---
 
 ## 🧪 Tested & Verified in Production

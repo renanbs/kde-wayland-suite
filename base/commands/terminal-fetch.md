@@ -29,11 +29,16 @@ Before applying changes, the agent **must use `AskUserQuestion` (or `ask`)** to 
 - **"Classic Garuda ASCII"** — Native fastfetch ANSI text art bird (`Garuda`).
 - **"Revert to Distribution Default"** — Restores original system default preset and shell hooks.
 
+### Question 2 — Shell Synchronization (`shells`) (singleSelect):
+- **"All Installed Shells (Fish, Zsh, Bash) (Recommended)"** — Synchronizes all detected shells, replacing hardcoded presets (e.g. Mokka in Zsh) and adding interactive fastfetch greeting.
+- **"Active Shell Only"** — Only configures the currently active user shell.
+- **"Fastfetch Configuration Only (Skip Shell RC files)"** — Only writes `~/.config/fastfetch/config.jsonc` without touching `.zshrc`, `.bashrc` or `config.fish`.
+
 ### Mapping Answers to Command Execution:
 
-* **Dr460nized Neon Eagle:**
+* **Dr460nized Neon Eagle (All Shells):**
   ```bash
-  ./bin/linux-wayland-config terminal-fetch --apply --logo eagle
+  ./bin/linux-wayland-config terminal-fetch --apply --logo eagle --all-shells
   ```
 * **Mokka Mascot Cat:**
   ```bash

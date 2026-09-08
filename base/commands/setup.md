@@ -36,6 +36,7 @@ The agent reads `machine-profile.json` and presents only the detected options:
 - **"Logitech MX Master 3S Mouse"** — Only if Logitech device is detected or requested.
 - **"Set 60 Hz Display Refresh Rate"** — Only if 60 Hz mode is available and battery savings are desired.
 - **"Tongfang / Avell Matrix Unlock (GRUB)"** — Only if Tongfang/Avell chassis is detected.
+- **"Terminal Visual Identity (Fastfetch)"** — Optional (Configures Dr460nized low-poly eagle logo across Fish, Zsh, and Bash).
 
 ### Mapping Answers to Command Execution:
 
@@ -45,7 +46,7 @@ The agent reads `machine-profile.json` and presents only the detected options:
   ```
 * **Apply specific selections:**
   ```bash
-  ./bin/linux-wayland-config setup --keyboard --autoheal --wifi-power
+  ./bin/linux-wayland-config setup --keyboard --autoheal --wifi-power --terminal-fetch
   ```
 * **Interactive Terminal Wizard:**
   ```bash

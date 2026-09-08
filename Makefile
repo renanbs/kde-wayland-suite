@@ -1,4 +1,4 @@
-.PHONY: all init scan profile setup report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight help
+.PHONY: all init scan profile setup report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight terminal-fetch cosmetic help
 
 all: status
 
@@ -44,6 +44,8 @@ help:
 	@echo "  make rollback        - Restores previous configuration snapshots"
 	@echo "  make report          - Run report from structured events + historical trends"
 	@echo "  make upgrade         - Checks and applies suite and marketplace updates"
+	@echo "  make terminal-fetch  - Cosmetic Fastfetch/terminal identity menu and logo switch"
+	@echo "  make cosmetic        - Alias for make terminal-fetch"
 	@echo "  make install-cli     - Installs kde-config CLI command in ~/.local/bin"
 status:
 	@./bin/kde-config status
@@ -122,3 +124,9 @@ report:
 
 install-cli:
 	@./bin/kde-config install
+
+terminal-fetch:
+	@./bin/kde-config terminal-fetch
+
+cosmetic:
+	@./bin/kde-config cosmetic

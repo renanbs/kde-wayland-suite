@@ -68,6 +68,7 @@ usage() {
     echo "  upgrade / update  Checks and applies repository and marketplace updates"
     echo "  install           Creates symlink in ~/.local/bin/linux-wayland-config"
     echo "  help              Displays this help manual"
+    echo "  terminal-fetch    Cosmetic Fastfetch/terminal identity menu and logo switch (alias: cosmetic)"
     echo ""
     echo -e "${BOLD}Environment variables (init / setup / fix-keyboard / battery):${NC}"
     echo "  KDE_SUITE_LANG=en|pt-BR      Sets language preference during init (default: en)"
@@ -435,6 +436,15 @@ cmd_install() {
 cmd_report() {
     bash "$SHARED_DIR/report.sh" "${1:-}"
 }
+cmd_terminal_fetch() {
+    if [ -f "$SHARED_DIR/terminal-fetch.sh" ]; then
+        bash "$SHARED_DIR/terminal-fetch.sh" "$@"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/terminal-fetch.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 
 # Despacha o comando pedido. Separado do roteamento para que o wrapper de log
 # consiga executá-lo capturando a saída.
@@ -466,6 +476,7 @@ dispatch() {
         rollback) cmd_rollback ;;
         install) cmd_install ;;
         report) cmd_report "${2:-}" ;;
+        terminal-fetch|fetch-theme|cosmetic) shift; cmd_terminal_fetch "$@" ;;
         upgrade|update) cmd_upgrade "${2:---apply}" ;;
         help|--help|-h) usage ;;
         *) echo -e "${RED}Unknown command: $1${NC}"; usage; exit 1 ;;

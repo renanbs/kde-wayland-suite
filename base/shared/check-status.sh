@@ -416,6 +416,35 @@ for iface_path in /sys/class/net/*; do
     fi
 done
 
+# -----------------------------------------------------------------------------
+# 8. Identidade Visual do Terminal (Fastfetch)
+# -----------------------------------------------------------------------------
+if command -v fastfetch >/dev/null 2>&1; then
+    FF_USER_CFG="$HOME/.config/fastfetch/config.jsonc"
+    if [ -f "$FF_USER_CFG" ]; then
+        ACTIVE_LOGO="$(grep -E '"source":' "$FF_USER_CFG" 2>/dev/null | head -n1 | sed -E 's/.*"source":[[:space:]]*"([^"]*)".*/\1/' || true)"
+        if [[ "$ACTIVE_LOGO" == *garuda-purple.png* ]]; then
+            echo -e "  • ${GREEN}[OK]${NC} Identidade do Terminal (Fastfetch): Águia Neon Dr460nized ativa."
+            runlog_event "ok" "terminal_fetch_logo" "eagle"
+        elif [[ "$ACTIVE_LOGO" == *mokka-fastfetch.png* ]]; then
+            echo -e "  • ${GREEN}[OK]${NC} Identidade do Terminal (Fastfetch): Gato Mascote Mokka ativo."
+            runlog_event "ok" "terminal_fetch_logo" "cat"
+        elif [[ "$ACTIVE_LOGO" == *garudalinux-logo* ]]; then
+            echo -e "  • ${GREEN}[OK]${NC} Identidade do Terminal (Fastfetch): Emblema 'G' Hexagonal ativo."
+            runlog_event "ok" "terminal_fetch_logo" "emblem"
+        elif [[ "$ACTIVE_LOGO" == "GarudaDragon" ]]; then
+            echo -e "  • ${GREEN}[OK]${NC} Identidade do Terminal (Fastfetch): Dragão ASCII Dr460nized ativo."
+            runlog_event "ok" "terminal_fetch_logo" "dragon-ascii"
+        else
+            echo -e "  • ${GREEN}[OK]${NC} Identidade do Terminal (Fastfetch): Logo personalizado ativo ($ACTIVE_LOGO)."
+            runlog_event "ok" "terminal_fetch_logo" "custom"
+        fi
+    else
+        echo -e "  • ${BLUE}[INFO]${NC} Fastfetch instalado com configuração padrão da distribuição."
+        runlog_event "info" "terminal_fetch_default" "system"
+    fi
+fi
+
 echo ""
 echo -e "${BOLD}${BLUE}======================================================${NC}"
 echo -e "${BOLD}${GREEN}✔ Verificação concluída.${NC}"

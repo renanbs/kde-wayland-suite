@@ -94,7 +94,7 @@ flowchart TD
    - Language preference persistence (`en` default, `pt-BR`) in `~/.config/linux-wayland-suite/harness-profile.json`.
    - Internal codebase, contracts, and runlogs remain canonical English; the AI translates user dialogues as requested.
 5. **Release & Marketplace Discipline:**
-   - Every release requires: semantic version bump (`package.json`, `.claude-plugin/`, `.omp-plugin/`, `antigravity/`), README version badges update, semantic commit (`feat(...)`, `fix(...)`), git push, and marketplace upgrade (`omp plugin upgrade ...`).
+   - Every release requires: semantic version bump across all manifests (`package.json`, `.claude-plugin/{plugin,marketplace}.json`, `.omp-plugin/{plugin,marketplace}.json`, `antigravity/plugin.json`), README version badges update, semantic commit (`feat(...)`, `fix(...)`), git push, and internal harness marketplace sync (`omp plugin marketplace update <name> && omp plugin upgrade <name>@<name>`).
 6. **Mandatory Documentation Synchronization (README & Translations):**
    - Every new feature, command, or behavioral change must be documented simultaneously in both `README.md` (English) and `README.pt-BR.md` (Português do Brasil).
    - Must keep in sync: version badges (`Version-X.Y.Z`), the feature problem/solution section, and the CLI/Makefile command reference table.

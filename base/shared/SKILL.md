@@ -22,7 +22,7 @@ This skill provides automations and diagnostics to resolve common problems in th
 14. **Machine Profiling & Modular Setup (`/init` & `/setup`)**: `/init` (or `/scan`) performs non-destructive hardware inspection saving `~/.config/linux-wayland-suite/machine-profile.json`. `/setup` uses this profile to offer a contextual configuration wizard tailored to detected hardware.
 15. **Tongfang S3 Deep Sleep Resume Fix**: Hook in `/etc/systemd/system-sleep/90-kde-keyboard-resume.sh` issuing `rescan` to `/sys/devices/platform/i8042/serio0/drvctl` upon lid open.
 16. **Structured Event Logs and Historical Reporting**: Every execution records a run in `~/.local/state/linux-wayland-suite/runs/<timestamp>-<cmd>/` with `events.tsv`, `output.log`, and `meta.env`. `report` parses structured events to produce reproducible reports and actionable remediation advice.
-> **Standardized Output Format**: Every command in this suite reports in the 4-phase format defined in `OUTPUT-CONTRACT.md` (**Plan** $\to$ **Execution** $\to$ **Summary** $\to$ **Recommended Actions**), identical across Claude Code, Cursor, OMP, OpenCode, and Antigravity.
+> **Evidence-First Verdict Output Format**: Every command in this suite reports in the format defined in `OUTPUT-CONTRACT.md` (**Verdict** $\to$ **Execution Breakdown** $\to$ **Ground Truth Evidence** $\to$ **Daily Impact** $\to$ **Action Required**), identical across Claude Code, Cursor, OMP, OpenCode, and Antigravity.
 
 > **Internationalization & Translation**: Internally, all commands, skills, contracts, and runlogs are maintained in English. The AI agent translates explanations and interaction dialogues into the user's selected language (`en` or `pt-BR`) as configured.
 

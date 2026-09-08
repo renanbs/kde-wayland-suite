@@ -66,7 +66,7 @@ flowchart TD
 ### Pillar 6: Standardized AI Command (`base/commands/<name>.md`)
 - Document with YAML frontmatter (`description:`), header `# /<name>`, and:
   1. **Guided Interactive Workflow:** Explicit instruction for AI agents to use `AskUserQuestion` (or `ask`) before applying risky or multi-choice options.
-  2. **4-Phase Output Contract:** Complete replication of `OUTPUT-CONTRACT.md`.
+  2. **Evidence-First Verdict Output Contract:** Complete replication of `OUTPUT-CONTRACT.md`.
 - **Relative Symlinks:** Mirrored via relative symlinks into `claude-code/commands/`, `cursor/commands/`, `omp/commands/`, and `antigravity/skills/`.
 
 ### Pillar 7: Central `/help` and Recommended Actions in `/report`
@@ -80,12 +80,13 @@ flowchart TD
 1. **Single Canonical Source (`base/`):**
    - Never create duplicate physical files in `claude-code/`, `cursor/`, `omp/`, `antigravity/`, or root.
    - All platform integration directories use relative symlinks pointing to `base/commands/`, `base/shared/`, and `base/skills/`.
-2. **4-Phase Output Contract (`OUTPUT-CONTRACT.md`):**
-   - Every command executed by any AI agent must strictly answer in 4 phases:
-     * `### 1. Plan` (Command, Action, Reversible)
-     * `### 2. Execution` (`✅`, `⏭️`, `⚠️`, `❌`)
-     * `### 3. Summary` (Table: Changed, Language, Unchanged, Backup, Saved Report, How to Revert, Requires)
-     * `### 4. Recommended Actions` (Mandatory if `⚠️` or `❌` occurs, with exact 1-line command)
+2. **Evidence-First Verdict Output Contract (`OUTPUT-CONTRACT.md`):**
+   - Every command executed by any AI agent must strictly report using the evidence-first verdict format:
+     * `### 🎯 Verdict: [ ✅ SUCCESS | ❌ FAILURE | ⚠️ PARTIAL SUCCESS ]`
+     * `#### 📋 Execution Breakdown` (`✅ Applied`, `❌ Failure/Rejection with raw error & root cause`, `🔒 Manual Root Action`)
+     * `#### 🔬 Technical Evidence & Ground Truth` (Table: Component, Verified State, Observable Proof/Command, How to Revert)
+     * `#### 💡 Daily Impact & Practical Benefits`
+     * `#### 👉 Action Required` (Direct copy-paste command without sudo prefix)
 3. **Structured Data Consumption (`events.tsv`):**
    - AI agents and reporting engines must read `events.tsv`, never parse ANSI color escape codes from terminal logs.
 4. **AI Host & Language Profile Alignment (`lib-harness.sh`):**

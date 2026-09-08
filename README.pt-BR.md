@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-instalação-e-integração-com-ferramentas-de-ia)
-[![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.3.0-brightgreen.svg)](package.json)
+[![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.4.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -63,6 +63,10 @@ Compatível como plugin nativo para **Oh My Pi (OMP)**, **Claude Code**, **Curso
 
 ### 13. Motor de Relatórios Numerados e Interativos
 * **Solução:** Registros estruturados salvos em `~/.local/state/linux-wayland-suite/runs/`. Permite seleção interativa (`report --select`), consulta indexada (`report 3`) e gera ações recomendadas de 1 linha para qualquer aviso ou falha.
+
+### 14. Identidade Visual do Terminal & Alternador de Logo do Fastfetch (`terminal-fetch` / `cosmetic`)
+* **Problema:** A apresentação inicial do terminal é engessada ou sobreposta em atualizações da distribuição (ex: Garuda Mokka forçando o mascote do gato pastel sobre a águia neon do Dr460nized ou o dragão clássico em ASCII).
+* **Solução:** `./bin/linux-wayland-config cosmetic` (ou `make cosmetic`) oferece um menu interativo para alternar entre a Águia low-poly neon Dr460nized (`garuda-purple.png`), o Gato Mascote Mokka (`mokka-fastfetch.png`), o Emblema Hexagonal 'G', o Dragão ASCII nativo ou imagens personalizadas, com detecção prévia de ambiente e reversão atômica no espaço de usuário.
 
 ---
 
@@ -128,6 +132,7 @@ cd ~/src/linux-wayland-suite
 | `linux-wayland-config report --select` | — | Menu interativo no terminal para escolher qualquer relatório |
 | `linux-wayland-config upgrade` | `make upgrade` | Verifica e aplica atualizações do GitHub e marketplace |
 | `linux-wayland-config rollback` | `make rollback` | Restaura o snapshot anterior a partir do backup |
+| `linux-wayland-config cosmetic` / `terminal-fetch` | `make cosmetic` / `make terminal-fetch` | Menu interativo de identidade visual e troca de logo do Fastfetch |
 | `linux-wayland-config help` | `make help` | Exibe o manual completo de ajuda |
 ---
 

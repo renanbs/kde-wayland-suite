@@ -34,6 +34,7 @@ Displays the quick reference help center for all commands available in the **Lin
 | `./bin/linux-wayland-config report` | `/report` | Latest run report + historical trends & recommendations | To inspect execution history and solve warnings/failures |
 | `./bin/linux-wayland-config upgrade` | `/upgrade` | Checks and applies updates from GitHub and marketplace | To upgrade the suite to the latest release |
 | `./bin/linux-wayland-config rollback` | — | Restores previous configuration snapshot from backup | To revert changes made by the suite |
+| `./bin/linux-wayland-config terminal-fetch` | `/terminal-fetch` | Fastfetch terminal identity menu & logo switch (Eagle, Cat Mokka, Dragon, etc.) | To customize or restore the terminal logo and greeting |
 
 ---
 

@@ -111,8 +111,8 @@ cmd_apply() {
 
     echo -e "  [*] [3/4] Atualizando plugin nos marketplaces locais de IA..."
     if command -v omp >/dev/null 2>&1; then
-        omp plugin marketplace update kde-wayland-suite >/dev/null 2>&1 || true
-        omp plugin upgrade kde-wayland-suite@kde-wayland-suite >/dev/null 2>&1 || true
+        omp plugin marketplace update linux-wayland-suite >/dev/null 2>&1 || true
+        omp plugin upgrade linux-wayland-suite@linux-wayland-suite >/dev/null 2>&1 || true
         echo -e "  ✅ [3/4] Plugin atualizado no marketplace do OMP"
         runlog_event "ok" "omp_marketplace_upgraded" ""
     else

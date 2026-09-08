@@ -69,10 +69,10 @@ flowchart TD
   2. **Evidence-First Verdict Output Contract:** Complete replication of `OUTPUT-CONTRACT.md`.
 - **Relative Symlinks:** Mirrored via relative symlinks into `claude-code/commands/`, `cursor/commands/`, `omp/commands/`, and `antigravity/skills/`.
 
-### Pillar 7: Central `/help` and Recommended Actions in `/report`
+### Pillar 7: Central `/help`, `/report` and Documentation Synchronization
 - **`/help`:** Insert corresponding row in the command matrix of `base/commands/help.md`.
 - **`report.sh`:** Register `warn`/`fail` event mapping so reports display the exact 1-line fix in `Recommended Actions`.
-
+- **`README.md` & `README.pt-BR.md`:** Synchronize feature description and CLI reference table across both languages.
 ---
 
 ## 2. The 6 Inviolable Architectural Rules
@@ -94,4 +94,8 @@ flowchart TD
    - Language preference persistence (`en` default, `pt-BR`) in `~/.config/linux-wayland-suite/harness-profile.json`.
    - Internal codebase, contracts, and runlogs remain canonical English; the AI translates user dialogues as requested.
 5. **Release & Marketplace Discipline:**
-   - Every release requires: semantic version bump (`package.json`, `.claude-plugin/`, `.omp-plugin/`, `antigravity/`), semantic commit (`feat(...)`, `fix(...)`), git push, and marketplace upgrade (`omp plugin upgrade ...`).
+   - Every release requires: semantic version bump (`package.json`, `.claude-plugin/`, `.omp-plugin/`, `antigravity/`), README version badges update, semantic commit (`feat(...)`, `fix(...)`), git push, and marketplace upgrade (`omp plugin upgrade ...`).
+6. **Mandatory Documentation Synchronization (README & Translations):**
+   - Every new feature, command, or behavioral change must be documented simultaneously in both `README.md` (English) and `README.pt-BR.md` (Português do Brasil).
+   - Must keep in sync: version badges (`Version-X.Y.Z`), the feature problem/solution section, and the CLI/Makefile command reference table.
+   - A release or feature merge is strictly incomplete without synchronized dual-language documentation.

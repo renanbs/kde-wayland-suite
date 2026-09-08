@@ -102,12 +102,13 @@ cmd_apply() {
         runlog_event "skip" "git_pull_skipped" ""
     fi
 
-    echo -e "  [*] [2/4] Atualizando link simbólico da CLI (~/.local/bin/kde-config)..."
+    echo -e "  [*] [2/4] Atualizando links simbólicos da CLI (~/.local/bin)..."
     mkdir -p "$HOME/.local/bin"
-    ln -sf "$BASE_REPO_DIR/base/bin/kde-config" "$HOME/.local/bin/kde-config"
-    chmod +x "$BASE_REPO_DIR/base/bin/kde-config"
-    echo -e "  ✅ [2/4] Link simbólico ~/.local/bin/kde-config atualizado"
-    runlog_event "ok" "cli_symlink_updated" ""
+    for name in linux-wayland-config kde-config wayland-config; do
+        ln -sf "$BASE_REPO_DIR/base/bin/linux-wayland-config" "$HOME/.local/bin/$name"
+    done
+    chmod +x "$BASE_REPO_DIR/base/bin/linux-wayland-config"
+    echo -e "  ✅ [2/4] Links simbólicos (~/.local/bin/{linux-wayland-config,kde-config,wayland-config}) atualizados"
 
     echo -e "  [*] [3/4] Atualizando plugin nos marketplaces locais de IA..."
     if command -v omp >/dev/null 2>&1; then

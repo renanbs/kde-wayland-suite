@@ -24,7 +24,10 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-RUNLOG_ROOT="${KDE_SUITE_RUNLOG_ROOT:-$HOME/.local/state/kde-wayland-suite/runs}"
+RUNLOG_ROOT="${LINUX_WAYLAND_SUITE_RUNLOG_ROOT:-${KDE_SUITE_RUNLOG_ROOT:-$HOME/.local/state/linux-wayland-suite/runs}}"
+if [ ! -d "$RUNLOG_ROOT" ] && [ -d "$HOME/.local/state/kde-wayland-suite/runs" ]; then
+    RUNLOG_ROOT="$HOME/.local/state/kde-wayland-suite/runs"
+fi
 
 if [ ! -d "$RUNLOG_ROOT" ] || [ -z "$(find "$RUNLOG_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)" ]; then
     echo -e "${YELLOW}Nenhuma execução registrada ainda em $RUNLOG_ROOT.${NC}"

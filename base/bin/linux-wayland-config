@@ -130,10 +130,12 @@ cmd_mouse() {
 }
 
 cmd_battery_status() {
-    if [ -f "$SHARED_DIR/diagnose-battery.sh" ]; then
-        bash "$SHARED_DIR/diagnose-battery.sh"
+    if [ -f "$SHARED_DIR/diagnose-battery.py" ]; then
+        python3 "$SHARED_DIR/diagnose-battery.py" "$@"
+    elif [ -f "$SHARED_DIR/diagnose-battery.sh" ]; then
+        bash "$SHARED_DIR/diagnose-battery.sh" "$@"
     else
-        echo -e "${RED}Erro: $SHARED_DIR/diagnose-battery.sh não encontrado.${NC}"
+        echo -e "${RED}Erro: $SHARED_DIR/diagnose-battery.py não encontrado.${NC}"
         exit 1
     fi
 }
@@ -273,10 +275,12 @@ cmd_init() {
 }
 
 cmd_setup() {
-    if [ -f "$SHARED_DIR/setup-suite.sh" ]; then
+    if [ -f "$SHARED_DIR/setup-suite.py" ]; then
+        python3 "$SHARED_DIR/setup-suite.py" "$@"
+    elif [ -f "$SHARED_DIR/setup-suite.sh" ]; then
         bash "$SHARED_DIR/setup-suite.sh" "$@"
     else
-        echo -e "${RED}Erro: $SHARED_DIR/setup-suite.sh não encontrado.${NC}"
+        echo -e "${RED}Erro: $SHARED_DIR/setup-suite.py não encontrado.${NC}"
         exit 1
     fi
 }
@@ -448,7 +452,11 @@ cmd_install() {
     echo "Ensure ~/.local/bin is in your PATH."
 }
 cmd_report() {
-    bash "$SHARED_DIR/report.sh" "${1:-}"
+    if [ -f "$SHARED_DIR/report.py" ]; then
+        python3 "$SHARED_DIR/report.py" "$@"
+    else
+        bash "$SHARED_DIR/report.sh" "$@"
+    fi
 }
 cmd_terminal_fetch() {
     if [ -f "$SHARED_DIR/terminal-fetch.sh" ]; then

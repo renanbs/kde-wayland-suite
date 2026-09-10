@@ -21,9 +21,13 @@ class UI:
     CYAN    = "\033[0;36m"   # Cyan
     BLUE    = "\033[0;34m"   # Blue
     SUCCESS = "\033[0;32m"   # Green
+    GREEN   = "\033[0;32m"
     DANGER  = "\033[0;31m"   # Red
+    RED     = "\033[0;31m"
     WARNING = "\033[1;33m"   # Bold Yellow
+    YELLOW  = "\033[1;33m"
     MUTED   = "\033[0;90m"   # Gray / Dim
+    GRAY    = "\033[0;90m"
     BORDER  = "\033[2;36m"   # Dim Cyan
     BOLD    = "\033[1m"      # Bold
     DIM     = "\033[2m"      # Dim

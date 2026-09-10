@@ -56,6 +56,8 @@ found = set()
 for pat in search_globs:
     for p in glob.glob(pat):
         if os.path.isfile(p) and os.access(p, os.X_OK):
+            if p.endswith('.orig') or '.bak-' in p or '.tmp-' in p or p.endswith('.bak'):
+                continue
             try:
                 rp = os.path.realpath(p)
                 # Filtra executáveis ELF com tamanho > 25MB (típico de navegadores/Electron)
@@ -201,37 +203,115 @@ cmd_status() {
 }
 
 cmd_apply() {
-    echo -e "${BOLD}${BLUE}==> [1/3] Detectando binários Chromium e Electron...${NC}"
-    echo -e "  • Motor de patch por ${BOLD}Leandro Cassa${NC} (https://github.com/lcassa/chromium-wayland-cedilla-fix)"
-    local targets=()
+    local auto_all=false
+    local explicit_targets=()
 
-    # Se recebeu argumentos, usa-os; caso contrário, roda a autodescoberta
-    if [ $# -gt 0 ]; then
-        for arg in "$@"; do
-            [ -f "$arg" ] && targets+=("$arg")
-        done
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --all|-y|--yes)
+                auto_all=true
+                shift
+                ;;
+            *)
+                [ -f "$1" ] && explicit_targets+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    echo -e "${BOLD}${BLUE}======================================================${NC}"
+    echo -e "${BOLD}${BLUE}   Aplicação do Patch da Cedilha Wayland              ${NC}"
+    echo -e "${BOLD}${BLUE}======================================================${NC}"
+    echo -e "  ${BLUE}• Motor de patch original por Leandro Cassa (lcassa/chromium-wayland-cedilla-fix)${NC}\n"
+
+    echo -e "${BOLD}==> [1/3] Detectando binários Chromium e Electron instalados...${NC}"
+    local discovered=()
+
+    if [ ${#explicit_targets[@]} -gt 0 ]; then
+        discovered=("${explicit_targets[@]}")
     elif [ ! -t 0 ]; then
         # Recebeu lista via stdin (ex: pacman hook com NeedsTargets)
         while IFS= read -r line; do
-            [ -f "/$line" ] && targets+=("/$line")
-            [ -f "$line" ] && targets+=("$line")
+            [ -f "/$line" ] && discovered+=("/$line")
+            [ -f "$line" ] && discovered+=("$line")
         done
-    fi
-
-    if [ ${#targets[@]} -eq 0 ]; then
+        auto_all=true
+    else
         while IFS= read -r bin; do
-            [ -n "$bin" ] && targets+=("$bin")
+            [ -n "$bin" ] && discovered+=("$bin")
         done <<< "$(discover_binaries)"
     fi
 
-    if [ ${#targets[@]} -eq 0 ]; then
+    if [ ${#discovered[@]} -eq 0 ]; then
         echo -e "    ${YELLOW}[AVISO] Nenhum binário encontrado para aplicar o patch.${NC}"
         return 0
     fi
 
-    echo -e "${BOLD}${BLUE}==> [2/3] Aplicando patch de bytes nos binários...${NC}"
+    local targets=()
+
+    # Se for execução interativa no terminal sem flag --all / -y, pergunta ao usuário
+    if [ "$auto_all" = "false" ] && [ -t 0 ] && [ ${#explicit_targets[@]} -eq 0 ]; then
+        echo -e "\nAplicativos encontrados no sistema:\n"
+        local i=1
+        local vuln_indices=()
+        for bin in "${discovered[@]}"; do
+            local name status_raw status_desc
+            name="$(app_display_name "$bin")"
+            status_raw="$(check_binary_status "$bin")"
+            if [[ "$status_raw" == PATCHED:* ]]; then
+                status_desc="${GREEN}[JÁ CORRIGIDO]${NC}"
+            elif [[ "$status_raw" == VULNERABLE:* ]]; then
+                status_desc="${RED}[NECESSITA PATCH]${NC}"
+                vuln_indices+=("$i")
+            else
+                status_desc="${YELLOW}[INELIGÍVEL]${NC}"
+            fi
+            printf "  %2d) %-25s %-32b (%s)\n" "$i" "$name" "$status_desc" "$bin"
+            i=$((i + 1))
+        done
+
+        echo ""
+        echo -e "${BOLD}Escolha quais aplicativos deseja patchear:${NC}"
+        echo -e "  • Digite os ${BOLD}números${NC} separados por espaço (ex: 1 2 6)"
+        echo -e "  • ${CYAN}'V'${NC} = Aplicar apenas nos que necessitam de patch (${#vuln_indices[@]} apps) [Recomendado]"
+        echo -e "  • ${CYAN}'A'${NC} = Aplicar em todos os detectados"
+        echo -e "  • ${CYAN}'Q'${NC} = Cancelar sem modificar nada"
+        echo ""
+        read -r -p "Opção [Padrão: V]: " user_choice
+        user_choice="${user_choice:-V}"
+
+        case "$user_choice" in
+            [qQ]*)
+                echo -e "\n${YELLOW}Operação cancelada pelo usuário.${NC}"
+                return 0
+                ;;
+            [aA]*)
+                targets=("${discovered[@]}")
+                ;;
+            [vV]*)
+                for idx in "${vuln_indices[@]}"; do
+                    targets+=("${discovered[$((idx - 1))]}")
+                done
+                ;;
+            *)
+                for num in $user_choice; do
+                    if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#discovered[@]}" ]; then
+                        targets+=("${discovered[$((num - 1))]}")
+                    fi
+                done
+                ;;
+        esac
+    else
+        targets=("${discovered[@]}")
+    fi
+
+    if [ ${#targets[@]} -eq 0 ]; then
+        echo -e "    ${YELLOW}[INFO] Nenhum aplicativo selecionado para aplicação.${NC}"
+        return 0
+    fi
+
+    echo -e "\n${BOLD}==> [2/3] Aplicando patch de bytes nos aplicativos selecionados (${#targets[@]})...${NC}"
     local applied_count=0
-    local skipped_count=0
 
     for target in "${targets[@]}"; do
         local name
@@ -258,23 +338,37 @@ cmd_apply() {
         fi
     done
 
-    echo -e "${BOLD}${BLUE}==> [3/3] Configurando autocura no Pacman (Hook pós-atualização)...${NC}"
-    local hook_dir="/etc/pacman.d/hooks"
+    echo -e "\n${BOLD}==> [3/3] Autocura pós-atualização via Pacman Hook${NC}"
+    local want_hook=true
 
-    install_hook() {
-        mkdir -p "$hook_dir"
-        mkdir -p "/usr/local/bin"
+    if [ "$auto_all" = "false" ] && [ -t 0 ]; then
+        echo -e "\n${BOLD}Como funciona o gancho do Pacman:${NC}"
+        echo -e "  Quando o Google Chrome, Orca IDE ou VS Code forem atualizados via ${BOLD}pacman${NC} ou ${BOLD}paru${NC},"
+        echo -e "  o gerenciador de pacotes baixa uma versão nova de fábrica que desfaz o patch da cedilha."
+        echo -e "  O gancho em ${BOLD}/etc/pacman.d/hooks/99-cedilla-wayland.hook${NC} reaplica o patch automaticamente"
+        echo -e "  apenas nos pacotes atualizados, sem você precisar executar nada manualmente.\n"
+        read -r -p "Deseja instalar o gancho do Pacman para manter a autocura? [S/n]: " hook_choice
+        hook_choice="${hook_choice:-S}"
+        if [[ "$hook_choice" =~ ^[nN] ]]; then
+            want_hook=false
+            echo -e "  ${BLUE}[INFO] Gancho do Pacman ignorado conforme solicitado.${NC}"
+        fi
+    fi
 
-        # Cria o script utilitário de sistema apontando para esta instalação
-        cat << EOF > "$SYSTEM_WRAPPER"
+    if [ "$want_hook" = "true" ] && [ -d "/etc/pacman.d" ]; then
+        local hook_dir="/etc/pacman.d/hooks"
+        install_hook() {
+            mkdir -p "$hook_dir"
+            mkdir -p "/usr/local/bin"
+
+            cat << EOF > "$SYSTEM_WRAPPER"
 #!/usr/bin/env bash
 # Wrapper de autocura gerado pelo linux-wayland-suite
-exec "$SCRIPT_DIR/manage-chromium-cedilla.sh" --apply "\$@"
+exec "$SCRIPT_DIR/manage-chromium-cedilla.sh" --apply --yes "\$@"
 EOF
-        chmod +x "$SYSTEM_WRAPPER"
+            chmod +x "$SYSTEM_WRAPPER"
 
-        # Cria o gancho do pacman
-        cat << 'EOF' > "$PACMAN_HOOK_FILE"
+            cat << 'EOF' > "$PACMAN_HOOK_FILE"
 [Trigger]
 Operation = Install
 Operation = Upgrade
@@ -293,9 +387,8 @@ When = PostTransaction
 Exec = /usr/local/bin/linux-wayland-patch-cedilla
 NeedsTargets
 EOF
-    }
+        }
 
-    if [ -d "/etc/pacman.d" ]; then
         if [ "$EUID" -ne 0 ]; then
             echo -e "  • Instalando gancho em $PACMAN_HOOK_FILE via sudo..."
             sudo bash -c "$(declare -f install_hook); SCRIPT_DIR='$SCRIPT_DIR'; SYSTEM_WRAPPER='$SYSTEM_WRAPPER'; PACMAN_HOOK_FILE='$PACMAN_HOOK_FILE'; hook_dir='$hook_dir'; install_hook"
@@ -304,12 +397,12 @@ EOF
         fi
         echo -e "    ${GREEN}[OK]${NC} Gancho do pacman e wrapper /usr/local/bin instalados com sucesso."
         runlog_event "ok" "cedilla_hook_installed" "$PACMAN_HOOK_FILE"
-    else
+    elif [ "$want_hook" = "true" ]; then
         echo -e "    ${BLUE}[INFO]${NC} Diretório /etc/pacman.d ausente (distro não-Arch? Hook do pacman ignorado)."
     fi
 
-    echo -e "\n${GREEN}✔ Patch de cedilha concluído!${NC}"
-    echo -e "Reinicie o Google Chrome, Orca IDE, Discord ou VS Code para que a cedilha (' + c -> ç) entre em vigor.\n"
+    echo -e "\n${GREEN}✔ Concluído!${NC}"
+    echo -e "Reinicie os aplicativos modificados para que a cedilha (' + c -> ç) entre em vigor.\n"
 }
 
 cmd_revert() {

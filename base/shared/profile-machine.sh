@@ -335,7 +335,28 @@ fi
 echo -e "  • Touchpad: $([ "$TOUCHPAD_PRESENT" -eq 1 ] && echo -e "${GREEN}Detectado${NC}" || echo -e "Não detectado")"
 echo -e "  • Mouse Logitech MX Master 3S: $([ "$MX_MASTER_PRESENT" -eq 1 ] && echo -e "${GREEN}Detectado${NC}" || echo -e "Não detectado")"
 echo -e "  • Layout Auto-Heal (Proteção KWin): $([ "$AUTOHEAL_INSTALLED" -eq 1 ] && echo -e "${GREEN}[INSTALADO]${NC}" || echo -e "${YELLOW}[NÃO INSTALADO]${NC}")"
-echo -e "  • Apps Chromium/Electron detectados: ${BOLD}${#CHROMIUM_APPS[@]}${NC} app(s)"
+if [ ${#CHROMIUM_APPS[@]} -gt 0 ]; then
+    APP_LABELS=()
+    for ap in "${CHROMIUM_APPS[@]}"; do
+        case "$ap" in
+            *chrome/chrome*) APP_LABELS+=("Google Chrome") ;;
+            *electron43*) APP_LABELS+=("Orca IDE") ;;
+            *code/code*) APP_LABELS+=("VS Code") ;;
+            *Discord*) APP_LABELS+=("Discord") ;;
+            *brave*) APP_LABELS+=("Brave") ;;
+            *antigravity-ide*) APP_LABELS+=("Antigravity IDE") ;;
+            *Antigravity*) APP_LABELS+=("Antigravity") ;;
+        esac
+    done
+    UNIQUE_LABELS=()
+    while IFS= read -r l; do
+        [ -n "$l" ] && UNIQUE_LABELS+=("$l")
+    done < <(printf '%s\n' "${APP_LABELS[@]:-}" | sort -u)
+    LABELS_STR=$(printf ", %s" "${UNIQUE_LABELS[@]}"); LABELS_STR="${LABELS_STR:2}"
+    echo -e "  • Apps Chromium/Electron detectados: ${BOLD}${#CHROMIUM_APPS[@]} app(s)${NC} (${LABELS_STR})"
+else
+    echo -e "  • Apps Chromium/Electron detectados: ${YELLOW}Nenhum${NC}"
+fi
 
 # -----------------------------------------------------------------------------
 # 6. Gravação Estruturada do Machine Profile (JSON)

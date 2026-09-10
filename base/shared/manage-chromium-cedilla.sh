@@ -13,7 +13,11 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 BOLD='\033[1m'
+DIM='\033[2m'
+GRAY='\033[0;90m'
 NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -123,13 +127,14 @@ except Exception as e:
 }
 
 cmd_status() {
-    echo -e "${BOLD}${BLUE}======================================================${NC}"
-    echo -e "${BOLD}${BLUE}   Auditoria da Cedilha Wayland (Chromium / Electron)  ${NC}"
-    echo -e "${BOLD}${BLUE}======================================================${NC}"
-    echo -e "  ${BLUE}• Baseado na solução de Leandro Cassa (lcassa/chromium-wayland-cedilla-fix)${NC}\n"
+    echo -e "${BOLD}${CYAN}======================================================${NC}"
+    echo -e "${BOLD}${CYAN}   Auditoria da Cedilha Wayland (Chromium / Electron)  ${NC}"
+    echo -e "${BOLD}${CYAN}======================================================${NC}"
+    echo -e "  ${DIM}• Motor original por${NC} ${CYAN}Leandro Cassa${NC} ${DIM}(https://github.com/lcassa/chromium-wayland-cedilla-fix)${NC}\n"
+
     echo -e "${BOLD}1. Binários Detectados e Estado da Cedilha (' + c):${NC}\n"
-    printf "  %-30s %-10s %-25s %-12s\n" "APLICATIVO" "TAMANHO" "ESTADO DO PATCH" "BACKUP .ORIG"
-    printf "  %-30s %-10s %-25s %-12s\n" "------------------------------" "----------" "-------------------------" "------------"
+    printf "  ${BOLD}%-30s %-10s %-25s %-12s${NC}\n" "APLICATIVO" "TAMANHO" "ESTADO DO PATCH" "BACKUP .ORIG"
+    printf "  ${DIM}%-30s %-10s %-25s %-12s${NC}\n" "──────────────────────────────" "──────────" "─────────────────────────" "────────────"
 
     local total_found=0
     local total_patched=0
@@ -164,7 +169,7 @@ cmd_status() {
             backup_color="$YELLOW"
         fi
 
-        printf "  %-30s %-10s ${status_color}%-25s${NC} ${backup_color}%-12s${NC}\n" "$name" "$size_mb" "$status_desc" "$backup_desc"
+        printf "  ${BOLD}%-30s${NC} ${DIM}%-10s${NC} ${status_color}%-25s${NC} ${backup_color}%-12s${NC}\n" "$name" "$size_mb" "$status_desc" "$backup_desc"
     done <<< "$(discover_binaries)"
 
     if [ "$total_found" -eq 0 ]; then
@@ -173,17 +178,17 @@ cmd_status() {
 
     echo -e "\n${BOLD}2. Automação e Autocura pós-atualização (Pacman Hook):${NC}"
     if [ -f "$PACMAN_HOOK_FILE" ]; then
-        echo -e "  • Gancho do Pacman: ${GREEN}[OK] ATIVO${NC} ($PACMAN_HOOK_FILE)"
+        echo -e "  • Gancho do Pacman:   ${GREEN}✔ ATIVO${NC} ${DIM}($PACMAN_HOOK_FILE)${NC}"
         runlog_event "ok" "cedilla_hook_active" "$PACMAN_HOOK_FILE"
     else
-        echo -e "  • Gancho do Pacman: ${YELLOW}[AVISO] NÃO INSTALADO${NC} (atualizações do pacote vão sobrescrever o patch)"
+        echo -e "  • Gancho do Pacman:   ${YELLOW}⚠ NÃO INSTALADO${NC} ${DIM}(atualizações vão sobrescrever o patch)${NC}"
         runlog_event "warn" "cedilla_hook_missing" ""
     fi
 
     if [ -f "$SYSTEM_WRAPPER" ] || [ -L "$SYSTEM_WRAPPER" ]; then
-        echo -e "  • Wrapper do Sistema: ${GREEN}[OK] INSTALADO${NC} ($SYSTEM_WRAPPER)"
+        echo -e "  • Wrapper do Sistema: ${GREEN}✔ INSTALADO${NC} ${DIM}($SYSTEM_WRAPPER)${NC}"
     else
-        echo -e "  • Wrapper do Sistema: ${YELLOW}[AVISO] NÃO INSTALADO${NC}"
+        echo -e "  • Wrapper do Sistema: ${YELLOW}⚠ NÃO INSTALADO${NC}"
     fi
 
     echo ""
@@ -219,12 +224,12 @@ cmd_apply() {
         esac
     done
 
-    echo -e "${BOLD}${BLUE}======================================================${NC}"
-    echo -e "${BOLD}${BLUE}   Aplicação do Patch da Cedilha Wayland              ${NC}"
-    echo -e "${BOLD}${BLUE}======================================================${NC}"
-    echo -e "  ${BLUE}• Motor de patch original por Leandro Cassa (lcassa/chromium-wayland-cedilla-fix)${NC}\n"
+    echo -e "${BOLD}${CYAN}======================================================${NC}"
+    echo -e "${BOLD}${CYAN}   Aplicação do Patch da Cedilha Wayland              ${NC}"
+    echo -e "${BOLD}${CYAN}======================================================${NC}"
+    echo -e "  ${DIM}• Motor original por${NC} ${CYAN}Leandro Cassa${NC} ${DIM}(https://github.com/lcassa/chromium-wayland-cedilla-fix)${NC}\n"
 
-    echo -e "${BOLD}==> [1/3] Detectando binários Chromium e Electron instalados...${NC}"
+    echo -e "${BOLD}${CYAN}==> [1/3]${NC} ${BOLD}Detectando binários Chromium e Electron instalados...${NC}"
     local discovered=()
 
     if [ ${#explicit_targets[@]} -gt 0 ]; then
@@ -266,7 +271,7 @@ cmd_apply() {
             else
                 status_desc="${YELLOW}[INELIGÍVEL]${NC}"
             fi
-            printf "  %2d) %-25s %-32b (%s)\n" "$i" "$name" "$status_desc" "$bin"
+            printf "  ${CYAN}%2d)${NC} ${BOLD}%-26s${NC} %-32b ${GRAY}%s${NC}\n" "$i" "$name" "$status_desc" "($bin)"
             i=$((i + 1))
         done
 
@@ -310,7 +315,7 @@ cmd_apply() {
         return 0
     fi
 
-    echo -e "\n${BOLD}==> [2/3] Aplicando patch de bytes nos aplicativos selecionados (${#targets[@]})...${NC}"
+    echo -e "\n${BOLD}${CYAN}==> [2/3]${NC} ${BOLD}Aplicando patch de bytes nos aplicativos selecionados (${#targets[@]})...${NC}"
     local applied_count=0
 
     for target in "${targets[@]}"; do
@@ -338,20 +343,20 @@ cmd_apply() {
         fi
     done
 
-    echo -e "\n${BOLD}==> [3/3] Autocura pós-atualização via Pacman Hook${NC}"
+    echo -e "\n${BOLD}${CYAN}==> [3/3]${NC} ${BOLD}Autocura pós-atualização via Pacman Hook${NC}"
     local want_hook=true
 
     if [ "$auto_all" = "false" ] && [ -t 0 ]; then
-        echo -e "\n${BOLD}Como funciona o gancho do Pacman:${NC}"
-        echo -e "  Quando o Google Chrome, Orca IDE ou VS Code forem atualizados via ${BOLD}pacman${NC} ou ${BOLD}paru${NC},"
-        echo -e "  o gerenciador de pacotes baixa uma versão nova de fábrica que desfaz o patch da cedilha."
-        echo -e "  O gancho em ${BOLD}/etc/pacman.d/hooks/99-cedilla-wayland.hook${NC} reaplica o patch automaticamente"
-        echo -e "  apenas nos pacotes atualizados, sem você precisar executar nada manualmente.\n"
+        echo -e "\n  ${BOLD}💡 Como funciona o gancho do Pacman:${NC}"
+        echo -e "     Ao atualizar pacotes como ${CYAN}Google Chrome${NC}, ${CYAN}Orca IDE${NC} ou ${CYAN}VS Code${NC} via ${BOLD}pacman/paru${NC},"
+        echo -e "     o gerenciador sobrescreve os binários com versões de fábrica que desfazem o patch."
+        echo -e "     O gancho em ${BOLD}${CYAN}/etc/pacman.d/hooks/99-cedilla-wayland.hook${NC} reaplica a correção"
+        echo -e "     automaticamente pós-atualização, de forma totalmente transparente.\n"
         read -r -p "Deseja instalar o gancho do Pacman para manter a autocura? [S/n]: " hook_choice
         hook_choice="${hook_choice:-S}"
         if [[ "$hook_choice" =~ ^[nN] ]]; then
             want_hook=false
-            echo -e "  ${BLUE}[INFO] Gancho do Pacman ignorado conforme solicitado.${NC}"
+            echo -e "  ${BLUE}ℹ Gancho do Pacman ignorado conforme solicitado.${NC}"
         fi
     fi
 
@@ -401,8 +406,8 @@ EOF
         echo -e "    ${BLUE}[INFO]${NC} Diretório /etc/pacman.d ausente (distro não-Arch? Hook do pacman ignorado)."
     fi
 
-    echo -e "\n${GREEN}✔ Concluído!${NC}"
-    echo -e "Reinicie os aplicativos modificados para que a cedilha (' + c -> ç) entre em vigor.\n"
+    echo -e "\n${BOLD}${GREEN}✔ Operação concluída com sucesso!${NC}"
+    echo -e "${DIM}Reinicie os aplicativos modificados para que a cedilha (' + c -> ç) entre em vigor.${NC}\n"
 }
 
 cmd_revert() {

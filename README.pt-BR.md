@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-instalação-e-integração-com-ferramentas-de-ia)
-[![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.5.0-brightgreen.svg)](package.json)
+[![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.6.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -35,10 +35,19 @@ Compatível como plugin nativo para **Oh My Pi (OMP)**, **Claude Code**, **Curso
 * **Problema:** Módulos legados de input method (`GTK_IM_MODULE=cedilla` / `QT_IM_MODULE=cedilla`) ou o `fcitx5` ativo sob Wayland fazem *grab* do teclado e engolem combinações com Ctrl em apps Qt, GTK e Electron.
 * **Solução:** Elimina variáveis nocivas de IM e mascara o autostart do `fcitx5` no sistema.
 
-### 5. Cedilha Nativa no Layout US-intl (`' + c` $\to$ `ç` em Chrome, Orca IDE, Electron, GTK, Qt)
-* **Problema:** A tabela padrão `en_US` mapeia `<dead_acute> <c>` para `ć` (c com agudo).
-* **Solução:** Composição nativa **sem nenhum input method**. A tabela pt_BR do sistema (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) já mapeia `<dead_acute> <c>` para `ç`. A suite configura `LC_CTYPE=pt_BR.UTF-8` em `~/.config/environment.d/cedilla.conf` e injeta `--ozone-platform-hint=auto` nas flags dos navegadores.
-
+### 5. Cedilha Nativa no Layout US-intl (`' + c` $\to$ `ç` em Qt, GTK, Chrome, Orca IDE, Electron)
+* **Problema no Nível do SO:** A tabela padrão `en_US` mapeia `<dead_acute> <c>` para `ć` (c com agudo).
+* **Correção no Nível do SO (`fix-keyboard`):** Composição nativa **sem nenhum input method**. A tabela pt_BR do sistema (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) já mapeia `<dead_acute> <c>` para `ç`. A suite configura `LC_CTYPE=pt_BR.UTF-8` em `~/.config/environment.d/cedilla.conf` para Qt, GTK e Konsole.
+* **Problema no Chromium/Electron sob Wayland:** No Wayland nativo (`--ozone-platform=wayland`), o Chromium e apps Electron ignoram o `libxkbcommon` e as tabelas de compose do sistema, usando um módulo interno próprio (`ui::CharacterComposer`) que tem `dead_acute + c` $\to$ `ć` chumbado no código-fonte (Issue Chromium 40272818).
+* **Patch de Bytes e Autocura no Pacman (`patch-cedilla`):** `./bin/linux-wayland-config patch-cedilla --apply` aplica a substituição do padrão de bytes (`63 00 07 01` $\to$ `63 00 e7 00`) diretamente nos binários ELF instalados e registra o gancho `/etc/pacman.d/hooks/99-cedilla-wayland.hook`. Toda vez que o `pacman` ou `paru` atualizar qualquer navegador ou runtime Electron, o patch é reaplicado automaticamente pós-transação.
+* **Aplicativos Detectados Dinamicamente e Verificados:**
+  - **Google Chrome** (`/opt/google/chrome/chrome`)
+  - **Orca IDE** (`/usr/lib/electron43/electron`)
+  - **Visual Studio Code** (`/usr/share/code/code`)
+  - **Discord** (`~/.config/discord/app-*/Discord`)
+  - **Google Antigravity Platform & IDE** (`/opt/Antigravity/antigravity`, `/opt/antigravity-ide/antigravity-ide`)
+  - **Brave Browser** (`/opt/brave-bin/brave`)
+  - **Runtimes Electron do Sistema** (`electron37`, `electron39`, `electron40`, `electron42`, `electron43`)
 ### 6. Reparo de Deadlocks de Clipboard no Wayland
 * **Problema:** Processos zumbis do `xsel` congelam comandos de cópia e colagem no terminal.
 * **Solução:** Elimina processos travados e assegura o funcionamento nativo do backend `wl-clipboard` (`wl-copy`/`wl-paste`).
@@ -115,6 +124,7 @@ cd ~/src/linux-wayland-suite
 | `linux-wayland-config smart-wifi-power` | `make smart-wifi-power` | Gerenciamento dinâmico de Wi-Fi (`off` na tomada para zero latência, `on` na bateria) |
 | `linux-wayland-config screen-hz [60\|120]` | `make screen-60` / `screen-120` | Alterna a taxa de atualização da tela interna (60 Hz vs 120 Hz) |
 | `linux-wayland-config fix-keyboard` | `make fix-keyboard` | Corrige `Ctrl+C` no ABNT2, configura a cedilha nativa e mascara o fcitx5 |
+| `linux-wayland-config patch-cedilla` | `make patch-cedilla` | Patch de bytes no Chromium/Electron (`'+c -> ç`) + gancho de autocura no Pacman |
 | `linux-wayland-config fix-tongfang` | `make fix-tongfang` | Desbloqueia a matriz no GRUB para laptops Tongfang/Avell/Clevo |
 | `linux-wayland-config smart-keyboard-power` | `make smart-keyboard-power` | Gestão dinâmica de energia (`on` sozinho, `auto` com teclado USB/BT) |
 | `linux-wayland-config configure-harness` | — | Configura e sincroniza o perfil do host de IA e papéis de modelos |

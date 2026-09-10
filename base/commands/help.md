@@ -22,6 +22,7 @@ Displays the quick reference help center for all commands available in the **Lin
 | `./bin/linux-wayland-config smart-wifi-power` | `/smart-wifi-power` | Dynamic Wi-Fi power (`off` on AC for zero latency, `on` on battery) | To prevent radio sleep/timeout for Orca, SSH and remote access |
 | `./bin/linux-wayland-config screen-hz [60\|120]` | — | Switches internal display refresh rate (60 Hz vs 120 Hz) | To save 2W-3W on battery or restore high refresh rate |
 | `./bin/linux-wayland-config fix-keyboard` | `/fix-keyboard` | Fixes `Ctrl+C` on ABNT2, native cedilla on US-intl, masks fcitx5 | When shortcuts fail or dead-key acute outputs `ć` instead of `ç` |
+| `./bin/linux-wayland-config patch-cedilla` | `/patch-cedilla` | Byte-pattern patch for Chromium/Electron + Pacman autorepair hook | When `' + c` outputs `ć` in Chrome, Orca, VS Code, Discord, Brave on Wayland |
 | `./bin/linux-wayland-config fix-tongfang` | `/fix-tongfang` | Unlocks matrix in GRUB for Tongfang/Avell laptops | If the physical notebook Control key does not respond |
 | `./bin/linux-wayland-config smart-keyboard-power` | `/smart-keyboard-power` | Dynamic bus power (`on` standalone, `auto` with USB/BT keyboard) | To eliminate Left Ctrl latency/latch without battery waste |
 | `./bin/linux-wayland-config battery-status` | `/battery` | Battery, hybrid GPU, and PCIe ASPM diagnostics (read-only) | To audit power consumption and battery health |

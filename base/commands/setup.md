@@ -28,7 +28,8 @@ Before applying setup changes, the agent **must use `AskUserQuestion` (or `ask`)
 
 ### Question 1 — Components to Configure (multiSelect):
 The agent reads `machine-profile.json` and presents only the detected options:
-- **"Keyboard Layout and Native Cedilla"** — Recommended (ABNT2 / US-intl ç without input methods).
+- **"Keyboard Layout and Shortcuts (Desktop/KDE)"** — Recommended (KDE dual layout `br,us`, Ctrl+C on ABNT2, `LC_CTYPE=pt_BR.UTF-8`, no root).
+- **"Wayland Cedilla Patch for Chromium & Electron"** — Recommended if Chrome, Orca IDE, VS Code, Discord, Brave, or Antigravity are detected. Uses Leandro Cassa's byte-pattern patcher (`lcassa/chromium-wayland-cedilla-fix`) with Pacman autorepair hook [Requires sudo].
 - **"Layout Auto-Heal on Login"** — Recommended (protects against KWin/Plasma layout collapse bug).
 - **"Smart Wi-Fi Power Management"** — Recommended if laptop has Wi-Fi (disables radio sleep on AC).
 - **"Smart Keyboard Power Management"** — Recommended if i8042 bus is present (anti-latch / zero latency).
@@ -47,6 +48,8 @@ The agent reads `machine-profile.json` and presents only the detected options:
 * **Apply specific selections:**
   ```bash
   ./bin/linux-wayland-config setup --keyboard --autoheal --wifi-power --terminal-fetch
+  # With Chromium/Electron cedilla patch:
+  ./bin/linux-wayland-config setup --keyboard --patch-cedilla --autoheal --wifi-power
   ```
 * **Interactive Terminal Wizard:**
   ```bash

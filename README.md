@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-installation--ai-tools-integration)
-[![Version](https://img.shields.io/badge/Version-2.5.0-brightgreen.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-2.6.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -34,10 +34,18 @@ Compatible as a native plugin for **Oh My Pi (OMP)**, **Claude Code**, **Cursor 
 * **Problem:** Legacy input method modules (`GTK_IM_MODULE=cedilla` / `QT_IM_MODULE=cedilla`) or running `fcitx5` under Wayland grab the keyboard and swallow Ctrl key combinations across Qt, GTK, and Electron apps.
 * **Fix:** Eliminates legacy IM environment variables and masks the `fcitx5` system autostart.
 
-### 5. Native Cedilla on US-intl (`' + c` $\to$ `ç` in Chrome, Orca IDE, Electron, GTK, Qt)
-* **Problem:** The default `en_US` compose table maps `<dead_acute> <c>` to `ć` (c-acute).
-* **Fix:** Native composition **without any input method**. The system's pt_BR compose table (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) already maps `<dead_acute> <c>` to `ç`. The suite configures `LC_CTYPE=pt_BR.UTF-8` in `~/.config/environment.d/cedilla.conf` and injects `--ozone-platform-hint=auto` into browser flags.
-
+### 5. Native Cedilla on US-intl (`' + c` $\to$ `ç` in Qt, GTK, Chrome, Orca IDE, Electron)
+* **OS-Level Problem:** The default `en_US` compose table maps `<dead_acute> <c>` to `ć` (c-acute).
+* **OS-Level Fix (`fix-keyboard`):** Native composition **without any input method**. The system's pt_BR compose table (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) already maps `<dead_acute> <c>` to `ç`. The suite configures `LC_CTYPE=pt_BR.UTF-8` in `~/.config/environment.d/cedilla.conf` for Qt, GTK, and Konsole.
+* **Chromium/Electron Wayland Problem:** Under native Wayland (`--ozone-platform=wayland`), Chromium and Electron apps bypass `libxkbcommon` and system compose tables, using an internal `ui::CharacterComposer` table that hardcodes `<dead_acute> <c>` $\to$ `ć` (Chromium Issue 40272818).
+* **Binary Patch & Pacman Autorepair (`patch-cedilla`):** Powered by the upstream byte-pattern patch created by [Leandro Cassa](https://github.com/lcassa/chromium-wayland-cedilla-fix) (`chromium-cedilla-patch` on AUR). `./bin/linux-wayland-config patch-cedilla --apply` executes the byte-pattern replacement (`63 00 07 01` $\to$ `63 00 e7 00`) directly on installed Chromium/Electron ELF binaries and registers `/etc/pacman.d/hooks/99-cedilla-wayland.hook`. Whenever `pacman` or `paru` upgrades any browser or Electron package, the patch is automatically reapplied post-transaction.
+  - **Google Chrome** (`/opt/google/chrome/chrome`)
+  - **Orca IDE** (`/usr/lib/electron43/electron`)
+  - **Visual Studio Code** (`/usr/share/code/code`)
+  - **Discord** (`~/.config/discord/app-*/Discord`)
+  - **Google Antigravity Platform & IDE** (`/opt/Antigravity/antigravity`, `/opt/antigravity-ide/antigravity-ide`)
+  - **Brave Browser** (`/opt/brave-bin/brave`)
+  - **System Electron Runtimes** (`electron37`, `electron39`, `electron40`, `electron42`, `electron43`)
 ### 6. Wayland Clipboard Deadlock Repair
 * **Problem:** Zombie `xsel` processes freeze terminal clipboard pipelines.
 * **Fix:** Cleans hung processes and ensures native `wl-clipboard` (`wl-copy`/`wl-paste`) backend operation.
@@ -113,6 +121,7 @@ cd ~/src/linux-wayland-suite
 | `linux-wayland-config smart-wifi-power` | `make smart-wifi-power` | Dynamic Wi-Fi power management (`off` on AC for zero latency, `on` on battery) |
 | `linux-wayland-config screen-hz [60\|120]` | `make screen-60` / `screen-120` | Switches internal display refresh rate (60 Hz vs 120 Hz) |
 | `linux-wayland-config fix-keyboard` | `make fix-keyboard` | Fixes `Ctrl+C` on ABNT2, sets up native cedilla, and masks fcitx5 |
+| `linux-wayland-config patch-cedilla` | `make patch-cedilla` | Byte-pattern patch for Chromium/Electron (`'+c -> ç`) + Pacman autorepair hook |
 | `linux-wayland-config fix-tongfang` | `make fix-tongfang` | Unlocks keyboard matrix in GRUB for Tongfang/Avell/Clevo laptops |
 | `linux-wayland-config smart-keyboard-power` | `make smart-keyboard-power` | Dynamic keyboard power management (`on` standalone, `auto` with USB/BT keyboard) |
 | `linux-wayland-config configure-harness` | — | Configures and syncs AI host harness profile and model roles |
@@ -181,6 +190,13 @@ This repository follows strict engineering standards defined in **`skills/kde-wa
 3. **Structured Event Logs:** Persisted in `~/.local/state/kde-wayland-suite/runs/<timestamp>-<cmd>/events.tsv`.
 
 ---
+## 👏 Acknowledgments & Upstream Credits
+* **Chromium Wayland Cedilla Fix:** Special thanks to **Leandro Cassa** ([lcassa/chromium-wayland-cedilla-fix](https://github.com/lcassa/chromium-wayland-cedilla-fix)) for the ingenious byte-pattern patch of `ui::CharacterComposer`.
+* **Logitech MX Master 3S:** Powered by [logiops](https://github.com/PixlOne/logiops) by PixlOne.
+* **Touchpad Gestures:** Powered by [libinput-gestures](https://github.com/bulletmark/libinput-gestures) by Mark Blakeney.
+
+---
+
 
 ## 📄 License
 

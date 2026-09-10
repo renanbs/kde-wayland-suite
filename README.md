@@ -74,6 +74,10 @@ Compatible as a native plugin for **Oh My Pi (OMP)**, **Claude Code**, **Cursor 
 ### 14. Multi-Shell Terminal Visual Identity & Fastfetch Logo Switcher (`terminal-fetch` / `cosmetic`)
 * **Problem:** Terminal greetings and logos are hardcoded in distribution files (e.g. Garuda Mokka forcing a pastel cat mascot over the iconic Dr460nized neon eagle, or `.zshrc` hardcoding `--config mokka` while `.bashrc` lacks greeting hooks entirely).
 * **Fix:** `./bin/linux-wayland-config cosmetic` (or `make cosmetic`) provides an interactive menu to choose between the Dr460nized low-poly neon eagle (`garuda-purple.png`), Mokka mascot cat (`mokka-fastfetch.png`), modern hexagonal "G" emblem, classic ASCII dragon, or custom PNG/SVG images. It audits all installed shells (**Fish**, **Zsh**, **Bash**), cleans hardcoded presets, prompts for multi-shell synchronization, and provides atomic user-space rollback (`--revert`).
+
+### 15. Central Interactive Control Portal (`menu`)
+* **Problem:** Remembering separate CLI flags or running modules blindly without knowing the current hardware status increases cognitive load and causes accidental misconfigurations.
+* **Fix:** Running `./bin/linux-wayland-config` without arguments in any interactive terminal (or `./bin/linux-wayland-config menu`) launches the Central Control Portal (`portal_menu.py`). It displays a real-time system context card (Hardware, Active KWin Layout, Battery/AC state, and Cedilla patch status) and an intuitive numbered menu with rich module descriptions, non-blocking execution loops, and full bilingual localization (`en` and `pt-BR`).
 ---
 
 ## 🧪 Tested & Verified in Production

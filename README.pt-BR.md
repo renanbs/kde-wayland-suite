@@ -76,6 +76,10 @@ Compatível como plugin nativo para **Oh My Pi (OMP)**, **Claude Code**, **Curso
 ### 14. Identidade Visual Multi-Shell do Terminal & Alternador de Logo do Fastfetch (`terminal-fetch` / `cosmetic`)
 * **Problema:** A apresentação inicial do terminal é engessada ou sobreposta em atualizações da distribuição (ex: Garuda Mokka forçando o mascote do gato pastel sobre a águia neon do Dr460nized, o `.zshrc` com chamada fixa `--config mokka` ignorando arquivos de usuário e o `.bashrc` sem hook automático).
 * **Solução:** `./bin/linux-wayland-config cosmetic` (ou `make cosmetic`) oferece um menu interativo para alternar entre a Águia low-poly neon Dr460nized (`garuda-purple.png`), o Gato Mascote Mokka (`mokka-fastfetch.png`), o Emblema Hexagonal 'G', o Dragão ASCII nativo ou imagens personalizadas. Detecta todos os shells instalados (**Fish**, **Zsh**, **Bash**), limpa chamadas forçadas de sistema, pergunta se o usuário deseja sincronizar os demais shells e oferece reversão atômica (`--revert`).
+
+### 15. Portal Central de Controle Interativo (`menu`)
+* **Problema:** Lembrar de comandos isolados ou executar ações no escuro sem saber o estado atual do hardware aumenta a carga cognitiva e induz a alterações não planejadas.
+* **Solução:** Executar `./bin/linux-wayland-config` sem argumentos no terminal (ou `./bin/linux-wayland-config menu`) abre o Portal de Controle Central (`portal_menu.py`). Ele exibe um card com o resumo em tempo real do sistema (Hardware, Layout ativo no KWin, Fonte de Energia/Bateria e Estado da Cedilha) e um menu numerado com descrições ricas de cada módulo, loops de execução sem perda de histórico e bilinguismo completo (`pt-BR` e `en`).
 ---
 
 ## 🧪 Testado e Comprovado em Produção

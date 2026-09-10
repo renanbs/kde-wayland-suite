@@ -31,12 +31,12 @@ flowchart TD
   - `--status`: displays current feature state.
 - **Fault Tolerance:** Usage of `set -euo pipefail`, dependency validation, and root protection checks.
 
-### Pillar 2: CLI Orchestrator (`base/bin/kde-config`)
+### Pillar 2: CLI Orchestrator (`base/bin/kde-config` / `linux-wayland-config`)
 - Mapped in `usage()` function.
 - Dedicated helper function `cmd_<name>()`.
 - Routed in `dispatch()`.
 - Execution logging support via `~/.local/state/kde-wayland-suite/runs/`.
-
+- **Interactive Default Portal (`portal_menu.py`):** When `linux-wayland-config` is invoked with zero arguments in an interactive terminal (`[ -t 0 ]`), it launches `portal_menu.py` (Central Control Portal), displaying the real-time system context card (hardware, layout, power, cedilla) and rich module descriptions. In non-interactive pipelines or subshells, it safely falls back to `status`.
 ### Pillar 3: Build & Automation (`Makefile`)
 - Add target name to `.PHONY`.
 - Document in `make help` output.
@@ -139,6 +139,7 @@ flowchart TD
      * **Phase 2 (Contextualization):** Present findings clearly. Explain the *what*, the *why*, and the *how to rollback* in 2–3 concise sentences before applying changes.
      * **Phase 3 (Consent & Scoping):** When actions carry tradeoffs, multiple targets, or require `sudo`, prompt the user with safe defaults (e.g. apply only to vulnerable targets, ask confirmation before installing persistence hooks).
      * **Phase 4 (Atomic Execution & Proof):** Execute changes with atomic backups (`.orig`), verify immediately, and report results using the Evidence-First Verdict contract.
+     * **Central Portal Entrypoint:** The interactive portal (`linux-wayland-config menu`) embodies Progressive Disclosure by presenting real-time hardware context and clear explanations of every module before execution, allowing users to make informed decisions.
 10. **Terminal Internationalization & Design Tokens (`i18n` & UI System):**
    - **Bilingual Terminal Output:** Scripts and terminal interfaces must consult `harness-profile.json` (or `KDE_SUITE_LANG`, fallback `en`) and present all headers, tables, prompts, and status messages in the user's configured language (`en` or `pt-BR`).
    - **Unified Design Tokens (Dracula/Garuda Palette):**

@@ -81,10 +81,12 @@ usage() {
     echo ""
 }
 cmd_status() {
-    if [ -f "$SHARED_DIR/check-status.sh" ]; then
-        bash "$SHARED_DIR/check-status.sh"
+    if [ -f "$SHARED_DIR/check-status.py" ]; then
+        python3 "$SHARED_DIR/check-status.py" "$@"
+    elif [ -f "$SHARED_DIR/check-status.sh" ]; then
+        bash "$SHARED_DIR/check-status.sh" "$@"
     else
-        echo -e "${RED}Erro: $SHARED_DIR/check-status.sh não encontrado.${NC}"
+        echo -e "${RED}Erro: $SHARED_DIR/check-status.py não encontrado.${NC}"
         exit 1
     fi
 }

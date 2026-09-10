@@ -8,6 +8,8 @@ table rendering, internationalization (en / pt-BR), and runlog event logging.
 import os
 import re
 import sys
+import glob
+from typing import List, Dict, Optional, Any, Tuple
 import json
 from typing import List, Dict, Optional, Any
 
@@ -191,3 +193,88 @@ def log_event(status: str, event_id: str, detail: str = "") -> None:
             f.write(f"{now_iso}\t{status}\t{event_id}\t{clean_detail}\n")
     except Exception:
         pass
+
+# ==============================================================================
+# 5. Application Naming Helper
+# ==============================================================================
+
+def app_display_name(path: str) -> str:
+    """Returns clean human-readable name for an executable path."""
+    p_lower = path.lower()
+    if "chrome/chrome" in p_lower:
+        return "Google Chrome"
+    elif "chromium/chromium" in p_lower:
+        return "Chromium"
+    elif "brave" in p_lower:
+        return "Brave Browser"
+    elif "msedge" in p_lower:
+        return "Microsoft Edge"
+    elif "electron43/electron" in p_lower:
+        return "Orca IDE (Electron 43)"
+    elif "electron" in p_lower:
+        for part in path.split("/"):
+            if part.startswith("electron") and part[8:].isdigit():
+                return f"Electron Runtime ({part})"
+        return "Electron Runtime"
+    elif "code/code" in p_lower or "code-insiders" in p_lower:
+        return "Visual Studio Code"
+    elif "vscodium" in p_lower:
+        return "VSCodium"
+    elif "discord" in p_lower:
+        return "Discord"
+    elif "antigravity-ide" in p_lower:
+        return "Antigravity IDE"
+    elif "antigravity" in p_lower:
+        return "Antigravity Platform"
+    return os.path.basename(path)
+
+SEARCH_GLOBS = [
+    "/opt/*/*",
+    "/opt/*/*/*",
+    "/usr/lib/electron*/electron",
+    "/usr/lib/chromium/chromium",
+    "/usr/share/code/code",
+    "/usr/share/code-insiders/code-insiders",
+    "/usr/share/vscodium*/codium*",
+    os.path.expanduser("~/.config/discord/app-*/Discord"),
+    "/usr/lib/discord/Discord",
+    "/opt/discord/Discord",
+]
+
+def discover_binaries() -> List[str]:
+    """Dynamically finds installed Chromium and Electron ELF executables (>25MB)."""
+    found = set()
+    for pattern in SEARCH_GLOBS:
+        for p in glob.glob(pattern):
+            if not os.path.isfile(p) or not os.access(p, os.X_OK):
+                continue
+            if p.endswith(".orig") or ".bak-" in p or ".tmp-" in p or p.endswith(".bak"):
+                continue
+            try:
+                rp = os.path.realpath(p)
+                if os.path.getsize(rp) > 25 * 1024 * 1024:
+                    with open(rp, "rb") as f:
+                        if f.read(4) == b"\x7fELF":
+                            found.add(rp)
+            except (OSError, PermissionError):
+                continue
+    return sorted(list(found))
+
+def check_binary_status(bin_path: str) -> Tuple[str, int]:
+    """
+    Returns (status, count) where status is 'PATCHED', 'VULNERABLE', or 'INELIGIBLE'.
+    """
+    if not os.path.isfile(bin_path):
+        return ("NOT_FOUND", 0)
+    try:
+        with open(bin_path, "rb") as f:
+            data = f.read()
+        needs = data.count(b"\x63\x00\x07\x01")
+        patched = data.count(b"\x63\x00\xe7\x00")
+        if needs > 0:
+            return ("VULNERABLE", needs)
+        elif patched > 0:
+            return ("PATCHED", patched)
+        return ("INELIGIBLE", 0)
+    except Exception:
+        return ("ERROR", 0)

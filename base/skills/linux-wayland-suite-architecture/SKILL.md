@@ -94,7 +94,24 @@ flowchart TD
    - Language preference persistence (`en` default, `pt-BR`) in `~/.config/linux-wayland-suite/harness-profile.json`.
    - Internal codebase, contracts, and runlogs remain canonical English; the AI translates user dialogues as requested.
 5. **Release & Marketplace Discipline:**
-   - Every release requires: semantic version bump across all manifests (`package.json`, `.claude-plugin/{plugin,marketplace}.json`, `.omp-plugin/{plugin,marketplace}.json`, `antigravity/plugin.json`), README version badges update, semantic commit (`feat(...)`, `fix(...)`), git push, and internal harness marketplace sync (`omp plugin marketplace update <name> && omp plugin upgrade <name>@<name>`).
+   - **Exhaustive Version Bump Checklist:** Every release strictly requires bumping the semantic version (`X.Y.Z`) across **all 11 manifest and documentation files**:
+     1. `package.json` (`"version": "X.Y.Z"`)
+     2. `.claude-plugin/plugin.json` (`"version": "X.Y.Z"`)
+     3. `.claude-plugin/marketplace.json` (`plugins[].version = "X.Y.Z"`)
+     4. `.omp-plugin/plugin.json` (`"version": "X.Y.Z"`)
+     5. `.omp-plugin/marketplace.json` (`plugins[].version = "X.Y.Z"`)
+     6. `claude-code/.claude-plugin/plugin.json` (`"version": "X.Y.Z"`)
+     7. `omp/.claude-plugin/plugin.json` (`"version": "X.Y.Z"`)
+     8. `omp/.omp-plugin/plugin.json` (`"version": "X.Y.Z"`)
+     9. `antigravity/plugin.json` (`"version": "X.Y.Z"`)
+     10. `README.md` (Version badge: `[![Version](https://img.shields.io/badge/Version-X.Y.Z-brightgreen.svg)]`)
+     11. `README.pt-BR.md` (Badge de versão: `[![Versão](https://img.shields.io/badge/Vers%C3%A3o-X.Y.Z-brightgreen.svg)]`)
+   - **Mandatory Verification Check:** Run `grep -rn '"version"' package.json */*.json .*/*/*.json` before committing to guarantee zero version drift across catalogs.
+   - **Marketplace Sync:** After pushing to GitHub, immediately sync the local harness marketplace:
+     ```bash
+     omp plugin marketplace update linux-wayland-suite
+     omp plugin upgrade linux-wayland-suite@linux-wayland-suite
+     ```
 6. **Mandatory Documentation Synchronization (README & Translations):**
    - Every new feature, command, or behavioral change must be documented simultaneously in both `README.md` (English) and `README.pt-BR.md` (Português do Brasil).
    - Must keep in sync: version badges (`Version-X.Y.Z`), the feature problem/solution section, and the CLI/Makefile command reference table.

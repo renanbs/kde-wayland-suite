@@ -35,6 +35,19 @@ Every command response must be presented in this structured format:
 | :--- | :--- | :--- | :--- |
 | `<Name>` | `<Active / Inactive>` | `<Command and exact verified output>` | `<Exact 1-line reversal command>` |
 
+
+---
+
+#### 🏛️ 7-Pillars Architectural Compliance Gate (Mandatory for Feature Deliveries):
+| Pillar | Scope | Verified File / Component | Status |
+| :--- | :--- | :--- | :---: |
+| **1. Canonical Script** | `base/shared/` | `base/shared/<name>.py` (or `.sh`) | `[✅ / N/A]` |
+| **2. CLI Orchestrator** | `base/bin/` | `linux-wayland-config` (`usage`, `cmd`, `dispatch`) | `[✅ / N/A]` |
+| **3. Makefile Target** | `Makefile` | `make <target>` declared & documented | `[✅ / N/A]` |
+| **4. Structured Events** | `lib-runlog` / `lib_suite` | `log_event()` calls emitting to `events.tsv` | `[✅ / N/A]` |
+| **5. Health Audit** | `check-status` | Verified in `base/shared/check-status.py` | `[✅ / N/A]` |
+| **6. AI Command Spec** | `base/commands/` | `commands/<name>.md` + all platform symlinks | `[✅ / N/A]` |
+| **7. Dual Documentation** | READMEs & `/help` | `README.md` (Section + Table) + `README.pt-BR.md` + `help.md` | `[✅ / N/A]` |
 ---
 
 #### 💡 Daily Impact & Practical Benefits:
@@ -58,3 +71,4 @@ linux-wayland-config <subcommand>
 3. **Prominent User Notification:** Whenever an operation fails, the AI agent MUST prominently and unambiguously state in the narrative that the action **FAILED** and that **NO CHANGE was applied** to that component, explaining the exact technical reason.
 4. **Sudo Command Guidelines:** When an operation requires root privileges and cannot be executed in a non-interactive subshell, instruct the user to run `linux-wayland-config <subcommand>` directly in their terminal. **Do not prepend `sudo`**, because `sudo`'s `secure_path` often omits `~/.local/bin`. The script internally handles elevation via `exec sudo "$0" "$@"` using its fully-resolved path.
 5. **Requires field:** If a fix requires a logout or reboot to take effect, explicitly state it in both the breakdown and the daily impact text.
+6. **Mandatory 7-Pillars Pre-Delivery Gate:** Never yield a feature, script, or architectural delivery as complete without including the `#### 🏛️ 7-Pillars Architectural Compliance Gate` table proving that all 7 layers have been updated, synchronized, and verified. If any pillar is incomplete, the delivery is blocked.

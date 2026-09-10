@@ -85,8 +85,10 @@ flowchart TD
      * `### 🎯 Verdict: [ ✅ SUCCESS | ❌ FAILURE | ⚠️ PARTIAL SUCCESS ]`
      * `#### 📋 Execution Breakdown` (`✅ Applied`, `❌ Failure/Rejection with raw error & root cause`, `🔒 Manual Root Action`)
      * `#### 🔬 Technical Evidence & Ground Truth` (Table: Component, Verified State, Observable Proof/Command, How to Revert)
+     * `#### 🏛️ 7-Pillars Architectural Compliance Gate` (Mandatory table proving compliance across all 7 layers before yielding)
      * `#### 💡 Daily Impact & Practical Benefits`
      * `#### 👉 Action Required` (Direct copy-paste command without sudo prefix)
+   - **Pre-Delivery Gate Enforcement:** No AI agent or developer may declare a feature delivery complete without the explicit 7-Pillars compliance table. Deliveries omitting this verification are strictly rejected.
 3. **Structured Data Consumption (`events.tsv`):**
    - AI agents and reporting engines must read `events.tsv`, never parse ANSI color escape codes from terminal logs.
 4. **AI Host & Language Profile Alignment (`lib-harness.sh`):**

@@ -98,10 +98,12 @@ cmd_fix_keyboard() {
     fi
 }
 cmd_patch_cedilla() {
-    if [ -f "$SHARED_DIR/manage-chromium-cedilla.sh" ]; then
+    if [ -f "$SHARED_DIR/manage-chromium-cedilla.py" ]; then
+        python3 "$SHARED_DIR/manage-chromium-cedilla.py" "$@"
+    elif [ -f "$SHARED_DIR/manage-chromium-cedilla.sh" ]; then
         bash "$SHARED_DIR/manage-chromium-cedilla.sh" "$@"
     else
-        echo -e "${RED}Erro: $SHARED_DIR/manage-chromium-cedilla.sh não encontrado.${NC}"
+        echo -e "${RED}Erro: $SHARED_DIR/manage-chromium-cedilla.py não encontrado.${NC}"
         exit 1
     fi
 }

@@ -15,3 +15,7 @@ kde-config-backups/
 
 # Logs
 *.log
+
+# Python
+__pycache__/
+*.pyc

@@ -75,7 +75,7 @@ flowchart TD
 - **`README.md` & `README.pt-BR.md`:** Synchronize feature description and CLI reference table across both languages.
 ---
 
-## 2. The 8 Inviolable Architectural Rules
+## 2. The 10 Inviolable Architectural Rules
 
 1. **Single Canonical Source (`base/`):**
    - Never create duplicate physical files in `claude-code/`, `cursor/`, `omp/`, `antigravity/`, or root.
@@ -133,3 +133,19 @@ flowchart TD
      * `docs/<slug>`: Documentation, translations, skill guides, or contract clarifications.
      * `refactor/<slug>`: Code restructuring without interface or behavioral changes.
    - **Main Branch Discipline:** The `main` branch represents tested, production-ready code. Direct chaotic commits are prohibited; merges into `main` must use semantic commit messages (`feat(...)`, `fix(...)`, `chore(...)`).
+9. **Progressive Disclosure & Informed Consent (*Discover $\to$ Contextualize $\to$ Ask $\to$ Execute*):**
+   - No destructive command, root action, or multi-target batch modification may execute blindly without informed user consent:
+     * **Phase 1 (Silent Discovery):** Inspect the system, hardware, and filesystem non-destructively. Never ask the user what the computer can determine on its own.
+     * **Phase 2 (Contextualization):** Present findings clearly. Explain the *what*, the *why*, and the *how to rollback* in 2–3 concise sentences before applying changes.
+     * **Phase 3 (Consent & Scoping):** When actions carry tradeoffs, multiple targets, or require `sudo`, prompt the user with safe defaults (e.g. apply only to vulnerable targets, ask confirmation before installing persistence hooks).
+     * **Phase 4 (Atomic Execution & Proof):** Execute changes with atomic backups (`.orig`), verify immediately, and report results using the Evidence-First Verdict contract.
+10. **Terminal Internationalization & Design Tokens (`i18n` & UI System):**
+   - **Bilingual Terminal Output:** Scripts and terminal interfaces must consult `harness-profile.json` (or `KDE_SUITE_LANG`, fallback `en`) and present all headers, tables, prompts, and status messages in the user's configured language (`en` or `pt-BR`).
+   - **Unified Design Tokens (Dracula/Garuda Palette):**
+     * `PRIMARY` (`\033[1;36m` / Bold Cyan): Headers, banners, menu selection numbers.
+     * `SUCCESS` (`\033[0;32m` / Green): Completed actions, active states (`[✔ OK]`, `[✔ PATCHED]`).
+     * `DANGER` (`\033[0;31m` / Red): Hard failures, vulnerable items (`[✖ VULNERABLE]`).
+     * `WARNING` (`\033[1;33m` / Bold Yellow): User attention items (`[⚠ WARNING]`).
+     * `MUTED` (`\033[0;90m` / Gray): Long filesystem paths, secondary details.
+     * `BORDER` (`\033[2;36m` / Dim Cyan): Unicode box borders and horizontal rules (`────`).
+   - **Visible-Width Table Alignment:** Table formatters must calculate visible string width (stripping ANSI escapes) so columns remain mathematically aligned regardless of terminal size, colors, or UTF-8 accents.

@@ -61,9 +61,19 @@ def main():
         print(f"[backup] pristine original saved to {BIN}.orig")
     shutil.copy2(BIN, f"{BIN}.bak-{ts}")
 
-    with open(BIN, "r+b") as f:
-        f.write(new_data)
-        f.truncate(len(new_data))
+    # Atomic replacement: writing in-place via open(BIN, "r+b") fails with
+    # [Errno 26] Text file busy if the application is currently running.
+    # Writing to a temp file and using os.replace() succeeds safely on Linux.
+    tmp = f"{BIN}.tmp-{ts}"
+    try:
+        with open(tmp, "wb") as f:
+            f.write(new_data)
+        shutil.copystat(BIN, tmp)
+        os.replace(tmp, BIN)
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
 
     print("[ok] patch applied:")
     print("\n".join(report))

@@ -255,6 +255,8 @@ discovered = set()
 for g in search_globs:
     for p in glob.glob(g):
         if os.path.isfile(p) and os.access(p, os.X_OK):
+            if p.endswith('.orig') or '.bak-' in p or '.tmp-' in p or p.endswith('.bak'):
+                continue
             try:
                 rp = os.path.realpath(p)
                 if os.path.getsize(rp) > 25*1024*1024:

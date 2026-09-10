@@ -16,6 +16,7 @@ Displays the quick reference help center for all commands available in the **Lin
 
 | CLI Command | Slash Command | Function / Action | When to Use |
 | :--- | :--- | :--- | :--- |
+| `./bin/linux-wayland-config menu` | — | Interactive central control portal with real-time status summary | When running without arguments or to access all modules from one screen |
 | `./bin/linux-wayland-config init` | `/init` (or `/scan`) | Non-destructive hardware inspection & machine profiling | On first-time setup or to inspect all hardware safe & read-only |
 | `./bin/linux-wayland-config setup` | `/setup` | Contextual modular configuration wizard based on detected hardware | To apply recommended settings for keyboards, Wi-Fi, gestures, etc. |
 | `./bin/linux-wayland-config status` | `/check-status` | Unified 7-stage health audit across environment | To check keyboard, DMI, power, Wi-Fi, IM, cedilla, and gestures |

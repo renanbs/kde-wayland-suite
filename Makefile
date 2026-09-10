@@ -1,6 +1,9 @@
-.PHONY: all init scan profile setup report status check fix-keyboard patch-cedilla fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight terminal-fetch cosmetic help
+.PHONY: all menu init scan profile setup report status check fix-keyboard patch-cedilla fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight terminal-fetch cosmetic help
 
 all: status
+
+menu:
+	@./bin/kde-config menu
 
 init:
 	@./bin/kde-config init
@@ -15,6 +18,7 @@ setup:
 	@./bin/kde-config setup
 help:
 	@echo "Available targets in Makefile:"
+	@echo "  make menu            - Interactive central control portal with real-time status summary"
 	@echo "  make init            - Hardware inspection and machine profiling (safe, non-destructive)"
 	@echo "  make scan            - Alias for make init"
 	@echo "  make setup           - Contextual modular configuration wizard based on detected hardware"

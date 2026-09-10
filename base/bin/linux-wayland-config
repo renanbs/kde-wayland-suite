@@ -41,6 +41,7 @@ usage() {
     echo -e "${BOLD}Usage:${NC} linux-wayland-config <command> [arguments]"
     echo ""
     echo -e "${BOLD}Available commands:${NC}"
+    echo "  menu              Interactive management portal with real-time status summary"
     echo "  init / scan       Hardware inspection and machine profiling (safe, non-destructive)"
     echo "  setup             Contextual modular configuration wizard based on detected hardware"
     echo "  status            Unified health audit (keyboard, cedilla, shortcuts, gestures, battery, wifi)"
@@ -466,12 +467,31 @@ cmd_terminal_fetch() {
         exit 1
     fi
 }
+cmd_menu() {
+    if [ -f "$SHARED_DIR/portal_menu.py" ]; then
+        python3 "$SHARED_DIR/portal_menu.py" "$@"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/portal_menu.py não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 
 
 # Despacha o comando pedido. Separado do roteamento para que o wrapper de log
 # consiga executá-lo capturando a saída.
 dispatch() {
-    case "${1:-status}" in
+    if [ $# -eq 0 ]; then
+        if [ -t 0 ]; then
+            cmd_menu
+        else
+            cmd_status
+        fi
+        return 0
+    fi
+
+    case "$1" in
+        menu|portal) shift; cmd_menu "$@" ;;
         init|scan|profile) shift; cmd_init "$@" ;;
         setup|configure) shift; cmd_setup "$@" ;;
         status) cmd_status ;;

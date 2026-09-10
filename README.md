@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-installation--ai-tools-integration)
-[![Version](https://img.shields.io/badge/Version-2.9.0-brightgreen.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-2.10.0-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -115,6 +115,7 @@ cd ~/src/linux-wayland-suite
 
 | Command | Makefile Target | Description |
 | :--- | :--- | :--- |
+| `linux-wayland-config menu` | `make menu` | Interactive central control portal with real-time hardware status summary |
 | `linux-wayland-config init` / `scan` | `make init` / `make scan` | Non-destructive hardware inspection & machine profiling (`machine-profile.json`) |
 | `linux-wayland-config setup` | `make setup` | Contextual modular configuration wizard based on detected hardware |
 | `linux-wayland-config status` | `make status` | 7-stage unified health audit of hardware, DMI, power, Wi-Fi, IM, cedilla, and gestures |

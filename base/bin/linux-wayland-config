@@ -45,6 +45,7 @@ usage() {
     echo "  setup             Contextual modular configuration wizard based on detected hardware"
     echo "  status            Unified health audit (keyboard, cedilla, shortcuts, gestures, battery, wifi)"
     echo "  fix-keyboard      Fixes Ctrl+C on ABNT2, native cedilla on US-intl and masks fcitx5"
+    echo "  patch-cedilla [--apply|--revert|--status]  Fixes '+c -> ç in Chromium/Electron (Chrome, Orca, VS Code, Discord, Brave)"
     echo "  gestures          Installs and configures 3/4-finger touchpad gestures (libinput-gestures)"
     echo "  mouse             Installs and configures Logitech MX Master 3S (logiops/logid)"
     echo "  battery-status    Battery and power consumption diagnostics (GPU, PCIe ASPM, health)"
@@ -96,6 +97,15 @@ cmd_fix_keyboard() {
         exit 1
     fi
 }
+cmd_patch_cedilla() {
+    if [ -f "$SHARED_DIR/manage-chromium-cedilla.sh" ]; then
+        bash "$SHARED_DIR/manage-chromium-cedilla.sh" "$@"
+    else
+        echo -e "${RED}Erro: $SHARED_DIR/manage-chromium-cedilla.sh não encontrado.${NC}"
+        exit 1
+    fi
+}
+
 
 cmd_gestures() {
     if [ -f "$SHARED_DIR/configure-gestures.sh" ]; then
@@ -454,6 +464,7 @@ dispatch() {
         setup|configure) shift; cmd_setup "$@" ;;
         status) cmd_status ;;
         fix-keyboard) cmd_fix_keyboard ;;
+        patch-cedilla) shift; cmd_patch_cedilla "$@" ;;
         fix-tongfang) cmd_fix_tongfang ;;
         revert-tongfang) cmd_revert_tongfang ;;
         test-keyboard) cmd_test_keyboard ;;

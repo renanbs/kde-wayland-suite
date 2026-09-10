@@ -1,4 +1,4 @@
-.PHONY: all init scan profile setup report status check fix-keyboard fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight terminal-fetch cosmetic help
+.PHONY: all init scan profile setup report status check fix-keyboard patch-cedilla fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight terminal-fetch cosmetic help
 
 all: status
 
@@ -21,6 +21,7 @@ help:
 	@echo "  make status          - Runs unified health audit of keyboard, gestures, power and wifi"
 	@echo "  make check           - Alias for make status"
 	@echo "  make fix-keyboard    - Fixes Ctrl+C on ABNT2 and sets up native cedilla on US-intl"
+	@echo "  make patch-cedilla   - Fixes '+c -> ç in Chromium/Electron (Chrome, Orca, VS Code, Discord, Brave)"
 	@echo "  make gestures        - Configures 3/4-finger touchpad gestures (libinput-gestures)"
 	@echo "  make fix-tongfang    - Unlocks keyboard matrix in GRUB for Tongfang/Avell laptops"
 	@echo "  make revert-tongfang - Reverts GRUB configuration to previous backup"
@@ -54,6 +55,9 @@ check: status
 
 fix-keyboard:
 	@./bin/kde-config fix-keyboard
+
+patch-cedilla:
+	@./bin/kde-config patch-cedilla
 
 fix-tongfang:
 	@./bin/kde-config fix-tongfang

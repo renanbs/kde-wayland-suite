@@ -243,6 +243,53 @@ else
     echo -e "  • ${YELLOW}[AVISO]${NC} LC_CTYPE='${LC_CTYPE:-vazio}' neste processo (faça logout/login após 'fix-keyboard')."
     runlog_event "warn" "lc_ctype_process_missing" "${LC_CTYPE:-vazio}"
 fi
+if [ -f "$SCRIPT_DIR/manage-chromium-cedilla.sh" ]; then
+    read -r TOTAL_DISCOVERED TOTAL_PATCHED TOTAL_VULN <<< "$(python3 -c "
+import sys, os, glob
+search_globs = [
+    '/opt/*/*', '/opt/*/*/*', '/usr/lib/electron*/electron',
+    '/usr/lib/chromium/chromium', '/usr/share/code/code',
+    os.path.expanduser('~/.config/discord/app-*/Discord')
+]
+discovered = set()
+for g in search_globs:
+    for p in glob.glob(g):
+        if os.path.isfile(p) and os.access(p, os.X_OK):
+            try:
+                rp = os.path.realpath(p)
+                if os.path.getsize(rp) > 25*1024*1024:
+                    with open(rp, 'rb') as f:
+                        if f.read(4) == b'\x7fELF':
+                            discovered.add(rp)
+            except Exception: pass
+v_count = 0
+p_count = 0
+for d in discovered:
+    try:
+        data = open(d, 'rb').read()
+        if b'\x63\x00\x07\x01' in data: v_count += 1
+        elif b'\x63\x00\xe7\x00' in data: p_count += 1
+    except Exception: pass
+print(f'{len(discovered)} {p_count} {v_count}')
+" 2>/dev/null || echo "0 0 0")"
+
+    if [ "$TOTAL_VULN" -gt 0 ]; then
+        echo -e "  • ${YELLOW}[AVISO]${NC} Cedilha Wayland: $TOTAL_VULN app(s) Chromium/Electron sem patch ('+c gerará 'ć' no Wayland nativo)."
+        echo -e "    Corrija com: ${BOLD}./bin/linux-wayland-config patch-cedilla --apply${NC}"
+        runlog_event "warn" "chromium_cedilla_unpatched" "vulnerable=$TOTAL_VULN total=$TOTAL_DISCOVERED"
+    elif [ "$TOTAL_DISCOVERED" -gt 0 ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Cedilha Wayland: Todos os $TOTAL_PATCHED app(s) Chromium/Electron estão com patch ('+c -> ç)."
+        runlog_event "ok" "chromium_cedilla_patched" "patched=$TOTAL_PATCHED"
+    fi
+
+    if [ -f "/etc/pacman.d/hooks/99-cedilla-wayland.hook" ]; then
+        echo -e "  • ${GREEN}[OK]${NC} Autocura de cedilha no Pacman ativa (/etc/pacman.d/hooks/99-cedilla-wayland.hook)."
+        runlog_event "ok" "cedilla_pacman_hook_active" ""
+    else
+        echo -e "  • ${BLUE}[INFO]${NC} Autocura de cedilha no Pacman não instalada (execute './bin/linux-wayland-config patch-cedilla --apply')."
+    fi
+fi
+
 
 # -----------------------------------------------------------------------------
 # 4. Simulação de Composição via libxkbcommon

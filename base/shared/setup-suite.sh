@@ -78,6 +78,12 @@ apply_keyboard() {
     bash "$SCRIPT_DIR/fix-keyboard.sh"
     runlog_event "ok" "setup_keyboard_applied" ""
 }
+apply_patch_cedilla() {
+    echo -e "${BOLD}==> [Configuração] Patch da Cedilha Wayland (Chromium / Electron)${NC}"
+    bash "$SCRIPT_DIR/manage-chromium-cedilla.sh" --apply
+    runlog_event "ok" "setup_patch_cedilla_applied" ""
+}
+
 
 apply_autoheal() {
     echo -e "${BOLD}==> [Configuração] Proteção de Auto-Cura de Layout no Login${NC}"
@@ -196,6 +202,21 @@ apply_all_detected() {
 
     local has_i8042
     has_i8042="$(read_profile_value "input.i8042_present")"
+    local has_chromium_apps
+    has_chromium_apps="$(python3 -c "
+import json, os
+try:
+    with open(os.path.expanduser('$PROFILE_FILE')) as f:
+        d = json.load(f)
+    print('true' if d.get('chromium_apps', {}).get('count', 0) > 0 else 'false')
+except Exception:
+    print('false')
+" 2>/dev/null || echo "false")"
+    if [ "$has_chromium_apps" = "true" ]; then
+        apply_patch_cedilla
+        echo ""
+    fi
+
     if [ "$has_i8042" = "true" ]; then
         apply_keyboard_power
         echo ""
@@ -266,12 +287,13 @@ show_interactive_menu() {
     echo -e "  • Sistema: ${BOLD}${distro}${NC} (${desktop})\n"
 
     echo -e "${BOLD}Otimizações disponíveis para o seu hardware:${NC}"
-    echo -e "  1) ${GREEN}Teclado e Cedilha${NC}      (ABNT2 / US-intl ç nativo sem input method)"
-    echo -e "  2) ${GREEN}Auto-Cura de Layout${NC}    (Proteção contra bug de colapso do KWin no reboot)"
+    echo -e "  1) ${GREEN}Teclado e Atalhos${NC}      (Layout br/us no KDE, Ctrl+C no ABNT2, LC_CTYPE, sem root)"
+    echo -e "  2) ${GREEN}Cedilha Wayland${NC}        (Patch '+c -> ç' no Chrome, Orca, VS Code, Discord, Brave) [sudo]"
+    echo -e "  3) ${GREEN}Auto-Cura de Layout${NC}    (Proteção contra bug de colapso do KWin no reboot)"
 
     local has_i8042
     has_i8042="$(read_profile_value "input.i8042_present")"
-    [ "$has_i8042" = "true" ] && echo -e "  3) ${GREEN}Smart Keyboard Power${NC}   (Anti-latch/latência no barramento i8042)"
+    [ "$has_i8042" = "true" ] && echo -e "  4) ${GREEN}Smart Keyboard Power${NC}   (Anti-latch/latência no barramento i8042)"
 
     local has_wifi
     has_wifi="$(python3 -c "
@@ -280,29 +302,28 @@ with open(os.path.expanduser('$PROFILE_FILE')) as f:
     d = json.load(f)
 print('true' if len(d.get('wifi', {}).get('interfaces', [])) > 0 else 'false')
 " 2>/dev/null || echo "false")"
-    [ "$has_wifi" = "true" ] && echo -e "  4) ${GREEN}Smart Wi-Fi Power${NC}      (Power save OFF na tomada / ON na bateria)"
+    [ "$has_wifi" = "true" ] && echo -e "  5) ${GREEN}Smart Wi-Fi Power${NC}      (Power save OFF na tomada / ON na bateria)"
 
     local has_touchpad
     has_touchpad="$(read_profile_value "input.touchpad_present")"
-    [ "$has_touchpad" = "true" ] && echo -e "  5) ${GREEN}Gestos de Touchpad${NC}     (3/4 dedos no Wayland via libinput-gestures)"
+    [ "$has_touchpad" = "true" ] && echo -e "  6) ${GREEN}Gestos de Touchpad${NC}     (3/4 dedos no Wayland via libinput-gestures)"
 
     local has_mouse
     has_mouse="$(read_profile_value "input.mx_master_present")"
-    [ "$has_mouse" = "true" ] && echo -e "  6) ${GREEN}Logitech MX Master 3S${NC}  (Botões e SmartShift via logiops)"
+    [ "$has_mouse" = "true" ] && echo -e "  7) ${GREEN}Logitech MX Master 3S${NC}  (Botões e SmartShift via logiops)"
 
     local mode_60 mode_60_rej
     mode_60="$(read_profile_value "display.mode_60_available")"
     mode_60_rej="$(read_profile_value "display.mode_60_rejected")"
-    [ "$mode_60" = "true" ] && [ "$mode_60_rej" != "true" ] && echo -e "  7) ${GREEN}Tela 60 Hz Power-Saver${NC} (Economia de 2W-3W na tela interna)"
+    [ "$mode_60" = "true" ] && [ "$mode_60_rej" != "true" ] && echo -e "  8) ${GREEN}Tela 60 Hz Power-Saver${NC} (Economia de 2W-3W na tela interna)"
 
     local is_tongfang
     is_tongfang="$(read_profile_value "input.is_tongfang_candidate")"
-    [ "$is_tongfang" = "true" ] && echo -e "  8) ${GREEN}Desbloqueio Tongfang${NC}   (Parâmetro i8042 no GRUB para teclado)"
+    [ "$is_tongfang" = "true" ] && echo -e "  9) ${GREEN}Desbloqueio Tongfang${NC}   (Parâmetro i8042 no GRUB para teclado)"
 
     if command -v fastfetch >/dev/null 2>&1; then
-        echo -e "  9) ${GREEN}Identidade do Terminal${NC} (Fastfetch: Águia Dr460nized em todos os shells)"
+        echo -e " 10) ${GREEN}Identidade do Terminal${NC} (Fastfetch: Águia Dr460nized em todos os shells)"
     fi
-
     echo -e "  A) ${CYAN}Aplicar Todas Recomendadas${NC} (--all)"
     echo -e "  Q) Sair sem alterar nada\n"
 
@@ -327,6 +348,10 @@ while [ $# -gt 0 ]; do
             ;;
         --keyboard)
             apply_keyboard
+            shift
+            ;;
+        --patch-cedilla|--cedilla)
+            apply_patch_cedilla
             shift
             ;;
         --autoheal)

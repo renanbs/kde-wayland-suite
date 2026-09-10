@@ -75,7 +75,7 @@ flowchart TD
 - **`README.md` & `README.pt-BR.md`:** Synchronize feature description and CLI reference table across both languages.
 ---
 
-## 2. The 6 Inviolable Architectural Rules
+## 2. The 8 Inviolable Architectural Rules
 
 1. **Single Canonical Source (`base/`):**
    - Never create duplicate physical files in `claude-code/`, `cursor/`, `omp/`, `antigravity/`, or root.
@@ -99,3 +99,20 @@ flowchart TD
    - Every new feature, command, or behavioral change must be documented simultaneously in both `README.md` (English) and `README.pt-BR.md` (Português do Brasil).
    - Must keep in sync: version badges (`Version-X.Y.Z`), the feature problem/solution section, and the CLI/Makefile command reference table.
    - A release or feature merge is strictly incomplete without synchronized dual-language documentation.
+7. **Upstream Attribution & Open-Source Ethics:**
+   - Whenever this suite adopts, wraps, or ports code, algorithms, byte patterns, patches, or research from external creators or community repositories:
+     * **Code Integrity:** Keep the upstream script or module intact in its canonical form in `base/shared/` whenever possible, delegating orchestration to suite wrappers rather than rewriting.
+     * **Multi-Layer Attribution:**
+       1. **Script Headers:** Retain and explicitly declare author name, license, and upstream repository URL.
+       2. **CLI & Terminal Output:** Banners and logs for the feature must display the author name and upstream URL.
+       3. **AI Agent Commands (`commands/<name>.md`):** Include an explicit `## 👏 Upstream Attribution & Credits` section, and instruct AI agents in the Guided Flow to explain the origin of the fix to the user.
+       4. **Documentation:** Synchronize attribution in both `README.md` and `README.pt-BR.md` in the feature description and under `## 👏 Acknowledgments & Upstream Credits`.
+8. **Git Branching Conventions:**
+   - All work in the repository must be developed on standardized topic branches before merging into `main`:
+     * `feature/<slug>`: New capabilities, scripts, options, or hardware support (e.g. `feature/patch-cedilla`).
+     * `fix/<slug>`: Bug fixes, hardware matrix repairs, shortcut patches, or regressions (e.g. `fix/fcitx5-system-autostart`).
+     * `release/<version>`: Release staging, version bumps across manifests, and changelog updates (e.g. `release/v2.6.0`).
+     * `chore/<slug>`: Tooling, marketplace catalogs, CI, or harness maintenance.
+     * `docs/<slug>`: Documentation, translations, skill guides, or contract clarifications.
+     * `refactor/<slug>`: Code restructuring without interface or behavioral changes.
+   - **Main Branch Discipline:** The `main` branch represents tested, production-ready code. Direct chaotic commits are prohibited; merges into `main` must use semantic commit messages (`feat(...)`, `fix(...)`, `chore(...)`).

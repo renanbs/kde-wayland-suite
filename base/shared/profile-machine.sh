@@ -321,6 +321,12 @@ AUTOHEAL_INSTALLED=0
 if [ -f "$HOME/.config/autostart/kde-wayland-suite-restore-layout.desktop" ] || [ -f "$HOME/.config/autostart/linux-wayland-layout-autoheal.desktop" ]; then
     AUTOHEAL_INSTALLED=1
 fi
+CHROMIUM_APPS=()
+if [ -f "$SCRIPT_DIR/manage-chromium-cedilla.sh" ]; then
+    while IFS= read -r app_path; do
+        [ -n "$app_path" ] && CHROMIUM_APPS+=("$app_path")
+    done <<< "$("$SCRIPT_DIR/manage-chromium-cedilla.sh" --discover 2>/dev/null || true)"
+fi
 
 echo -e "  • Barramento i8042: $([ "$I8042_PRESENT" -eq 1 ] && echo -e "${GREEN}Presente${NC}" || echo -e "Ausente")"
 if [ "$IS_TONGFANG" -eq 1 ]; then
@@ -329,6 +335,7 @@ fi
 echo -e "  • Touchpad: $([ "$TOUCHPAD_PRESENT" -eq 1 ] && echo -e "${GREEN}Detectado${NC}" || echo -e "Não detectado")"
 echo -e "  • Mouse Logitech MX Master 3S: $([ "$MX_MASTER_PRESENT" -eq 1 ] && echo -e "${GREEN}Detectado${NC}" || echo -e "Não detectado")"
 echo -e "  • Layout Auto-Heal (Proteção KWin): $([ "$AUTOHEAL_INSTALLED" -eq 1 ] && echo -e "${GREEN}[INSTALADO]${NC}" || echo -e "${YELLOW}[NÃO INSTALADO]${NC}")"
+echo -e "  • Apps Chromium/Electron detectados: ${BOLD}${#CHROMIUM_APPS[@]}${NC} app(s)"
 
 # -----------------------------------------------------------------------------
 # 6. Gravação Estruturada do Machine Profile (JSON)
@@ -397,6 +404,11 @@ profile = {
         'touchpad_present': bool($TOUCHPAD_PRESENT),
         'mx_master_present': bool($MX_MASTER_PRESENT),
         'layout_autoheal_installed': bool($AUTOHEAL_INSTALLED)
+    },
+    'chromium_apps': {
+        'count': len('''$(printf '%s\n' "${CHROMIUM_APPS[@]:-}")'''.strip().splitlines()) if '''$(printf '%s\n' "${CHROMIUM_APPS[@]:-}")'''.strip() else 0,
+        'installed_binaries': [p for p in '''$(printf '%s\n' "${CHROMIUM_APPS[@]:-}")'''.strip().splitlines() if p],
+        'cedilla_hook_installed': os.path.exists('/etc/pacman.d/hooks/99-cedilla-wayland.hook')
     }
 }
 

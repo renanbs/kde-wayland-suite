@@ -7,7 +7,9 @@ description: Comprehensive Linux Wayland configuration suite for KDE Plasma, GNO
 This skill provides automations and diagnostics to resolve common problems in the input stack and clipboard of **KDE Plasma 6 (Wayland)**:
 
 1. **Keyboard Shortcut Repair (`Ctrl+C` on ABNT2)**: Eliminates legacy `im-cedilla` module that grabs keystrokes and breaks `Ctrl+C` under Wayland.
-2. **Native Cedilla on US-intl (`dead_acute + c` $\to$ `ç` in Chrome, Orca IDE, Electron, GTK, Qt)**: Achieved **without any input method**. The system compose table for pt_BR (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) natively maps `<dead_acute> <c>` to `ç`. The suite configures `LC_CTYPE=pt_BR.UTF-8` in `~/.config/environment.d/cedilla.conf` (+ `systemd --user set-environment` and `~/.config/fish/conf.d/cedilla.fish`), and injects `--ozone-platform-hint=auto` into `*-flags.conf` for Chrome/Chromium/Brave/Orca/Code/Electron.
+2. **Native Cedilla on US-intl (`dead_acute + c` $\to$ `ç` in Chrome, Orca IDE, Electron, GTK, Qt)**:
+   - **Desktop & Toolkit Level:** Achieved **without any input method** via `LC_CTYPE=pt_BR.UTF-8` in `~/.config/environment.d/cedilla.conf` (+ `systemd --user set-environment` and `~/.config/fish/conf.d/cedilla.fish`), leveraging the system compose table (`/usr/share/X11/locale/pt_BR.UTF-8/Compose`) for Qt, GTK, Konsole, and Kate.
+   - **Chromium & Electron Native Wayland Patcher (`patch-cedilla`):** Resolves the upstream Chromium `ui::CharacterComposer` bug (Issue 40272818) where `<dead_acute> + c` is hardcoded to `ć`. Powered by the upstream byte-pattern engine by **Leandro Cassa** ([lcassa/chromium-wayland-cedilla-fix](https://github.com/lcassa/chromium-wayland-cedilla-fix)), `./bin/linux-wayland-config patch-cedilla --apply` directly patches Google Chrome, Orca IDE, VS Code, Discord, Brave, and Antigravity binaries, and registers `/etc/pacman.d/hooks/99-cedilla-wayland.hook` for automatic post-upgrade autorepair.
 3. **Wayland Clipboard Deadlock Repair (`Ctrl+Shift+V` / Images)**: Cleans up zombie `xsel` processes and ensures native `wl-clipboard` (`wl-copy`/`wl-paste`) operation in Konsole and shells.
 4. **Portable Touchpad Gestures**: Maps 3 and 4-finger gestures complementary to KWin via `libinput-gestures` and D-Bus (`qdbus6`), without concurrency conflicts with native Plasma gestures.
 5. **General Diagnostics and Verification**: Real-time auditing of session state, active layouts, clipboard health, browser flags, composition validation, and daemon status.
@@ -35,9 +37,9 @@ This skill provides automations and diagnostics to resolve common problems in th
 ### Question 1 — Language Preference (`language`) (singleSelect):
 - **"English (en) (Recommended)"** — Standard English. Internal operations remain canonical English.
 - **"Português do Brasil (pt-BR)"** — Brazilian Portuguese. Internal operations remain in English; the AI will translate user-facing messages and reports to Portuguese.
-
 ### Question 2 — Components (`components`) (multiSelect):
-- **"Keyboard, cedilla, and shortcuts (Ctrl+C ABNT2, US-intl native ç)"** — Recommended.
+- **"Keyboard, desktop shortcuts, and native compose (Ctrl+C ABNT2, US-intl native ç for Qt/GTK)"** — Recommended.
+- **"Wayland Cedilla Patch for Chromium & Electron (Chrome, Orca, VS Code, Discord, Brave: '+c -> ç)"** — Recommended if Chromium/Electron apps are used (powered by Leandro Cassa's byte patcher + Pacman hook) [Requires sudo].
 - **"Touchpad gestures (3/4 fingers via libinput-gestures)"** — Recommended if touchpad is present.
 - **"Logitech MX Master 3S mouse (logiops / logid)"** — Only if the user has this mouse.
 - **"Battery / power consumption diagnostic"** — Recommended (read-only diagnostic within init; no fixes applied yet).

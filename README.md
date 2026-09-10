@@ -148,19 +148,20 @@ cd ~/src/linux-wayland-suite
 Install directly from the remote marketplace:
 ```bash
 # In OMP terminal:
-omp plugin marketplace add renanbs/kde-wayland-suite
-omp plugin install kde-wayland-suite@kde-wayland-suite
+omp plugin marketplace add renanbs/linux-wayland-suite
+omp plugin install linux-wayland-suite@linux-wayland-suite
 
 # Upgrade:
-omp plugin upgrade kde-wayland-suite@kde-wayland-suite
+omp plugin marketplace update linux-wayland-suite
+omp plugin upgrade linux-wayland-suite@linux-wayland-suite
 ```
-* **Available Slash Commands:** `/kde-wayland-suite:status`, `/kde-wayland-suite:init`, `/kde-wayland-suite:fix-keyboard`, `/kde-wayland-suite:fix-tongfang`, `/kde-wayland-suite:smart-keyboard-power`, `/kde-wayland-suite:configure-harness`, `/kde-wayland-suite:battery`, `/kde-wayland-suite:report`, `/kde-wayland-suite:help`, `/kde-wayland-suite:upgrade`.
-* **Skills:** `skill://kde-wayland-suite`, `skill://kde-wayland-suite-architecture`.
+* **Available Slash Commands:** `/linux-wayland-suite:status`, `/linux-wayland-suite:init`, `/linux-wayland-suite:patch-cedilla`, `/linux-wayland-suite:fix-keyboard`, `/linux-wayland-suite:fix-tongfang`, `/linux-wayland-suite:smart-keyboard-power`, `/linux-wayland-suite:configure-harness`, `/linux-wayland-suite:battery`, `/linux-wayland-suite:report`, `/linux-wayland-suite:help`, `/linux-wayland-suite:upgrade`.
+* **Skills:** `skill://linux-wayland-suite`, `skill://linux-wayland-suite-architecture`.
 
 ### 2. Claude Code
 ```bash
-/plugin marketplace add renanbs/kde-wayland-suite
-/plugin install kde-wayland-suite@kde-wayland-suite
+/plugin marketplace add renanbs/linux-wayland-suite
+/plugin install linux-wayland-suite@linux-wayland-suite
 ```
 
 ### 3. Cursor IDE & Agent

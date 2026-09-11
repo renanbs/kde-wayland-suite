@@ -5,7 +5,7 @@
 [![KDE Plasma 6](https://img.shields.io/badge/KDE%20Plasma-6-blue.svg)](https://kde.org/plasma-desktop/)
 [![Wayland Ready](https://img.shields.io/badge/Wayland-Native-success.svg)](https://wayland.freedesktop.org/)
 [![Multi-Harness Plugin](https://img.shields.io/badge/AI%20Harnesses-OMP%20%7C%20Claude%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20OpenCode-purple.svg)](#-installation--ai-tools-integration)
-[![Version](https://img.shields.io/badge/Version-2.11.0-brightgreen.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-2.11.1-brightgreen.svg)](package.json)
 
 **[English](README.md)** | **[Português do Brasil](README.pt-BR.md)**
 
@@ -144,6 +144,7 @@ cd ~/src/linux-wayland-suite
 | `linux-wayland-config upgrade` | `make upgrade` | Checks and applies updates from GitHub and marketplace |
 | `linux-wayland-config rollback` | `make rollback` | Restores previous configuration snapshot from backup |
 | `linux-wayland-config cosmetic` / `terminal-fetch` | `make cosmetic` / `make terminal-fetch` | Fastfetch terminal identity interactive menu & logo switcher |
+| `linux-wayland-config install` | `make install` | Installs suite permanently to `~/.local/share` (independent of git worktrees) |
 | `linux-wayland-config help` | `make help` | Displays full command help manual |
 ---
 

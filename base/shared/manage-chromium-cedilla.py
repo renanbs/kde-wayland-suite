@@ -13,9 +13,26 @@ import os
 import sys
 import glob
 import shutil
+import hashlib
 import subprocess
 from datetime import datetime
 from typing import List, Tuple, Dict, Optional
+
+def file_sha256(path: str) -> str:
+    """Computes SHA256 hex digest of a file."""
+    if not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except Exception:
+        return ""
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except Exception:
+        pass
 
 # Import shared suite library
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,8 +41,8 @@ from lib_suite import UI, I18n, get_active_language, render_table, render_banner
 
 PYTHON_PATCHER = os.path.join(SCRIPT_DIR, "chromium-cedilla-patch.py")
 PACMAN_HOOK_FILE = "/etc/pacman.d/hooks/99-cedilla-wayland.hook"
+SYSTEM_SHARE_DIR = "/usr/local/share/linux-wayland-suite"
 SYSTEM_WRAPPER = "/usr/local/bin/linux-wayland-patch-cedilla"
-
 # ==============================================================================
 # Internationalization Catalog (en / pt-BR)
 # ==============================================================================
@@ -170,24 +187,29 @@ SEARCH_GLOBS = [
     "/opt/discord/Discord",
 ]
 
+def is_eligible_binary(path: str) -> bool:
+    """Validates whether a path is an eligible Chromium/Electron ELF executable (>25MB)."""
+    if not os.path.isfile(path) or not os.access(path, os.X_OK):
+        return False
+    # Ignore backup copies
+    if path.endswith(".orig") or ".bak-" in path or ".tmp-" in path or path.endswith(".bak"):
+        return False
+    try:
+        rp = os.path.realpath(path)
+        if os.path.getsize(rp) > 25 * 1024 * 1024:
+            with open(rp, "rb") as f:
+                return f.read(4) == b"\x7fELF"
+    except (OSError, PermissionError):
+        return False
+    return False
+
 def discover_binaries() -> List[str]:
     """Dynamically finds installed Chromium and Electron ELF executables (>25MB)."""
     found = set()
     for pattern in SEARCH_GLOBS:
         for p in glob.glob(pattern):
-            if not os.path.isfile(p) or not os.access(p, os.X_OK):
-                continue
-            # Ignore backup copies
-            if p.endswith(".orig") or ".bak-" in p or ".tmp-" in p or p.endswith(".bak"):
-                continue
-            try:
-                rp = os.path.realpath(p)
-                if os.path.getsize(rp) > 25 * 1024 * 1024:
-                    with open(rp, "rb") as f:
-                        if f.read(4) == b"\x7fELF":
-                            found.add(rp)
-            except (OSError, PermissionError):
-                continue
+            if is_eligible_binary(p):
+                found.add(os.path.realpath(p))
     return sorted(list(found))
 
 def app_display_name(path: str) -> str:
@@ -293,8 +315,34 @@ def cmd_status() -> int:
         print(f"  • {UI.WARNING}{i18n.t('hook_missing')}{UI.RESET}")
         log_event("warn", "cedilla_hook_missing")
 
+    system_script = os.path.join(SYSTEM_SHARE_DIR, "manage-chromium-cedilla.py")
+    this_script = os.path.abspath(__file__)
+    this_hash = file_sha256(this_script)
+
     if os.path.isfile(SYSTEM_WRAPPER) or os.path.islink(SYSTEM_WRAPPER):
-        print(f"  • {UI.SUCCESS}{i18n.t('wrapper_installed', path=SYSTEM_WRAPPER)}{UI.RESET}")
+        try:
+            wrapper_content = open(SYSTEM_WRAPPER, "r", encoding="utf-8", errors="ignore").read()
+        except Exception:
+            wrapper_content = ""
+
+        if "workspaces/linux-wayland-suite" in wrapper_content or "pickerel" in wrapper_content:
+            print(f"  • {UI.WARNING}Wrapper do Sistema: ⚠ APONTANDO PARA WORKTREE TEMPORÁRIA ({SYSTEM_WRAPPER}){UI.RESET}" if i18n.lang == "pt-BR" else f"  • {UI.WARNING}System Wrapper: ⚠ POINTING TO TEMPORARY WORKTREE ({SYSTEM_WRAPPER}){UI.RESET}")
+            print(f"    {UI.MUTED}Dica: execute 'linux-wayland-config patch-cedilla --apply --hook' para instalar permanentemente em {SYSTEM_SHARE_DIR}.{UI.RESET}" if i18n.lang == "pt-BR" else f"    {UI.MUTED}Tip: run 'linux-wayland-config patch-cedilla --apply --hook' to install permanently to {SYSTEM_SHARE_DIR}.{UI.RESET}")
+        else:
+            print(f"  • {UI.SUCCESS}{i18n.t('wrapper_installed', path=SYSTEM_WRAPPER)}{UI.RESET}")
+
+        if os.path.isfile(system_script):
+            sys_hash = file_sha256(system_script)
+            if sys_hash == this_hash:
+                print(f"  • {UI.SUCCESS}Script do Gancho:   ✔ ATUALIZADO (sincronizado com repositório em {SYSTEM_SHARE_DIR}){UI.RESET}" if i18n.lang == "pt-BR" else f"  • {UI.SUCCESS}Hook Script:     ✔ UP TO DATE (matches repository at {SYSTEM_SHARE_DIR}){UI.RESET}")
+                log_event("ok", "cedilla_script_synced", SYSTEM_SHARE_DIR)
+            else:
+                print(f"  • {UI.WARNING}Script do Gancho:   ⚠ DESATUALIZADO (versão em {SYSTEM_SHARE_DIR} diverge do repositório){UI.RESET}" if i18n.lang == "pt-BR" else f"  • {UI.WARNING}Hook Script:     ⚠ OUT OF DATE (diverges from repository at {SYSTEM_SHARE_DIR}){UI.RESET}")
+                print(f"    {UI.MUTED}Dica: execute 'linux-wayland-config patch-cedilla --apply --hook' para sincronizar.{UI.RESET}" if i18n.lang == "pt-BR" else f"    {UI.MUTED}Tip: run 'linux-wayland-config patch-cedilla --apply --hook' to sync.{UI.RESET}")
+                log_event("warn", "cedilla_script_diverged", SYSTEM_SHARE_DIR)
+        else:
+            print(f"  • {UI.WARNING}Script do Gancho:   ⚠ NÃO INSTALADO EM {SYSTEM_SHARE_DIR}{UI.RESET}" if i18n.lang == "pt-BR" else f"  • {UI.WARNING}Hook Script:     ⚠ NOT INSTALLED IN {SYSTEM_SHARE_DIR}{UI.RESET}")
+            print(f"    {UI.MUTED}Dica: execute 'linux-wayland-config patch-cedilla --apply --hook' para instalar.{UI.RESET}" if i18n.lang == "pt-BR" else f"    {UI.MUTED}Tip: run 'linux-wayland-config patch-cedilla --apply --hook' to install.{UI.RESET}")
     else:
         print(f"  • {UI.WARNING}{i18n.t('wrapper_missing')}{UI.RESET}")
     print("")
@@ -327,7 +375,7 @@ def cmd_apply(args: List[str]) -> int:
     print(f"{UI.PRIMARY}{i18n.t('step1_detecting')}{UI.RESET}")
 
     if explicit_targets:
-        discovered = explicit_targets
+        discovered = [os.path.realpath(t) for t in explicit_targets if is_eligible_binary(t)]
     elif not sys.stdin.isatty():
         # Reading from pipe (pacman hook with NeedsTargets)
         discovered = []
@@ -336,9 +384,10 @@ def cmd_apply(args: List[str]) -> int:
             if not line:
                 continue
             for cand in ("/" + line, line):
-                if os.path.isfile(cand):
-                    discovered.append(cand)
+                if is_eligible_binary(cand):
+                    discovered.append(os.path.realpath(cand))
                     break
+        discovered = sorted(list(set(discovered)))
         auto_all = True
     else:
         discovered = discover_binaries()
@@ -399,31 +448,57 @@ def cmd_apply(args: List[str]) -> int:
     print(f"{UI.PRIMARY}{i18n.t('step2_patching', count=len(targets))}{UI.RESET}")
     for target in targets:
         name = app_display_name(target)
+        status, _ = check_binary_status(target)
+        if status == "PATCHED":
+            print(f"  • {UI.BOLD}{name}{UI.RESET} ({target}): {UI.SUCCESS}[{i18n.t('status_patched')}]{UI.RESET}")
+            log_event("ok", "cedilla_already_patched", target)
+            continue
+        elif status == "INELIGIBLE":
+            print(f"  • {UI.MUTED}{name} ({target}): {i18n.t('status_ineligible')} (skipped){UI.RESET}")
+            log_event("skip", "cedilla_ineligible", target)
+            continue
+
         print(i18n.t("processing", name=f"{UI.BOLD}{name}{UI.RESET}", path=f"{UI.MUTED}{target}{UI.RESET}"))
         if patch_binary(target):
             log_event("ok", "cedilla_patched", target)
         else:
             log_event("fail", "cedilla_patch_failed", target)
 
-    print(f"{UI.PRIMARY}{i18n.t('step3_hook')}{UI.RESET}")
-    want_hook = True
+    want_hook = False
     if is_interactive:
+        print(f"{UI.PRIMARY}{i18n.t('step3_hook')}{UI.RESET}")
         print(i18n.t("hook_explainer"))
         try:
             h_ans = input(f"{UI.BOLD}{i18n.t('hook_prompt')}{UI.RESET}").strip()
         except (KeyboardInterrupt, EOFError):
             h_ans = "y"
         h_ans = h_ans or "y"
-        if h_ans.lower().startswith("n"):
-            want_hook = False
+        if not h_ans.lower().startswith("n"):
+            want_hook = True
+        else:
             print(i18n.t("hook_skipped"))
+    elif any(a in ("--install-hook", "--hook") for a in args):
+        want_hook = True
 
     if want_hook and os.path.isdir("/etc/pacman.d"):
         install_hook_script = f"""
-mkdir -p /etc/pacman.d/hooks /usr/local/bin
+mkdir -p /etc/pacman.d/hooks /usr/local/bin "{SYSTEM_SHARE_DIR}"
+cp -p "{SCRIPT_DIR}/manage-chromium-cedilla.py" "{SYSTEM_SHARE_DIR}/"
+cp -p "{SCRIPT_DIR}/chromium-cedilla-patch.py" "{SYSTEM_SHARE_DIR}/"
+cp -p "{SCRIPT_DIR}/lib_suite.py" "{SYSTEM_SHARE_DIR}/"
+chmod 755 "{SYSTEM_SHARE_DIR}/manage-chromium-cedilla.py" "{SYSTEM_SHARE_DIR}/chromium-cedilla-patch.py"
+chmod 644 "{SYSTEM_SHARE_DIR}/lib_suite.py"
+
 cat << 'EOF' > {SYSTEM_WRAPPER}
 #!/usr/bin/env bash
-exec "{SCRIPT_DIR}/manage-chromium-cedilla.py" --apply --yes "$@"
+# Standalone system wrapper for Linux Wayland Cedilla Autorepair
+TARGET_SCRIPT="{SYSTEM_SHARE_DIR}/manage-chromium-cedilla.py"
+USER_SCRIPT="$HOME/.local/share/linux-wayland-suite/shared/manage-chromium-cedilla.py"
+if [ -f "$TARGET_SCRIPT" ]; then
+    exec python3 "$TARGET_SCRIPT" --apply --yes "$@"
+elif [ -f "$USER_SCRIPT" ]; then
+    exec python3 "$USER_SCRIPT" --apply --yes "$@"
+fi
 EOF
 chmod +x {SYSTEM_WRAPPER}
 
@@ -455,7 +530,6 @@ EOF
 
         print(i18n.t("hook_installed_ok"))
         log_event("ok", "cedilla_hook_installed", PACMAN_HOOK_FILE)
-
     print(f"{UI.BOLD}{UI.SUCCESS}{i18n.t('done_msg')}{UI.RESET}")
     return 0
 

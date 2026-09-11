@@ -119,6 +119,10 @@ cmd_apply() {
     else
         echo -e "  ⏭️ [3/4] OMP CLI não encontrado no PATH"
     fi
+    # Atualiza a instalação persistente em ~/.local/share/linux-wayland-suite
+    if [ -f "$BASE_REPO_DIR/base/bin/linux-wayland-config" ]; then
+        bash "$BASE_REPO_DIR/base/bin/linux-wayland-config" install >/dev/null 2>&1 || true
+    fi
 
     local new_ver
     new_ver="$(get_local_version)"

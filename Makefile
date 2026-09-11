@@ -1,4 +1,4 @@
-.PHONY: all menu init scan profile setup report status check fix-keyboard patch-cedilla fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install-cli preflight terminal-fetch cosmetic help
+.PHONY: all menu init scan profile setup report status check fix-keyboard patch-cedilla fix-tongfang revert-tongfang test-keyboard monitor-irq smart-keyboard-power smart-wifi-power wifi-power screen-hz screen-60 screen-120 configure-harness set-lang gestures mouse battery-status battery-apply battery-revert switch-br switch-us shortcut-switch rollback upgrade update install install-cli install-dev preflight terminal-fetch cosmetic help
 
 all: status
 
@@ -51,7 +51,9 @@ help:
 	@echo "  make upgrade         - Checks and applies suite and marketplace updates"
 	@echo "  make terminal-fetch  - Cosmetic Fastfetch/terminal identity menu and logo switch"
 	@echo "  make cosmetic        - Alias for make terminal-fetch"
-	@echo "  make install-cli     - Installs kde-config CLI command in ~/.local/bin"
+	@echo "  make install         - Installs suite permanently to ~/.local/share (independent of worktree)"
+	@echo "  make install-dev     - Symlinks suite CLI to current worktree for development"
+	@echo "  make install-cli     - Alias for make install"
 status:
 	@./bin/kde-config status
 
@@ -130,9 +132,13 @@ update: upgrade
 report:
 	@./bin/kde-config report
 
-install-cli:
+install:
 	@./bin/kde-config install
 
+install-cli: install
+
+install-dev:
+	@./bin/kde-config install --dev
 terminal-fetch:
 	@./bin/kde-config terminal-fetch
 

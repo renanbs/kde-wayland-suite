@@ -37,6 +37,7 @@ Displays the quick reference help center for all commands available in the **Lin
 | `./bin/linux-wayland-config upgrade` | `/upgrade` | Checks and applies updates from GitHub and marketplace | To upgrade the suite to the latest release |
 | `./bin/linux-wayland-config rollback` | — | Restores previous configuration snapshot from backup | To revert changes made by the suite |
 | `./bin/linux-wayland-config terminal-fetch` | `/terminal-fetch` | Fastfetch terminal identity menu & logo switch (Eagle, Cat Mokka, Dragon, etc.) | To customize or restore the terminal logo and greeting |
+| `./bin/linux-wayland-config install` | — | Installs suite permanently to `~/.local/share` (independent of worktree) | To ensure commands and hooks persist even if git worktrees are removed |
 
 ---
 
